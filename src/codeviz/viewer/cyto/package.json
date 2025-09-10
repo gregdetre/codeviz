@@ -1,0 +1,24 @@
+{
+    "name": "gdviz-cyto-viewer",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview --port 5173",
+        "types:gen": "json2ts --input ../../schema/codebase_graph.schema.json --output src/types.d.ts --bannerComment ''",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "cytoscape": "^3.28.1",
+        "cytoscape-elk": "^2.2.0",
+        "elkjs": "^0.9.0"
+    },
+    "devDependencies": {
+        "ajv": "^8.17.1",
+        "json-schema-to-typescript": "^13.0.0",
+        "typescript": "^5.5.4",
+        "vite": "^5.4.1"
+    }
+}

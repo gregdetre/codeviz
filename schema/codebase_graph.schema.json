@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gregdetre.com/gdwebgen/gdviz/codebase_graph.schema.json",
+  "title": "gdviz codebase graph",
+  "type": "object",
+  "required": ["version", "defaultMode", "nodes", "edges", "groups", "moduleImports"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "schemaVersion": { "type": "string" },
+    "id_prefix": { "type": "string" },
+    "defaultMode": { "type": "string", "enum": ["default", "exec", "modules", "datastruct"] },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "file", "module"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": ["integer", "null"], "minimum": 1 },
+          "module": { "type": "string" },
+          "kind": { "type": "string", "default": "function" },
+          "tags": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } },
+          "signature": { "type": ["string", "null"] },
+          "doc": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "target", "kind"],
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "kind": { "type": "string", "enum": ["calls", "bash_entry", "build_step", "runtime_call"] },
+          "conditions": { "type": "array", "items": { "type": "string" } },
+          "order": { "type": ["integer", "null"], "minimum": 1 }
+        },
+        "additionalProperties": true
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "children"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string", "enum": ["module"] },
+          "children": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    },
+    "moduleImports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "target", "weight"],
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "weight": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+
+
