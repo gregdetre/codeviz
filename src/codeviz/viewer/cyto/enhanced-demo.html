@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CodeViz Enhanced Demo - Cytoscape.js Features Showcase</title>
+    <link rel="icon" href="data:," />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 18px;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .header .subtitle {
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .control-panel {
+            width: 320px;
+            background: #fff;
+            border-right: 1px solid #e9ecef;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .graph-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+            background: #fcfcfc;
+            background-image:
+                repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.03) 0px, rgba(0, 0, 0, 0.03) 1px, transparent 1px, transparent 20px),
+                repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.03) 0px, rgba(0, 0, 0, 0.03) 1px, transparent 1px, transparent 20px);
+        }
+
+        .panel-section {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .panel-section:last-child {
+            border-bottom: none;
+        }
+
+        .panel-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 2px;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn.btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn.btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn.btn-success {
+            background: #28a745;
+        }
+
+        .btn.btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .btn.btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn.btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn.btn-small {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin: 0;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            font-size: 12px;
+        }
+
+        .slider-group {
+            margin-bottom: 12px;
+        }
+
+        .slider-group input[type="range"] {
+            width: 100%;
+            margin: 4px 0;
+        }
+
+        .slider-value {
+            font-size: 11px;
+            color: #6c757d;
+            text-align: right;
+        }
+
+        .layout-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            z-index: 1000;
+        }
+
+        .feature-badge {
+            display: inline-block;
+            background: #17a2b8;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 4px;
+        }
+
+        .keyboard-shortcuts {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        .keyboard-shortcuts h4 {
+            margin: 0 0 6px 0;
+            font-size: 12px;
+            color: #495057;
+        }
+
+        .keyboard-shortcuts div {
+            margin: 2px 0;
+            color: #6c757d;
+        }
+
+        .mode-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 123, 255, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            z-index: 1000;
+        }
+
+        /* Dark mode basics for control panel */
+        body.dark .header {
+            background: #1f2937;
+            border-color: #374151;
+        }
+
+        body.dark .header h1 {
+            color: #e5e7eb;
+        }
+
+        body.dark .subtitle {
+            color: #9ca3af;
+        }
+
+        body.dark .main-container {
+            background: #111827;
+        }
+
+        body.dark .control-panel {
+            background: #111827;
+            border-color: #1f2937;
+        }
+
+        body.dark .panel-section h3 {
+            color: #e5e7eb;
+        }
+
+        body.dark label,
+        body.dark .keyboard-shortcuts div {
+            color: #9ca3af;
+        }
+
+        body.dark .btn.btn-secondary {
+            background: #4b5563;
+        }
+
+        body.dark .status-indicator {
+            background: rgba(55, 65, 81, 0.9);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>CodeViz Enhanced Demo</h1>
+        <div class="subtitle">
+            Showcasing: Node Grouping • Filtering • Mixed Layouts • Interactivity • GUI Controls
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="control-panel">
+            <!-- Node Grouping Controls -->
+            <div class="panel-section">
+                <h3>🔗 Node Grouping <span class="feature-badge">#1</span></h3>
+                <div class="control-group">
+                    <button class="btn btn-success" id="expand-all" onclick="enhancedViewer?.expandAll()">Expand
+                        All</button>
+                    <button class="btn btn-warning" id="collapse-all" onclick="enhancedViewer?.collapseAll()">Collapse
+                        All</button>
+                </div>
+                <div class="control-group">
+                    <label>Hierarchical Structure:</label>
+                    <div style="font-size: 11px; color: #6c757d; line-height: 1.4;">
+                        Module → File → Functions/Classes<br>
+                        Click expand/collapse cues on nodes
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtering Controls -->
+            <div class="panel-section">
+                <h3>🔍 Filtering <span class="feature-badge">#2</span></h3>
+                <div class="control-group">
+                    <label>Search:</label>
+                    <input id="search-input" type="text" placeholder="Filter by name..."
+                        style="width: 100%; padding: 6px 8px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 12px;"
+                        oninput="onSearchChanged(this.value)" />
+                </div>
+                <div class="control-group">
+                    <label>Filter by Type:</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show-functions" checked onchange="applyTypeFilter()">
+                        <label for="show-functions">Functions</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show-classes" checked onchange="applyTypeFilter()">
+                        <label for="show-classes">Classes</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show-variables" checked onchange="applyTypeFilter()">
+                        <label for="show-variables">Variables</label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Visibility Mode:</label>
+                    <button class="btn btn-small" onclick="setFilterMode('hide')">Hide</button>
+                    <button class="btn btn-small" onclick="setFilterMode('fade')">Fade</button>
+                    <button class="btn btn-small" onclick="setFilterMode('disable')">Disable</button>
+                </div>
+                <div class="control-group">
+                    <button class="btn btn-secondary" onclick="enhancedViewer?.resetFilters()">Reset All
+                        Filters</button>
+                </div>
+            </div>
+
+            <!-- Layout Controls -->
+            <div class="panel-section">
+                <h3>📐 Mixed Layouts <span class="feature-badge">#3</span></h3>
+                <div class="control-group">
+                    <label>Layout Algorithm:</label>
+                    <div class="layout-buttons">
+                        <button class="btn btn-small" onclick="runLayout('fcose')">fCoSE</button>
+                        <button class="btn btn-small" onclick="runLayout('cola')">Cola</button>
+                        <button class="btn btn-small" onclick="runLayout('circle')">Circle</button>
+                        <button class="btn btn-small" onclick="runLayout('grid')">Grid</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="slider-group">
+                        <label>Edge Length:</label>
+                        <input type="range" id="edge-length" min="50" max="300" value="150"
+                            oninput="updateEdgeLengthValue()">
+                        <div class="slider-value" id="edge-length-value">150</div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Graph Actions:</label>
+                    <button class="btn btn-small" onclick="enhancedViewer?.fit()">Fit to Screen</button>
+                    <button class="btn btn-small" onclick="enhancedViewer?.center()">Center Graph</button>
+                </div>
+            </div>
+
+            <!-- Interactivity Controls -->
+            <div class="panel-section">
+                <h3>🎯 Interactivity <span class="feature-badge">#4</span></h3>
+                <div class="control-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-tooltips" checked>
+                        <label for="enable-tooltips">Rich Tooltips</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-context-menu" checked>
+                        <label for="enable-context-menu">Context Menus</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-focus-mode" onchange="setFocusMode(this.checked)">
+                        <label for="enable-focus-mode">Focus Mode</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-dark" onchange="setDarkMode(this.checked)">
+                        <label for="enable-dark">Dark Mode</label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Interaction Mode:</label>
+                    <button class="btn btn-small" onclick="setInteractionMode('default')">Default</button>
+                    <button class="btn btn-small" onclick="setInteractionMode('select')">Multi-Select</button>
+                </div>
+                <div class="control-group">
+                    <label>Export:</label>
+                    <button class="btn btn-small" onclick="enhancedViewer?.exportPNG()">PNG</button>
+                </div>
+            </div>
+
+            <!-- GUI Controls -->
+            <div class="panel-section">
+                <h3>🎛️ GUI Controls <span class="feature-badge">#5</span></h3>
+                <div class="control-group">
+                    <label>Selection Info:</label>
+                    <div id="selection-info" style="font-size: 11px; color: #6c757d; margin-top: 4px;">
+                        No nodes selected
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="keyboard-shortcuts">
+                        <h4>Keyboard Shortcuts:</h4>
+                        <div><strong>Esc</strong> - Reset filters</div>
+                        <div><strong>Ctrl+F</strong> - Fit to screen</div>
+                        <div><strong>Ctrl+C</strong> - Center graph</div>
+                        <div><strong>Ctrl+1</strong> - fCoSE layout</div>
+                        <div><strong>Ctrl+2</strong> - Cola layout</div>
+                        <div><strong>Ctrl+3</strong> - Circle layout</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="graph-container">
+            <div id="app"></div>
+            <div class="status-indicator" id="status">
+                Loading enhanced demo...
+            </div>
+            <div class="mode-indicator" id="mode-indicator">
+                Default Mode
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/enhanced-demo.ts"></script>
+
+    <script>
+        // Global functions for control panel
+        function applyTypeFilter() {
+            if (!window.enhancedViewer) return;
+
+            const showFunctions = document.getElementById('show-functions').checked;
+            const showClasses = document.getElementById('show-classes').checked;
+            const showVariables = document.getElementById('show-variables').checked;
+
+            window.enhancedViewer.filterByType(showFunctions, showClasses, showVariables);
+        }
+
+        function setFilterMode(mode) {
+            if (!window.enhancedViewer) return;
+            window.enhancedViewer.setFilterMode(mode);
+            applyTypeFilter();
+        }
+
+        function runLayout(layoutName) {
+            if (!window.enhancedViewer) return;
+            const edgeLength = parseInt(document.getElementById('edge-length').value);
+            window.enhancedViewer.applyLayout(layoutName, edgeLength);
+        }
+
+        function setInteractionMode(mode) {
+            if (!window.enhancedViewer) return;
+            window.enhancedViewer.setInteractionMode(mode);
+            document.getElementById('mode-indicator').textContent =
+                mode === 'select' ? 'Multi-Select Mode' : 'Default Mode';
+        }
+
+        function setFocusMode(enabled) {
+            if (!window.enhancedViewer) return;
+            window.enhancedViewer.setFocusMode(enabled);
+            document.getElementById('mode-indicator').textContent =
+                enabled ? 'Focus Mode' : 'Default Mode';
+        }
+
+        function updateEdgeLengthValue() {
+            const value = document.getElementById('edge-length').value;
+            document.getElementById('edge-length-value').textContent = value;
+        }
+
+        // Update selection info periodically
+        setInterval(() => {
+            if (window.enhancedViewer) {
+                const count = window.enhancedViewer.getSelectedCount();
+                const info = document.getElementById('selection-info');
+                if (count === 0) {
+                    info.textContent = 'No nodes selected';
+                } else if (count === 1) {
+                    info.textContent = '1 node selected';
+                } else {
+                    info.textContent = `${count} nodes selected`;
+                }
+            }
+        }, 500);
+    </script>
+</body>
+
+</html>

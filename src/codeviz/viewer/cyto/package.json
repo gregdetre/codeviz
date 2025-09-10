@@ -11,9 +11,16 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
+        "@popperjs/core": "^2.11.8",
         "cytoscape": "^3.28.1",
+        "cytoscape-cola": "^2.5.1",
+        "cytoscape-context-menus": "^4.2.1",
         "cytoscape-elk": "^2.2.0",
-        "elkjs": "^0.9.0"
+        "cytoscape-expand-collapse": "^4.1.1",
+        "cytoscape-fcose": "^2.2.0",
+        "cytoscape-popper": "^4.0.1",
+        "elkjs": "^0.9.0",
+        "tippy.js": "^6.3.7"
     },
     "devDependencies": {
         "ajv": "^8.17.1",

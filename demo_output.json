@@ -1,0 +1,432 @@
+{
+  "version": 1,
+  "schemaVersion": "1.0.0",
+  "id_prefix": "",
+  "defaultMode": "exec",
+  "nodes": [
+    {
+      "id": "main.build_pancake_recipe",
+      "label": "build_pancake_recipe",
+      "file": "demo_codebase/main.py",
+      "line": 5,
+      "module": "main",
+      "kind": "function",
+      "tags": {},
+      "signature": "build_pancake_recipe()",
+      "doc": null
+    },
+    {
+      "id": "main.main",
+      "label": "main",
+      "file": "demo_codebase/main.py",
+      "line": 37,
+      "module": "main",
+      "kind": "function",
+      "tags": {},
+      "signature": "main()",
+      "doc": null
+    },
+    {
+      "id": "main.plan_shopping",
+      "label": "plan_shopping",
+      "file": "demo_codebase/main.py",
+      "line": 21,
+      "module": "main",
+      "kind": "function",
+      "tags": {},
+      "signature": "plan_shopping(recipe)",
+      "doc": null
+    },
+    {
+      "id": "recipe.add_ingredient",
+      "label": "add_ingredient",
+      "file": "demo_codebase/recipe.py",
+      "line": 21,
+      "module": "recipe",
+      "kind": "function",
+      "tags": {},
+      "signature": "add_ingredient(recipe: Recipe, name: str, amount: float, unit: str) -> Recipe",
+      "doc": null
+    },
+    {
+      "id": "recipe.add_instruction",
+      "label": "add_instruction",
+      "file": "demo_codebase/recipe.py",
+      "line": 26,
+      "module": "recipe",
+      "kind": "function",
+      "tags": {},
+      "signature": "add_instruction(recipe: Recipe, instruction: str) -> Recipe",
+      "doc": null
+    },
+    {
+      "id": "recipe.create_recipe",
+      "label": "create_recipe",
+      "file": "demo_codebase/recipe.py",
+      "line": 18,
+      "module": "recipe",
+      "kind": "function",
+      "tags": {},
+      "signature": "create_recipe(name: str, prep_time: int) -> Recipe",
+      "doc": null
+    },
+    {
+      "id": "recipe.get_total_ingredients_count",
+      "label": "get_total_ingredients_count",
+      "file": "demo_codebase/recipe.py",
+      "line": 30,
+      "module": "recipe",
+      "kind": "function",
+      "tags": {},
+      "signature": "get_total_ingredients_count(recipe: Recipe) -> int",
+      "doc": null
+    },
+    {
+      "id": "shopping.calculate_total_cost",
+      "label": "calculate_total_cost",
+      "file": "demo_codebase/shopping.py",
+      "line": 8,
+      "module": "shopping",
+      "kind": "function",
+      "tags": {},
+      "signature": "calculate_total_cost(recipe: Recipe, price_db: Dict[str, float]) -> float",
+      "doc": null
+    },
+    {
+      "id": "shopping.create_price_database",
+      "label": "create_price_database",
+      "file": "demo_codebase/shopping.py",
+      "line": 24,
+      "module": "shopping",
+      "kind": "function",
+      "tags": {},
+      "signature": "create_price_database() -> Dict[str, float]",
+      "doc": null
+    },
+    {
+      "id": "shopping.extract_shopping_items",
+      "label": "extract_shopping_items",
+      "file": "demo_codebase/shopping.py",
+      "line": 5,
+      "module": "shopping",
+      "kind": "function",
+      "tags": {},
+      "signature": "extract_shopping_items(recipe: Recipe) -> List[str]",
+      "doc": null
+    },
+    {
+      "id": "shopping.group_by_category",
+      "label": "group_by_category",
+      "file": "demo_codebase/shopping.py",
+      "line": 15,
+      "module": "shopping",
+      "kind": "function",
+      "tags": {},
+      "signature": "group_by_category(recipe: Recipe, categories: Dict[str, str]) -> Dict[str, List[Ingredient]]",
+      "doc": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.add_ingredient",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.add_ingredient",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.add_ingredient",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.add_ingredient",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.add_ingredient",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.add_instruction",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.add_instruction",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.add_instruction",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.add_instruction",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.build_pancake_recipe",
+      "target": "main.create_recipe",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.build_pancake_recipe",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.get_total_ingredients_count",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.grouped.keys",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.list",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.plan_shopping",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.print",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.print",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.print",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.print",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.print",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.print",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.print",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.main",
+      "target": "main.print",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.plan_shopping",
+      "target": "main.calculate_total_cost",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.plan_shopping",
+      "target": "main.create_price_database",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.plan_shopping",
+      "target": "main.extract_shopping_items",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "main.plan_shopping",
+      "target": "main.group_by_category",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "recipe.add_ingredient",
+      "target": "recipe.Ingredient",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "recipe.add_ingredient",
+      "target": "recipe.recipe.ingredients.append",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "recipe.add_instruction",
+      "target": "recipe.recipe.instructions.append",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "recipe.create_recipe",
+      "target": "recipe.Recipe",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "recipe.get_total_ingredients_count",
+      "target": "recipe.len",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "shopping.calculate_total_cost",
+      "target": "shopping.price_db.get",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    },
+    {
+      "source": "shopping.group_by_category",
+      "target": "shopping.categories.get",
+      "kind": "calls",
+      "conditions": [],
+      "order": null
+    }
+  ],
+  "groups": [
+    {
+      "id": "main",
+      "kind": "module",
+      "children": [
+        "main.build_pancake_recipe",
+        "main.main",
+        "main.plan_shopping"
+      ]
+    },
+    {
+      "id": "recipe",
+      "kind": "module",
+      "children": [
+        "recipe.add_ingredient",
+        "recipe.add_instruction",
+        "recipe.create_recipe",
+        "recipe.get_total_ingredients_count"
+      ]
+    },
+    {
+      "id": "shopping",
+      "kind": "module",
+      "children": [
+        "shopping.calculate_total_cost",
+        "shopping.create_price_database",
+        "shopping.extract_shopping_items",
+        "shopping.group_by_category"
+      ]
+    }
+  ],
+  "moduleImports": [
+    {
+      "source": "main",
+      "target": "recipe",
+      "weight": 1
+    },
+    {
+      "source": "main",
+      "target": "shopping",
+      "weight": 1
+    },
+    {
+      "source": "recipe",
+      "target": "dataclasses",
+      "weight": 1
+    },
+    {
+      "source": "recipe",
+      "target": "typing",
+      "weight": 1
+    },
+    {
+      "source": "shopping",
+      "target": "recipe",
+      "weight": 1
+    },
+    {
+      "source": "shopping",
+      "target": "typing",
+      "weight": 1
+    }
+  ]
+}
