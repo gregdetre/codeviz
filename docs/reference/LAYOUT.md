@@ -11,9 +11,11 @@ This document explains how layout works in gdviz, with a focus on Execution Flow
 - `../../schema/codebase_graph.schema.json` – Visualization data format
 - `../../viewer/cyto/` – Cytoscape viewer (Vite + TS)
 - Root: `../../extract_codebase_graph.py` – Data extraction (AST/static analysis)
+- `cyto/README.md` – Comprehensive Cytoscape.js implementation guides
+- `cyto/NODE_GROUPING.md` – Node grouping and compound nodes implementation
+- `cyto/LAYOUTS.md` – Mixed layout strategies and constraint-based positioning
 - External: Cytoscape.js: https://js.cytoscape.org/
 - External: cytoscape-elk: https://github.com/cytoscape/cytoscape.js-elk
-- External: Compound nodes: https://js.cytoscape.org/#compound-nodes
 
 ## Principles and key decisions
 - Cytoscape-first for interactive rendering; use `cytoscape-elk` for layered/deterministic layout.

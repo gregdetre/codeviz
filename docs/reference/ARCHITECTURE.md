@@ -6,6 +6,8 @@ High-level system architecture for gdviz, the codebase visualization tool. This 
 
 - `../../README.md` - Project overview and quick start
 - `SETUP.md` - Development environment setup and dependencies
+- `LAYOUT.md` - Layout strategies and compound node grouping
+- `cyto/README.md` - Comprehensive Cytoscape.js implementation guides
 - `../../schema/codebase_graph.schema.json` - JSON data format specification
 - `../../../extract_codebase_graph.py` - Main extraction implementation
 - `../../viewer/cyto/` - Cytoscape + Vite + TypeScript viewer
