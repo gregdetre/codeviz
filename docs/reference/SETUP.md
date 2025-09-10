@@ -6,7 +6,6 @@ Development environment setup and dependencies for the gdviz codebase visualizat
 
 - `../../README.md` - Project overview and quick start commands
 - `ARCHITECTURE.md` - System architecture overview
-- `README.md` - Complete user guide and tutorials
 - `../../../docs/reference/DEVELOPMENT_SETUP.md` - Main gdwebgen development setup
 
 ## Prerequisites

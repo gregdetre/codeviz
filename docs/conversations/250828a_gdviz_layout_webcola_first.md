@@ -5,7 +5,7 @@ Date: 2025-08-28
 Duration: ~30m
 Type: Decision-making, Research Review
 Status: Active
-Related Docs: `gdviz/README.md`, `gdviz/docs/reference/README.md`
+Related Docs: `../../README.md`
 ---
 
 ## Context & Goals
@@ -81,5 +81,5 @@ Quotes from the user:
 
 ## Related Work
 - See `gdviz/README.md` for Quick Start and viewer context
-- See `gdviz/docs/reference/README.md` for modes and user workflows
+- See `../../README.md` for modes and user workflows
 

@@ -5,9 +5,8 @@
 This document explains how layout works in gdviz, with a focus on Execution Flow. It covers principles, grouping and lanes, interactivity, constraints, and planned extensions so the system remains understandable and maintainable over time.
 
 ## See also
-- `../README.md` – Quick start and viewer overview
+- `../../README.md` – Quick start and viewer overview
 - `ARCHITECTURE.md` – Extraction + viewer architecture and data flow
-- `README.md` – User guide, modes and tutorials
 - `../../gdviz_conf.py` – Inclusion/exclusion and default viewer mode
 - `../../schema/codebase_graph.schema.json` – Visualization data format
 - `../../viewer/cyto/` – Cytoscape viewer (Vite + TS)

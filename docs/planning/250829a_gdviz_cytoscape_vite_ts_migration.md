@@ -12,7 +12,7 @@
 - `gdviz/docs/conversations/250828a_gdviz_layout_webcola_first.md` – Background/user desiderata; now out-of-date on library choice but useful for goals (strict lanes, compounds, collapse-first).
 - `gdviz/docs/reference/LAYOUT.md` – Current layout principles (WebCola-first). Will need updating to reflect Cytoscape and dual-layout direction.
 - `gdviz/README.md` – Quick start for extracting and serving the viewer. Update to include Vite commands and new viewer entry.
-- `gdviz/docs/reference/README.md` – User guide and modes. Update screenshots and interaction model.
+- `../../README.md` – User guide and quick start. Update with new viewer commands and CLI usage.
 - `gdviz/docs/reference/LOGGING.md` – Remote browser logging; ensure the new viewer keeps the same logging hooks.
 - `gdviz/viewer/index.html` – Legacy D3 viewer (removed).
 - `gdviz/schema/codebase_graph.schema.json` – Contract for data interchange. We will version and generate TypeScript types from this.
@@ -112,7 +112,7 @@
 #### Stage: Documentation updates
 - [ ] Update `gdviz/README.md` with new Quick Start (Vite build, viewer paths, dev loop).
 - [ ] Update `gdviz/docs/reference/LAYOUT.md` to reflect Cytoscape-first, compounds, and dual-layout plan.
-- [ ] Update `gdviz/docs/reference/README.md` with revised screenshots and instructions.
+- [ ] Update `../../README.md` with revised CLI commands and troubleshooting.
 - [ ] Ensure `gdviz/docs/reference/LOGGING.md` matches the new viewer logging hook points.
   - [ ] Add troubleshooting (ELK stalls, missing edges, slow layout, proxy 404s).
   - [ ] Include keyboard shortcut reference and mode semantics table.
