@@ -6,19 +6,40 @@ Generic codebase visualization tool for exploring code structure and dependencie
 
 - **Framework**: Python CLI (Typer), AST analysis, web-based viewer  
 - **Purpose**: Generic codebase visualization (Python, future TypeScript support)
-- **Status**: ✓ Newly created, extracted from gdwebgen project
+- **Status**: ✓ Migrated from gdwebgen, extraction working, viewer needs fixes
 - **Core features**: AST extraction, interactive viewer, dependency mapping
+
+## Current Status & Known Issues
+
+**✅ Working:**
+- Extraction: `python codeviz.py extract python <target>` successfully processes Python codebases
+- CLI: Full Typer-based command structure functional
+- Configuration: Project-specific configs working (see `docs/reference/CONFIGURATION.md`)
+- Dependencies: gjdutils integration for shared webserver utilities
+
+**⚠️ Known Issues:**
+- **Viewer startup**: Two-server architecture needs coordination fixes
+- **Vite dependencies**: May need `npm install` in `src/codeviz/viewer/cyto/`  
+- **Data serving**: Viewer expects data at `/gdviz/out/codebase_graph.json` - path hardcoded
+
+**📋 Testing Results:**
+- Extraction from gdwebgen: ✅ 147 functions extracted successfully
+- JSON output: ✅ Valid schema, properly structured
+- CLI help: ✅ All commands documented and working
 
 ## Build Commands
 
 ```bash
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
+
+# Install viewer dependencies (if viewer issues occur)
+cd src/codeviz/viewer/cyto && npm install
 
 # Extract codebase structure
 python codeviz.py extract python <target_directory>
 
-# Start interactive viewer  
+# Start interactive viewer (may have startup issues - see troubleshooting)
 python codeviz.py view open
 
 # Help for any command
@@ -64,14 +85,19 @@ black .                  # Format code
   - `--mode, -m`: Viewer mode
   - `--no-browser`: Don't auto-open browser
 
+## Documentation
+
+- **README.md**: Quick start and essential usage
+- **docs/reference/CONFIGURATION.md**: Comprehensive configuration guide  
+- **docs/reference/SETUP.md**: Development environment setup
+- **docs/reference/ARCHITECTURE.md**: System architecture overview
+- **docs/reference/TROUBLESHOOTING.md**: Common issues and solutions
+
 ## Configuration
 
-`codeviz_conf.py` contains:
-- **EXCLUDE_FILE_GLOBS**: File patterns to exclude
-- **EXCLUDE_MODULES**: Module names to exclude
-- **DEFAULT_MODE**: Default viewer mode
-- **DEFAULT_HOST/PORT**: Server defaults
-- **Analysis settings**: Import depth, external imports, etc.
+Main config files:
+- **codeviz_conf.py**: Global defaults and exclusion patterns
+- **configs/project_conf.py**: Project-specific configurations (see CONFIGURATION.md)
 
 ## Development Workflow
 
