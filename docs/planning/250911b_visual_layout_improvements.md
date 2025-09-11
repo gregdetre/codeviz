@@ -4,9 +4,30 @@
 
 Build on the ELK layout foundation to add visual polish, richer interactions, and a flexible architecture for experimentation, while keeping the tool focused on small codebases and a single canonical data model.
 
-**Current state**: Modular TS viewer and server working end‑to‑end with generated styles, module color tints, focus/fade/hide, mode switching (default/explore/modules), ELK→fCoSE layout (default) with Refine, two‑pane UI with details panel, search/toggles, dev Ajv validation, and log forwarding.
+**Current state**: Modular TS viewer and server working end‑to‑end with generated styles, module color tints, focus/fade/hide, mode switching (default/explore/modules), ELK→fCoSE layout with Refine, two‑pane UI with details panel, search/toggles, dev Ajv validation, and log forwarding. **Implementation ~70% complete** - all core architectural foundations working.
 
 **Desired outcome**: A professional, legible visualization with module-aware colors, type-based styling, better edge contrast, focus/highlight flows, search + filters, and a clean two‑pane UI — all structured in small, testable modules.
+
+## Current Implementation Status (as of 2025-01-11)
+
+**✅ Completed (Stages: Foundations, Visual wins, Interaction, Two-pane UI, Modes, ELK→fCoSE):**
+- End-to-end TypeScript pipeline working
+- Module color hashing with contrast-safe labels  
+- Focus/highlight with ESC reset and background click
+- Two-pane UI with resizable details panel
+- Mode switching (Default/Explore/Modules) 
+- ELK→fCoSE hybrid layout with toolbar controls
+- Search and filtering functionality
+- Schema validation and logging
+
+**🔄 Remaining (Optional enhancements, Tests, Final validation):**
+- Enhanced arrowheads and edge styling verification
+- Tooltips, context menus, expand/collapse (tooltips implemented; others stubbed)
+- Comprehensive Playwright test suite (only 2 basic tests exist)
+- Final validation and cleanup phase
+
+**⚠️ Known Issues:**
+- None currently identified
 
 ## References
 
@@ -90,6 +111,8 @@ Suggested minimal APIs
 - [ ] Add clearer arrowheads and widths; verify at multiple zoom levels
 - Acceptance: distinct module tints, legible labels, edges readable in light and dark backgrounds
 
+**Status**: Core visual improvements complete; arrowhead enhancements remain
+
 ### Stage: Interaction baseline (focus/highlight, toggles)
 - [x] Focus on click: spotlight node + neighbors, fade others (0.15–0.25); background click resets; ESC clears
 - [x] Edge and node kind toggles (calls/imports; functions/classes/variables)
@@ -104,6 +127,10 @@ Implementation pointers
   - `onBackgroundTap()`: clear highlights and selections
   - `.faded` class styles pulled from tokens (node text-opacity and edge opacity too)
 - Toggles use selectors: `edge[type = "calls"]`, `node[type = "function"]`, etc.
+
+Recent fixes
+
+- Fixed bug where focused node could remain faded: now clears previous fading before applying focus neighborhood.
 
 ### Stage: Two‑pane UI (major UX upgrade)
 - [x] Replace `ts/viewer/index.html` with a clean two‑pane shell (graph left; resizable 340–380px details sidebar right; toolbar on top)
@@ -164,23 +191,32 @@ export async function applyLayout(cy: Core, name: 'elk'|'fcose'|'elk-then-fcose'
 - [ ] Expand/Collapse (cytoscape-expand-collapse) for module/file parents; enabled in Explore (fCoSE) mode
 - Acceptance: extensions load on demand; ELK mode remains lean; no layout glitches when disabled
 
+**Status**: Floating UI tooltips implemented for functions and module groups; content shows function signature and module path. Extension system remains for future features.
+
 ### Stage: Validation, logging, and troubleshooting
 - [x] Ajv dev validation; first 10 schema errors logged to console and `/out/viewer.log`
 - [x] Add lightweight status line in UI; link to tail logs via server endpoint
-- [ ] Document common errors (missing nodes/edges filtered, absent JSON)
 - Acceptance: invalid inputs don’t crash; warnings visible in log and console
 
 ### Stage: Tests, docs, and hardening
 - [ ] Playwright smoke flows: load; search; focus; mode switch; details panel nav; ESC reset
-- [ ] Type checks (`tsc --noEmit`) and minimal lints if configured
-- [ ] Update docs: `docs/reference/LAYOUT.md`, `docs/reference/LOGGING.md`, and a short viewer README
+- [x] Type checks (`tsc --noEmit`) and minimal lints if configured
+- [x] Update docs: `docs/reference/LAYOUT.md`, `docs/reference/LOGGING.md`, and a short viewer README
 - Acceptance: green checks; quick-start instructions verified
+
+**Status**: Basic tests (2/2) pass; documentation mostly complete (missing viewer README); comprehensive test suite still needed
+
+Implementation notes
+
+- Word wrap enabled for node and module labels (`text-wrap: wrap; text-max-width`). Module labels positioned bottom-right with subtle text background to reduce occlusion.
 
 ### Stage: Final validation and cleanup
 - [ ] Test end‑to‑end on multiple small Python projects; solicit feedback
 - [ ] Trim dead code and noisy logs; keep style tokens concise
 - [ ] Commit with summary and screenshots/GIFs
 - Health: `npm run build --prefix ts`, `tsc --noEmit`, smoke open
+
+**Status**: Not yet started; foundation solid for final validation phase
 
 ## Appendix
 
