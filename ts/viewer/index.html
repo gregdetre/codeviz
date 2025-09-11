@@ -13,30 +13,100 @@
             margin: 0;
         }
 
+        :root {
+            --sidebar-width: 360px;
+        }
+
+        .shell {
+            display: grid;
+            grid-template-rows: 40px 1fr;
+            grid-template-columns: 1fr var(--sidebar-width);
+            grid-template-areas: 'toolbar toolbar' 'graph sidebar';
+            height: 100%;
+        }
+
+        .toolbar {
+            grid-area: toolbar;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            font-family: sans-serif;
+        }
+
+        .graph {
+            grid-area: graph;
+            position: relative;
+        }
+
         #cy {
             width: 100%;
             height: 100%;
         }
 
-        .panel {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 8px;
-            border-radius: 6px;
+        .sidebar {
+            grid-area: sidebar;
+            border-left: 1px solid #e5e7eb;
+            padding: 10px;
             font-family: sans-serif;
+            overflow: auto;
+            min-width: 340px;
+            position: relative;
+        }
+
+        .resizer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            cursor: col-resize;
+        }
+
+        .resizer::after {
+            content: "";
+            position: absolute;
+            left: 2px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e5e7eb;
         }
     </style>
 </head>
 
 <body>
-    <div id="app">
-        <div id="cy"></div>
-        <div class="panel">
+    <div id="app" class="shell">
+        <div class="toolbar">
             <div id="layoutInfo">Layout: …</div>
+            <div id="modeInfo">Mode: …</div>
+            <a href="/out/viewer.log" target="_blank" rel="noreferrer">logs</a>
             <label><input type="checkbox" id="toggleCalls" checked /> calls</label>
+            <label><input type="checkbox" id="toggleImports" checked /> imports</label>
+            <label><input type="checkbox" id="toggleFunctions" checked /> functions</label>
+            <label><input type="checkbox" id="toggleClasses" checked /> classes</label>
+            <label><input type="checkbox" id="toggleVariables" checked /> variables</label>
+            <label>filter
+                <select id="filterMode">
+                    <option value="fade" selected>fade</option>
+                    <option value="hide">hide</option>
+                </select>
+            </label>
+            <select id="modeSelect">
+                <option value="default">Default</option>
+                <option value="explore">Explore</option>
+                <option value="modules">Modules</option>
+            </select>
+            <button id="refineBtn" title="Run fCoSE refinement">Refine</button>
+            <input type="search" id="searchBox" placeholder="Search…" />
         </div>
+        <div class="graph">
+            <div id="cy"></div>
+        </div>
+        <aside class="sidebar">
+            <div id="details"></div>
+        </aside>
     </div>
     <script type="module" src="/src/main.ts"></script>
 </body>
