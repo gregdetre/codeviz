@@ -51,9 +51,9 @@ When using the hybrid ELK → fCoSE layout, you can choose between:
 - Runs fCoSE with alignment constraints to maintain layers
 - Best for: Keeping hierarchical structure while improving positioning
 
-### Refine Feature
+### Re-layout Feature
 
-The **Refine** button (enabled only for hybrid layouts):
+The **Re-layout** button (enabled only for hybrid layouts):
 - Re-runs fCoSE optimization on the current graph
 - Useful for further improving node positions after initial layout
 - Can be clicked multiple times to iteratively improve layout quality
@@ -111,7 +111,7 @@ Use the control panel to show/hide different elements:
 2. Use **fCoSE** for compact, optimized arrangements
 3. Use **hybrid sequential** for best of both worlds
 4. Try **hybrid constrained** to maintain structure while optimizing
-5. Use **Refine** button to iteratively improve hybrid layouts
+5. Use **Re-layout** button to iteratively improve hybrid layouts
 
 ### Performance Tips
 - Hide unnecessary element types (variables, etc.) for better performance

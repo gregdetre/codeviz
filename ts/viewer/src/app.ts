@@ -88,8 +88,8 @@ export async function initApp() {
       const refineBtn = document.getElementById('refineBtn') as HTMLButtonElement | null;
       if (refineBtn) {
         refineBtn.disabled = !isHybrid;
-        if (!isHybrid) refineBtn.title = 'Enable ELK → fCoSE layout to use Refine';
-        else refineBtn.title = 'Run fCoSE refinement';
+        if (!isHybrid) refineBtn.title = 'Enable ELK → fCoSE layout to use Re-layout';
+        else refineBtn.title = 'Re-run layout optimization';
       }
     };
     updateHybridVisibility();
