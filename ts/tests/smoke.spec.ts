@@ -7,6 +7,9 @@ test('viewer homepage loads and has cytoscape container', async ({ page, baseURL
   await expect(cy).toBeVisible();
   // Wait for cytoscape to initialize by checking for a canvas inside the container
   await expect(page.locator('#cy canvas').first()).toBeVisible({ timeout: 10000 });
+  // Toolbar should be visible
+  await expect(page.locator('.toolbar')).toBeVisible();
+  await expect(page.locator('#modeSelect')).toBeVisible();
 });
 
 test('graph JSON endpoint returns valid schema-ish structure', async ({ baseURL }) => {

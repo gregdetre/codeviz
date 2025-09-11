@@ -80,6 +80,19 @@
     <div id="app" class="shell">
         <div class="toolbar">
             <div id="layoutInfo">Layout: …</div>
+            <label>layout
+                <select id="layoutSelect">
+                    <option value="elk-then-fcose">ELK → fCoSE</option>
+                    <option value="elk">ELK</option>
+                    <option value="fcose">fCoSE</option>
+                </select>
+            </label>
+            <label id="hybridModeLabel" style="display:none;">refine
+                <select id="hybridModeSelect">
+                    <option value="sequential">sequential</option>
+                    <option value="constrained">constrained</option>
+                </select>
+            </label>
             <div id="modeInfo">Mode: …</div>
             <a href="/out/viewer.log" target="_blank" rel="noreferrer">logs</a>
             <label><input type="checkbox" id="toggleCalls" checked /> calls</label>

@@ -9,7 +9,7 @@ import { generateStyles, applyModuleColorTint } from "./style.js";
 import { InteractionManager } from "./interaction-manager.js";
 import { search } from "./search.js";
 import type { Graph, ViewerConfig, ViewerMode } from "./graph-types.js";
-import { applyLayout } from "./layout-manager.js";
+import { applyLayout, normalizeLayoutName } from "./layout-manager.js";
 import { loadGraph as loadGraphRaw } from "./load-graph.js";
 
 async function forward(level: string, message: string, data?: any) {
@@ -37,7 +37,7 @@ export async function initApp() {
   const [graph, vcfg] = await Promise.all([loadGraph(), loadViewerConfig()]);
 
   let mode: ViewerMode = (vcfg.mode ?? 'default') as ViewerMode;
-  const layoutName = (vcfg.layout ?? 'elk') as 'elk'|'fcose'|'hybrid';
+  let layoutName = normalizeLayoutName(vcfg.layout);
   const elements = graphToElements(graph, { mode });
   const cy = cytoscape({ container: document.getElementById('cy') as HTMLElement, elements, style: generateStyles() });
 
@@ -80,14 +80,44 @@ export async function initApp() {
     });
   }
 
+  // Layout selector wiring
+  const layoutSelect = document.getElementById('layoutSelect') as HTMLSelectElement;
+  const hybridModeSelect = document.getElementById('hybridModeSelect') as HTMLSelectElement;
+  const hybridModeLabel = document.getElementById('hybridModeLabel') as HTMLLabelElement;
+  if (layoutSelect) {
+    layoutSelect.value = layoutName;
+    const updateHybridVisibility = () => {
+      const isHybrid = normalizeLayoutName(layoutSelect.value) === 'elk-then-fcose';
+      if (hybridModeLabel) hybridModeLabel.style.display = isHybrid ? 'inline-block' : 'none';
+      const refineBtn = document.getElementById('refineBtn') as HTMLButtonElement | null;
+      if (refineBtn) {
+        refineBtn.disabled = !isHybrid;
+        if (!isHybrid) refineBtn.title = 'Enable ELK → fCoSE layout to use Refine';
+        else refineBtn.title = 'Run fCoSE refinement';
+      }
+    };
+    updateHybridVisibility();
+    layoutSelect.addEventListener('change', async () => {
+      layoutName = normalizeLayoutName(layoutSelect.value);
+      if (layoutInfo) layoutInfo.textContent = `Layout: ${layoutName}`;
+      await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
+      updateHybridVisibility();
+    });
+  }
+
+  if (hybridModeSelect) {
+    hybridModeSelect.value = (vcfg.hybridMode as any) ?? 'sequential';
+    hybridModeSelect.addEventListener('change', async () => {
+      (vcfg as any).hybridMode = hybridModeSelect.value;
+      await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
+    });
+  }
+
   const refineBtn = document.getElementById('refineBtn') as HTMLButtonElement;
-  if (refineBtn && layoutName === 'hybrid') {
+  if (refineBtn) {
     refineBtn.addEventListener('click', async () => {
       await applyLayout(cy, 'fcose', { hybridMode: vcfg.hybridMode as any });
     });
-  } else if (refineBtn) {
-    refineBtn.disabled = true;
-    refineBtn.title = 'Enable Hybrid layout to use Refine';
   }
 
   const searchBox = document.getElementById('searchBox') as HTMLInputElement;

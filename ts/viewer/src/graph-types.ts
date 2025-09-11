@@ -46,7 +46,7 @@ export type ModuleImportEdge = {
 export type ViewerMode = "default" | "explore" | "modules";
 
 export type ViewerConfig = {
-  layout: "elk" | "fcose" | "hybrid";
+  layout: "elk" | "fcose" | "elk-then-fcose";
   mode: ViewerMode;
   hybridMode?: "sequential" | "constrained";
   dark?: boolean;

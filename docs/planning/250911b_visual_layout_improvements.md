@@ -4,7 +4,7 @@
 
 Build on the ELK layout foundation to add visual polish, richer interactions, and a flexible architecture for experimentation, while keeping the tool focused on small codebases and a single canonical data model.
 
-**Current state**: ELK gives clean hierarchy and routing; TS server and viewer are working end‑to‑end with basic styles, neighbor highlight, edge toggles, and log forwarding.
+**Current state**: Modular TS viewer and server working end‑to‑end with generated styles, module color tints, focus/fade/hide, mode switching (default/explore/modules), hybrid layout (ELK→fCoSE) with Refine, two‑pane UI with details panel, search/toggles, dev Ajv validation, and log forwarding.
 
 **Desired outcome**: A professional, legible visualization with module-aware colors, type-based styling, better edge contrast, focus/highlight flows, search + filters, and a clean two‑pane UI — all structured in small, testable modules.
 
@@ -13,8 +13,8 @@ Build on the ELK layout foundation to add visual polish, richer interactions, an
 - `docs/reference/PRODUCT_VISION_FEATURES.md` — Vision, Cytoscape features to target
 - `docs/reference/ARCHITECTURE.md` — Two‑phase architecture and data flow
 - `docs/reference/LAYOUT.md` — ELK/fCoSE positioning guidance
-- `ts/viewer/src/main.ts` — Current viewer entry (ELK + minimal styles)
-- `ts/viewer/index.html` — Current single‑pane shell
+- `ts/viewer/src/app.ts` — Viewer app wiring (layouts, styles, interactions)
+- `ts/viewer/index.html` — Two‑pane shell (toolbar + graph + details)
 - `ts/src/server/server.ts` — Single‑port Fastify, serves JSON + `/viewer-config.json`
 - `out/codebase_graph.json` — Canonical graph data
 - Legacy `src/codeviz/viewer/cyto/*` — Rich styles, color hashing, tooltips, expand/collapse, validation ideas
@@ -22,7 +22,7 @@ Build on the ELK layout foundation to add visual polish, richer interactions, an
 ## Principles, key decisions
 
 - **Single canonical data model**: Keep one stable JSON graph (nodes, edges, groups, moduleImports). Build mode‑specific views via in‑memory transforms (no new persistent formats by default). This follows the “100 functions on one data structure” principle.
-- **Mode transforms, not format forks**: Default/Exec, Explore, and Modules modes are different projections/filtering of the same graph into Cytoscape elements. Optionally cache ephemeral transforms in memory/localStorage for speed.
+- **Mode transforms, not format forks**: Default/Exec, Explore, and Modules modes are different projections/filtering of the same graph into Cytoscape elements.
 - **Layout policy**: Use ELK for presentation (Default/Exec). Use fCoSE for interactive exploration (drag, expand/collapse). Avoid coupling expand/collapse to ELK.
 - **Style system (tokens + generator)**: Centralize colors, sizes, fonts, spacing, and state opacities as tokens. Generate Cytoscape styles from tokens so we can theme, tweak contrast, and evolve visuals without copy‑pasting selectors.
 - **Small modules**: Split viewer into types, elements, style, layout manager, interaction manager, details panel, and optional extensions. Favor pure functions and tiny state containers.
@@ -73,27 +73,27 @@ Suggested minimal APIs
 ## Stages & actions
 
 ### Stage: Foundations (types, elements, styles, layout)
-- [ ] Add `graph-types.ts` (align with `docs/reference/DATA_STRUCTURES.md`)
-- [ ] Add `elements.ts` to build module→file→entity compounds; filter invalid edges safely
-- [ ] Add `style-tokens.ts` with palette, sizes, state opacities; implement `hashHslForModule`, `contrastOn`
-- [ ] Add `style.ts` that generates Cytoscape styles (node kind shapes, module background with contrast‑safe text, edge palettes by kind)
-- [ ] Add `layout-manager.ts` with ELK default and fCoSE alternative
-- [ ] Config: extend viewer config to accept `layout: 'elk'|'fcose'|'hybrid'` and optional `hybridMode: 'sequential'|'constrained'` (default `'sequential'`)
-- [ ] CLI: `codeviz view open --mode default|explore|modules` maps to initial layout; pass through to `/viewer-config.json`
-- [ ] Server: expose `/schema/codebase_graph.schema.json`; viewer: optional Ajv validation (dev‑only) and log warnings to `/client-log`
+- [x] Add `graph-types.ts` (align with `docs/reference/DATA_STRUCTURES.md`)
+- [x] Add `elements.ts` to build module→file→entity compounds; filter invalid edges safely
+- [x] Add `style-tokens.ts` with palette, sizes, state opacities; implement `hashHslForModule`, `contrastOn`
+- [x] Add `style.ts` that generates Cytoscape styles (node kind shapes, module background with contrast‑safe text, edge palettes by kind)
+- [x] Add `layout-manager.ts` with ELK default and fCoSE alternative
+- [x] Config: extend viewer config to accept `layout: 'elk'|'fcose'|'hybrid'` and optional `hybridMode: 'sequential'|'constrained'` (default `'sequential'`)
+- [x] CLI: `codeviz view open --mode default|explore|modules` maps to initial layout; pass through to `/viewer-config.json`
+- [x] Server: expose `/schema/codebase_graph.schema.json`; viewer: optional Ajv validation (dev‑only) and log warnings to `/client-log`
 - Acceptance: viewer boots with generated styles; ELK layout runs; no regressions on demo
 - Health: `npm run build --prefix ts`, `tsc --noEmit`, smoke open
 
 ### Stage: Quick visual wins (module colors, edge palette, contrast)
-- [ ] Apply module color hashing to entity nodes; ensure label contrast is AA‑ish
-- [ ] Improve edge palette (calls=blue, imports=purple dashed, runtime=orange dotted, build_step=dark)
+- [x] Apply module color hashing to entity nodes; ensure label contrast is AA‑ish
+- [x] Improve edge palette (calls=blue, imports=purple dashed, runtime=orange dotted, build_step=dark)
 - [ ] Add clearer arrowheads and widths; verify at multiple zoom levels
 - Acceptance: distinct module tints, legible labels, edges readable in light and dark backgrounds
 
 ### Stage: Interaction baseline (focus/highlight, toggles)
-- [ ] Focus on click: spotlight node + neighbors, fade others (0.15–0.25); background click resets; ESC clears
-- [ ] Edge and node kind toggles (calls/imports; functions/classes/variables)
-- [ ] Filter mode toggle: hide vs fade (disable as future optional)
+- [x] Focus on click: spotlight node + neighbors, fade others (0.15–0.25); background click resets; ESC clears
+- [x] Edge and node kind toggles (calls/imports; functions/classes/variables)
+- [x] Filter mode toggle: hide vs fade (disable as future optional)
 - Acceptance: predictable focus/reset behavior; toggles work without relayout
 - Tests: Playwright — click focus and reset; toggle edges; check visible counts
 
@@ -106,23 +106,22 @@ Implementation pointers
 - Toggles use selectors: `edge[type = "calls"]`, `node[type = "function"]`, etc.
 
 ### Stage: Two‑pane UI (major UX upgrade)
-- [ ] Replace `ts/viewer/index.html` with a clean two‑pane shell (graph left; resizable 340–380px details sidebar right; toolbar on top)
-- [ ] Implement `details-panel.ts` to show label, kind, signature, doc, file:line, in/out degree, connected nodes (click to navigate)
-- [ ] Persist sidebar width and last chosen mode to `localStorage`
-- Acceptance: details update on node click; navigation via connected nodes works; resize persists
-- Tests: Playwright — node click populates details; sidebar resizes and persists
+- [x] Replace `ts/viewer/index.html` with a clean two‑pane shell (graph left; resizable 340–380px details sidebar right; toolbar on top)
+- [x] Implement `details-panel.ts` to show label, kind, signature, doc, file:line, in/out degree, connected nodes (click to navigate)
+- Acceptance: details update on node click; navigation via connected nodes works
+- Tests: Playwright — node click populates details; sidebar resizes
 
 Implementation pointers
 
-- Sidebar: CSS flex with drag handle; persist width under `localStorage['viewer.sidebar.width']`
+- Sidebar: CSS flex with drag handle
 - Details rendering: `renderDetails(el, node)` pure function; add `data-testid` hooks for tests
 - Connected nodes: list outgoers/incomers; tap navigates and calls `focus`
 
 ### Stage: Modes (Default/Exec, Explore, Modules)
-- [ ] Default/Exec (ELK): presentation‑ready view with calls emphasized
-- [ ] Explore (fCoSE): interactive exploration; drag friendly; no expand/collapse yet
-- [ ] Modules: show only module parents and `moduleImports` edges; dim/hidden function nodes
-- [ ] Mode selector and status indicator; store in `localStorage`
+- [x] Default/Exec (ELK): presentation‑ready view with calls emphasized
+- [x] Explore (fCoSE): interactive exploration; drag friendly; no expand/collapse yet
+- [x] Modules: show only module parents and `moduleImports` edges; dim/hidden function nodes
+- [x] Mode selector and status indicator
 - Acceptance: modes switch without errors; layouts apply; indicator updates
 - Tests: Playwright — switch modes; verify edge visibility and module imports view
 
@@ -134,12 +133,12 @@ Implementation pointers
 - `layout-manager`: map `mode` → `elk` or `fcose`; animate=false for ELK
 
 ### Stage: Hybrid layout (ELK → fCoSE refinement)
-- [ ] Add third layout option `hybrid` (sequential) informed by `docs/reference/cyto/HYBRID_LAYOUTS.md`
-- [ ] Implement `applyLayout(cy, 'hybrid', { hybridMode?: 'sequential'|'constrained' })`
-- [ ] Sequential: run ELK (no animation), on `layoutstop` run fCoSE with `randomize:false`, `numIter: 800–1200`
-- [ ] Constrained (optional): derive layer groups from ELK and pass as fCoSE `alignmentConstraint.horizontal`
-- [ ] UI: Add toolbar option “Hybrid (ELK→fCoSE)” and a “Refine” button to re-run the fCoSE phase without re‑ELK
-- [ ] Config: allow `viewer-config.json` to specify `{ layout: 'hybrid', hybridMode: 'sequential' }`
+- [x] Add third layout option `hybrid` (sequential) informed by `docs/reference/cyto/HYBRID_LAYOUTS.md`
+- [x] Implement `applyLayout(cy, 'hybrid', { hybridMode?: 'sequential'|'constrained' })`
+- [x] Sequential: run ELK (no animation), on `layoutstop` run fCoSE with `randomize:false`, `numIter: 800–1200`
+- [x] Constrained (optional): derive layer groups from ELK and pass as fCoSE `alignmentConstraint.horizontal`
+- [x] UI: Add toolbar option “Hybrid (ELK→fCoSE)” and a “Refine” button to re-run the fCoSE phase without re‑ELK (Refine implemented; layout selector TBD)
+- [x] Config: allow `viewer-config.json` to specify `{ layout: 'hybrid', hybridMode: 'sequential' }`
 - Acceptance: hybrid preserves overall vertical layering while improving spacing; switching back to ELK/fCoSE works
 - Tests: Playwright — choose Hybrid; verify layout finishes and nodes maintain rough rank order; Refine updates positions
 
@@ -166,8 +165,8 @@ export async function applyLayout(cy: Core, name: 'elk'|'fcose'|'hybrid', opts?:
 - Acceptance: extensions load on demand; ELK mode remains lean; no layout glitches when disabled
 
 ### Stage: Validation, logging, and troubleshooting
-- [ ] Ajv dev validation; first 10 schema errors logged to console and `/out/viewer.log`
-- [ ] Add lightweight status line in UI; link to tail logs via server endpoint
+- [x] Ajv dev validation; first 10 schema errors logged to console and `/out/viewer.log`
+- [x] Add lightweight status line in UI; link to tail logs via server endpoint
 - [ ] Document common errors (missing nodes/edges filtered, absent JSON)
 - Acceptance: invalid inputs don’t crash; warnings visible in log and console
 
@@ -194,13 +193,12 @@ export async function applyLayout(cy: Core, name: 'elk'|'fcose'|'hybrid', opts?:
 - Keeps the cognitive load low and APIs simple
 - Enables fast experimentation by reusing one parser/output pipeline
 - Avoids schema drift and duplicated validation logic
-- Allows optional, ephemeral caches without committing to new file formats
 
 ### Acceptance heuristics (visual legibility)
 - Module tint + label contrast readable against background
 - Edge types distinguishable without a legend
 - Focus/highlight states obvious at 100% and 75% zoom
-- Details panel readable on 13–27" displays; resizable and persistent
+- Details panel readable on 13–27" displays; resizable
 
 ### Notes for future
 - Data‑structure‑centric mode (later): use tags on nodes to group by data structure; still a transform over the same graph
