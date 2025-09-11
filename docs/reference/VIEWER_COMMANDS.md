@@ -35,6 +35,8 @@ Each item targets either a collection (`cy.$(q)`) or the core (`cy`) depending o
 
 Multiple commands run sequentially; last command wins.
 
+Note: For convenience, several core ops also accept top-level fields in the command in addition to inside `arg` (e.g., `select` can take `q`, `from`, `rel`, `steps`, `as` at top level).
+
 ## Selectors (v1)
 
 Use Cytoscape selectors with a restricted feature set:
@@ -54,7 +56,7 @@ node:not([module = 'tests'])
 ## Allowed operations (v2)
 
 - Collection: `addClass`, `removeClass`, `show`, `hide`, `style` (restricted keys), `lock`, `unlock`, `showConnectedEdges`, `hideConnectedEdges`, `collapse` (optional), `expand` (optional)
-- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`, `select`, `setOp`, `clearSet`, `collapseAll` (optional), `expandAll` (optional), `selectPath`, `selectByDegree`, `selectComponents`
+- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`, `select`, `setOp`, `clearSet`, `clearAllSets`, `collapseAll` (optional), `expandAll` (optional), `selectPath`, `selectByDegree`, `selectComponents`, `selectEdgesBetween`
 - Allowed classes: `highlighted`, `faded`
 - Allowed style keys:
   - Base: `opacity`, `background-color`, `line-color`, `width`, `text-opacity`
@@ -66,8 +68,10 @@ node:not([module = 'tests'])
 - Named sets: `select` stores results as `$name` for later commands. Caps: max 16 sets, 5k IDs each.
 - Traversal selection: `select` supports `from` + `rel` (`neighborhood|incomers|outgoers|closedNeighborhood`) with bounded `steps` (≤3).
 - Set algebra: `setOp` with `union` | `intersection` | `difference` to produce new sets.
-- Path/analytics: `selectPath` (shortest path via Dijkstra, capped), `selectByDegree` (min/max), `selectComponents` (component membership).
+- Path/analytics: `selectPath` (shortest path via Dijkstra, capped), `selectByDegree` (min/max, `kind: total|in|out`), `selectComponents` (component membership).
+- Edge selection between sets: `selectEdgesBetween` from `$from` nodes to `$to` nodes (directed).
 - Optional expand/collapse: if the extension is present, `collapse`/`expand` on node selections and `collapseAll`/`expandAll` operate; otherwise they no-op with a warning.
+- Sets management: `clearSet` removes one set; `clearAllSets` removes all.
 
 ### Layout options passthrough (safe subset)
 
@@ -173,24 +177,53 @@ Explanation: removes highlight/fade classes, shows all elements, re-runs the def
 ]
 ```
 
+- Select edges between two named sets and highlight them:
+```json
+[
+  { "op": "select", "q": "node[module = 'main']", "as": "A" },
+  { "op": "select", "q": "node[module = 'shopping']", "as": "B" },
+  { "op": "selectEdgesBetween", "from": "$A", "to": "$B", "as": "E" },
+  { "q": "$E", "op": "addClass", "arg": "highlighted" },
+  { "op": "fit", "q": "$E" }
+]
+```
+
 ## Notes
 
 - Large selections may be capped for performance.
 - Unknown ops/keys are ignored or rejected.
-- Future versions may add richer selectors and additional analytics.
+- Optional features (expand/collapse) are feature-detected and safely no-op when unavailable.
 
 ## Limitations and future work
 
-- Selector features (v1): no traversal/neighborhood operators (e.g. callers-of, shortest paths), and no custom set expressions beyond simple unions (`,`), attribute conjunction, and negation (`:not(...)`).
-- Styles: only a small whitelist of inline `style` keys is allowed; cannot create new classes or change the base stylesheet. Supported classes are `highlighted` and `faded`.
-- Layout args: only the `name` is honored (`elk`, `fcose`, `elk-then-fcose`). Other layout parameters are currently ignored by the executor.
-- Undo/preview: commands apply immediately; there’s no preview/confirm flow or undo history yet.
-- JSON parsing: the server best-effort extracts a JSON array from the model reply; non-JSON text may lead to parse failures. Prefer pure JSON responses.
-- Snapshot scope: the assistant receives a compact snapshot (counts, examples), not the full graph; some complex intent may require follow-up.
+- Selectors:
+  - No direct refinement of a set via selector syntax (e.g., `$A & node[type='function']`); use a separate `select` then `setOp`.
+  - Traversal limited to `neighborhood|incomers|outgoers|closedNeighborhood`; no caller/callee semantics or typed-edge traversal yet.
+
+- Sets and algebra:
+  - No nested expressions or complement; algebra ops work on provided set references only.
+  - `clearAllSets` wipes all sets; there is no protected/pinned set notion.
+
+- Path/analytics:
+  - `selectPath` is directed and unweighted; may return empty if no path exists.
+  - `selectComponents` flattens membership into a single set; no per-component naming/index.
+  - Degree kind supports `total|in|out` only; no weighted degree.
+
+- Layouts:
+  - Only a safe subset of elk/fcose options; advanced tuning not exposed.
+  - No per-subgraph layouts; layout is global per invocation.
+
+- Styling and themes:
+  - No named themes or style presets beyond whitelisted inline styles and classes.
+
+- UX and safety:
+  - No preview/undo; commands apply immediately.
+  - Errors are collected per command and summarized; UI surfacing may be improved later.
 
 Planned enhancements:
-- Add safe graph relationship selectors (e.g. closed neighborhood, callers/callees, same-module relations).
-- Expand set operations (explicit union/intersection/difference with nested expressions).
-- Preview/apply workflow and an undo/redo stack for applied command batches.
-- Richer, configurable styles and additional semantic classes.
-- Broader layout control (tunable parameters per layout, optional animation flags).
+- Set refinement via selector intersections and typed-edge traversal (callers/callees).
+- Nested set expressions and complement support.
+- Path and graph analytics extensions (betweenness, bridges, articulation points, communities).
+- Broader layout controls and subgraph-specific layouts.
+- Themes and style presets for accessible/high-contrast modes.
+- Preview/apply workflow and undo/redo stack.

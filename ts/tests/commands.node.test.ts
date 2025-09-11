@@ -150,6 +150,20 @@ async function testHideVariables() {
     ] as any);
     assert.ok(res.appliedCount >= 1);
   })();
+  await (async function testEdgesBetweenAndDegreeKind() {
+    const { cy, res } = await run([
+      { op: 'select', q: "node[module = 'main']", as: 'A' },
+      { op: 'select', q: "node[module = 'shopping']", as: 'B' },
+      { op: 'selectEdgesBetween', from: '$A', to: '$B', as: 'E' },
+      { q: '$E', op: 'addClass', arg: 'highlighted' },
+      { op: 'selectByDegree', kind: 'in', min: 1, as: 'IN_DEG' },
+      { q: '$IN_DEG', op: 'addClass', arg: 'faded' },
+      { op: 'clearAllSets' }
+    ] as any);
+    assert.ok(res.appliedCount >= 1);
+    const hi = cy.$('.highlighted');
+    assert.ok(hi.length >= 0);
+  })();
   // If we got here, tests passed
   console.log('OK commands.node.test');
 })().catch((err) => {

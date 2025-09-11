@@ -14,8 +14,8 @@ export type ExecutionResult = {
 };
 
 const ALLOWED_COLLECTION_OPS = new Set(["addClass", "removeClass", "show", "hide", "style", "lock", "unlock", "showConnectedEdges", "hideConnectedEdges", "collapse", "expand"]);
-const ALLOWED_CORE_OPS = new Set(["layout", "fit", "center", "zoom", "resetViewport", "resetAll", "pan", "viewport", "batch", "select", "setOp", "clearSet", "collapseAll", "expandAll", "selectPath", "selectByDegree", "selectComponents"]);
-const ALLOWED_CLASSES = new Set(["highlighted", "faded"]);
+const ALLOWED_CORE_OPS = new Set(["layout", "fit", "center", "zoom", "resetViewport", "resetAll", "pan", "viewport", "batch", "select", "setOp", "clearSet", "clearAllSets", "collapseAll", "expandAll", "selectPath", "selectByDegree", "selectComponents", "selectEdgesBetween"]);
+const ALLOWED_CLASSES = new Set(["highlighted", "faded", "focus", "incoming-node", "outgoing-node", "incoming-edge", "outgoing-edge", "second-degree", "module-highlight"]);
 const ALLOWED_STYLE_KEYS = new Set([
   // existing
   "opacity", "background-color", "line-color", "width", "text-opacity",
@@ -92,6 +92,10 @@ function clearSet(name: string): void {
   const safe = sanitizeSetName(name);
   if (!safe) return;
   namedSets.delete(safe);
+}
+
+function clearAllSets(): void {
+  namedSets.clear();
 }
 
 function resolveCollection(cy: Core, q: string | undefined): Collection {
@@ -334,6 +338,10 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
     clearSet(name);
     return errors;
   }
+  if (op === "clearAllSets") {
+    clearAllSets();
+    return errors;
+  }
   if (op === "collapseAll" || op === "expandAll") {
     const ec = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
     if (!ec) {
@@ -388,8 +396,14 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
     }
     const min = typeof arg?.min === 'number' ? arg.min : undefined;
     const max = typeof arg?.max === 'number' ? arg.max : undefined;
+    const kind = String(arg?.kind || 'total').toLowerCase();
+    const getDegree = (n: any) => {
+      if (kind === 'in') return n.indegree ? n.indegree(false) : n.indegree();
+      if (kind === 'out') return n.outdegree ? n.outdegree(false) : n.outdegree();
+      return n.degree ? n.degree(false) : n.degree();
+    };
     const nodes = cy.nodes().filter((n) => {
-      const d = n.degree(false);
+      const d = getDegree(n);
       if (typeof min === 'number' && d < min) return false;
       if (typeof max === 'number' && d > max) return false;
       return true;
@@ -415,6 +429,22 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
       }
       if (ids.length >= MAX_SET_SIZE) break;
     }
+    setSetIds(setName, ids);
+    return errors;
+  }
+  if (op === "selectEdgesBetween") {
+    const setName = sanitizeSetName(arg?.as ?? arg?.name);
+    const fromNm = parseSetRef(arg?.from);
+    const toNm = parseSetRef(arg?.to);
+    if (!setName || !fromNm || !toNm) {
+      errors.push("selectEdgesBetween: requires 'from', 'to' ($set) and 'as'");
+      return errors;
+    }
+    const fromIds = new Set(getSetIds(fromNm));
+    const toIds = new Set(getSetIds(toNm));
+    const edges = cy.edges().filter((e) => fromIds.has(e.source().id()) && toIds.has(e.target().id()));
+    const ids: string[] = [];
+    for (let i = 0; i < edges.length && i < MAX_SET_SIZE; i++) ids.push(edges[i].id());
     setSetIds(setName, ids);
     return errors;
   }
