@@ -1,5 +1,5 @@
 import { Cli, Command, Option } from "clipanion";
-import { resolve } from "node:path";
+import { resolve, dirname, join } from "node:path";
 import { runExtract } from "../analyzer/extract-python.js";
 import { loadConfigForTarget } from "../config/loadConfig.js";
 import { startServer } from "../server/server.js";
@@ -12,28 +12,44 @@ class ExtractPython extends Command {
   async execute() {
     const target = resolve(this.dir);
     const cfg = await loadConfigForTarget(target);
-    const outPath = this.out ?? cfg.output?.path ?? "out/codebase_graph.json";
-    await runExtract({ targetDir: target, outPath, verbose: this.verbose });
+    const configuredOut = cfg.output?.path ?? this.out ?? "out/codebase_graph.json";
+    const outPath = resolve(configuredOut);
+    await runExtract({
+      targetDir: target,
+      outPath,
+      verbose: this.verbose,
+      analyzer: {
+        exclude: cfg.analyzer?.exclude ?? [],
+        includeOnly: cfg.analyzer?.includeOnly ?? [],
+        excludeModules: cfg.analyzer?.excludeModules ?? []
+      }
+    });
   }
 }
 
 class ViewOpen extends Command {
   static paths = [["view", "open"]];
-  host = Option.String("--host", "127.0.0.1");
-  port = Option.String("--port", "8080");
-  mode = Option.String("--mode", "default");
+  host = Option.String("--host", "");
+  port = Option.String("--port", "");
+  mode = Option.String("--mode", "");
   hybridMode = Option.String("--hybrid-mode", "sequential");
   target = Option.String("--target", "");
   noBrowser = Option.Boolean("--no-browser", false);
   async execute() {
-    let viewerLayout = "elk-then-fcose";
+    let viewerLayout = "elk";
+    let host = this.host || "127.0.0.1";
+    let port = this.port ? Number(this.port) : 8080;
+    let mode = this.mode || "default";
     if (this.target) {
       try {
         const cfg = await loadConfigForTarget(resolve(this.target));
         viewerLayout = cfg.viewer?.layout ?? viewerLayout;
+        host = this.host || cfg.viewer?.host || host;
+        port = this.port ? Number(this.port) : (cfg.viewer?.port ?? port);
+        mode = this.mode || cfg.viewer?.mode || mode;
       } catch {}
     }
-    await startServer({ host: this.host, port: Number(this.port), openBrowser: !this.noBrowser, viewerLayout, viewerMode: this.mode, hybridMode: this.hybridMode });
+    await startServer({ host, port, openBrowser: !this.noBrowser, viewerLayout, viewerMode: mode, hybridMode: this.hybridMode });
   }
 }
 

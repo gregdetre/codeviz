@@ -1,22 +1,25 @@
 import { readFile, writeFile, readdir } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, join, relative } from "node:path";
+import { minimatch } from "minimatch";
 import Parser from "tree-sitter";
 import Python from "tree-sitter-python";
 
-export async function runExtract(opts: { targetDir: string; outPath: string; verbose?: boolean }) {
+export async function runExtract(opts: { targetDir: string; outPath: string; verbose?: boolean; analyzer?: { exclude?: string[]; includeOnly?: string[]; excludeModules?: string[] } }) {
   const parser = new Parser();
   parser.setLanguage(Python);
-  const files = await collectPyFiles(opts.targetDir);
+  const filesAll = await collectPyFiles(opts.targetDir);
+  const files = filterFiles(filesAll, opts.targetDir, opts.analyzer);
   const nodes: any[] = [];
   const edgesRaw: any[] = [];
   const groupsMap = new Map<string, string[]>();
   const moduleImports = new Map<string, Map<string, number>>();
+  const excludedTopModules = new Set<string>((opts.analyzer?.excludeModules ?? []).map(s => s.trim()).filter(Boolean));
 
   for (const filePath of files) {
     const source = await readFile(filePath, "utf8");
     const tree = parser.parse(source);
     const moduleName = basename(filePath).replace(/\.py$/, "");
-    const relFile = filePath.slice(opts.targetDir.length + 1);
+    const relFile = toUnix(relative(opts.targetDir, filePath));
     if (!groupsMap.has(moduleName)) groupsMap.set(moduleName, []);
 
     // First pass: collect import aliases and local function definitions
@@ -36,7 +39,7 @@ export async function runExtract(opts: { targetDir: string; outPath: string; ver
       if (node.type === "import_statement" || node.type === "import_from_statement") {
         const tops = extractTopImports(node.text);
         for (const top of tops) {
-          if (top && top !== moduleName) {
+          if (top && top !== moduleName && !excludedTopModules.has(top)) {
             if (!moduleImports.has(moduleName)) moduleImports.set(moduleName, new Map());
             const t = moduleImports.get(moduleName)!;
             t.set(top, (t.get(top) || 0) + 1);
@@ -61,6 +64,8 @@ export async function runExtract(opts: { targetDir: string; outPath: string; ver
         const calleeText = getCallCalleeText(node);
         const targetId = calleeText ? resolveCallee(calleeText, moduleName, aliasToModule, importedNameToQualified, localFunctionNames) : null;
         if (targetId) {
+          const targetModule = targetId.split(".")[0];
+          if (excludedTopModules.has(targetModule)) return; // skip edges into excluded modules
           edgesRaw.push({ source: currentFuncId, target: targetId, kind: "calls", conditions: [], order: null });
         }
       }
@@ -75,6 +80,19 @@ export async function runExtract(opts: { targetDir: string; outPath: string; ver
   const edges = edgesRaw.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
   const graph = { version: 1, schemaVersion: "1.0.0", id_prefix: "", defaultMode: "exec", nodes, edges, groups, moduleImports: moduleImportsArr };
   await writeFile(opts.outPath, JSON.stringify(graph, null, 2), "utf8");
+}
+
+function filterFiles(files: string[], root: string, analyzer?: { exclude?: string[]; includeOnly?: string[] }): string[] {
+  const exclude = (analyzer?.exclude ?? []).filter(Boolean);
+  const includeOnly = (analyzer?.includeOnly ?? []).filter(Boolean);
+  return files.filter(full => {
+    const relUnix = toUnix(relative(root, full));
+    if (exclude.some(p => minimatch(relUnix, p, { dot: true }))) return false;
+    if (includeOnly.length > 0) {
+      return includeOnly.some(p => minimatch(relUnix, p, { dot: true }));
+    }
+    return true;
+  });
 }
 
 async function collectPyFiles(dir: string, acc: string[] = []): Promise<string[]> {

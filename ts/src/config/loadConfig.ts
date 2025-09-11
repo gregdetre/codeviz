@@ -3,9 +3,21 @@ import { resolve, basename, join } from "node:path";
 import { parse } from "toml";
 
 export type CodevizConfig = {
-  analyzer?: { exclude?: string[] };
-  output?: { path?: string };
-  viewer?: { layout?: string };
+  analyzer?: {
+    exclude?: string[];
+    includeOnly?: string[];
+    excludeModules?: string[];
+  };
+  output?: {
+    path?: string;
+    dir?: string;
+  };
+  viewer?: {
+    layout?: string;
+    mode?: string;
+    host?: string;
+    port?: number;
+  };
 };
 
 export async function loadConfigForTarget(targetDir: string): Promise<CodevizConfig> {
