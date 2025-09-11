@@ -7,7 +7,7 @@ Short reference for the compact, Cytoscape‑aligned JSON commands the assistant
 - `../conversations/250911b_llm_cytoscape_command_interface_design.md` – design + rationale
 - `../../ts/viewer/src/command-executor.ts` – executor implementation
 - `../../ts/viewer/src/state-snapshot.ts` – snapshot sent to the assistant
-- `../../ts/viewer/src/style.ts` – includes `.faded` and `.highlighted` styles
+- `../../ts/viewer/src/style.ts` – includes base styles and highlight classes
 
 ## Command shape
 
@@ -57,7 +57,7 @@ node:not([module = 'tests'])
 
 - Collection: `addClass`, `removeClass`, `show`, `hide`, `style` (restricted keys), `lock`, `unlock`, `showConnectedEdges`, `hideConnectedEdges`, `collapse` (optional), `expand` (optional)
 - Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`, `select`, `setOp`, `clearSet`, `clearAllSets`, `collapseAll` (optional), `expandAll` (optional), `selectPath`, `selectByDegree`, `selectComponents`, `selectEdgesBetween`
-- Allowed classes: `highlighted`, `faded`
+- Allowed classes: `highlighted`, `faded`, `focus`, `incoming-node`, `outgoing-node`, `incoming-edge`, `outgoing-edge`, `second-degree`, `module-highlight`
 - Allowed style keys:
   - Base: `opacity`, `background-color`, `line-color`, `width`, `text-opacity`
   - Nodes: `border-width`, `border-color`, `shape`, `font-size`, `text-outline-width`, `text-outline-color`

@@ -69,6 +69,30 @@ mode = "default"
 # Optional defaults for the view server
 host = "127.0.0.1"
 port = 8000
+
+# Optional: directional highlight settings for click focus
+[viewer.highlight]
+# 1 = neighbors only; 2 = include neighbors-of-neighbors (slightly faded)
+steps = 1
+hideNonHighlightedEdges = true
+
+[viewer.highlight.colors]
+focus = "#0ea5e9"
+incoming = "#ef4444"
+outgoing = "#10b981"
+moduleOutline = "#0ea5e9"
+
+[viewer.highlight.opacity]
+fadedNodes = 0.15
+fadedText = 0.4
+secondDegreeNodes = 0.5
+secondDegreeEdges = 0.6
+
+[viewer.highlight.widths]
+edge = 2
+edgeHighlighted = 3
+nodeBorder = 1
+nodeBorderHighlighted = 3
 ```
 
 ## Sections
@@ -86,6 +110,14 @@ port = 8000
 - **mode**: default viewer mode, used when starting the server via `view open`
 - **host**: default host for `view open` when `--target` is provided
 - **port**: default port for `view open` when `--target` is provided
+
+#### `[viewer.highlight]` (optional)
+- **steps**: number of hops to highlight (1 = immediate neighbors; 2 = include second‑degree with reduced opacity)
+- **hideNonHighlightedEdges**: when true, edges outside the highlighted sets are hidden
+- **colors.focus | colors.incoming | colors.outgoing | colors.moduleOutline**: hex colors for directional highlighting
+- **opacity.fadedNodes | opacity.fadedText**: fade levels for non‑highlighted elements
+- **opacity.secondDegreeNodes | opacity.secondDegreeEdges**: emphasis for second‑degree
+- **widths.edge | widths.edgeHighlighted | widths.nodeBorder | widths.nodeBorderHighlighted**: basic stroke widths
 
 ## Loading order and overrides
 
