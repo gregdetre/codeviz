@@ -10,6 +10,8 @@
         "build": "tsc && vite build --config viewer/vite.config.ts",
         "dev:view": "vite --config viewer/vite.config.ts",
         "dev:cli": "tsx src/cli/index.ts",
+        "up": "npm run build && node dist/cli/index.js view open",
+        "dev:up": "sh -c 'vite build --config viewer/vite.config.ts --watch & tsx watch src/cli/index.ts view open --kill-existing'",
         "start": "node dist/cli/index.js",
         "test": "playwright test",
         "test:ui": "playwright test --ui"
