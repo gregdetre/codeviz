@@ -12,19 +12,6 @@ import type { Graph, ViewerConfig, ViewerMode } from "./graph-types.js";
 import { applyLayout, normalizeLayoutName } from "./layout-manager.js";
 import { loadGraph as loadGraphRaw } from "./load-graph.js";
 
-async function forward(level: string, message: string, data?: any) {
-  try {
-    await fetch('/client-log', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ level, message, data }) }).catch(() => {});
-  } catch {}
-}
-
-function wireLogging() {
-  const origLog = console.log, origWarn = console.warn, origError = console.error;
-  console.log = (...args: any[]) => { origLog.apply(console, args); forward('log', args.map(String).join(' '), args).catch(() => {}); };
-  console.warn = (...args: any[]) => { origWarn.apply(console, args); forward('warn', args.map(String).join(' '), args).catch(() => {}); };
-  console.error = (...args: any[]) => { origError.apply(console, args); forward('error', args.map(String).join(' '), args).catch(() => {}); };
-}
-
 async function loadGraph(): Promise<Graph> { return await loadGraphRaw(process.env.NODE_ENV !== 'production'); }
 
 async function loadViewerConfig(): Promise<ViewerConfig> {
@@ -33,7 +20,6 @@ async function loadViewerConfig(): Promise<ViewerConfig> {
 }
 
 export async function initApp() {
-  wireLogging();
   const [graph, vcfg] = await Promise.all([loadGraph(), loadViewerConfig()]);
 
   let mode: ViewerMode = (vcfg.mode ?? 'default') as ViewerMode;

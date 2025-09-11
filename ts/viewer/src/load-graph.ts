@@ -14,7 +14,6 @@ export async function loadGraph(validate = false): Promise<Graph> {
       if (!valid) {
         const errors = (validateFn.errors ?? []).slice(0, 10);
         console.warn('Schema validation errors', errors);
-        await fetch('/client-log', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ level: 'warn', message: 'Schema validation errors', data: errors }) }).catch(() => {});
       }
     } catch (e) {
       // non-fatal in dev
