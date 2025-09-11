@@ -95,6 +95,7 @@ export function initChat(): void {
   const messagesEl = document.getElementById('chatMessages') as HTMLElement | null;
   const formEl = document.getElementById('chatForm') as HTMLFormElement | null;
   const inputEl = document.getElementById('chatInput') as HTMLInputElement | null;
+  const loadingEl = document.getElementById('llm-loading') as HTMLElement | null;
   if (!messagesEl || !formEl || !inputEl) return;
 
   renderMessages(messagesEl);
@@ -108,6 +109,9 @@ export function initChat(): void {
     renderMessages(messagesEl);
 
     try {
+      // show spinner
+      if (loadingEl) loadingEl.removeAttribute('hidden');
+
       const cy: any = (window as any).__cy;
       let snapshot: any = undefined;
       try {
@@ -141,6 +145,8 @@ export function initChat(): void {
       const msg = String(err?.message || err) || 'Unknown error';
       messages.push({ id: uid(), role: 'assistant', content: `Error: ${msg}` , timestamp: Date.now()});
     } finally {
+      // hide spinner
+      if (loadingEl) loadingEl.setAttribute('hidden', '');
       renderMessages(messagesEl);
     }
   });

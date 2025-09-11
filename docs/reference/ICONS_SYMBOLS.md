@@ -93,6 +93,7 @@ As the CodeViz interface grows, consider adding:
 - `VISUAL_DESIGN_STYLING.md`: Overall visual design components, styling libraries, and UI/UX implementation patterns
 - `UI_WIDGETS_ARRANGEMENT.md`: Layout context for icon placement and control organization
 - `USER_GUIDE.md`: User-facing features that utilize icons and visual symbols
+- `libraries/PHOSPHOR_ICONS.md`: Phosphor Icons reference and loading spinner pattern (LLM chat)
 - `static/img/`: Icon asset files and visual resources directory
 - `ts/viewer/src/details-panel.ts`: Implementation of external editor integration icons
 - `ts/viewer/index.html`: Toolbar icon implementations and markup

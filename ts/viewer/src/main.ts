@@ -1,4 +1,5 @@
 import { initApp } from "./app.js";
+import "@phosphor-icons/web/regular";
 
 function enableSidebarResize() {
   const root = document.documentElement as HTMLElement;
