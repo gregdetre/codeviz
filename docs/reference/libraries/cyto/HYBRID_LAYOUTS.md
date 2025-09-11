@@ -30,7 +30,7 @@ ELK and fCoSE layouts cannot be directly combined in a single Cytoscape.js layou
 3. **Different Coordinate Systems**: ELK produces fixed hierarchical coordinates; fCoSE expects flexible positioning
 
 ### Current Implementation Context
-CodeViz uses `elk-then-fcose` as the default and supports ELK or fCoSE individually. Layout names are case-insensitive and accept aliases (e.g., `hybrid` is treated as `elk-then-fcose`). The viewer exposes a toolbar layout selector and a hybrid submode selector (sequential|constrained).
+CodeViz uses `elk-then-fcose` as the default and supports ELK or fCoSE individually. Layout names are case-insensitive and accept aliases (e.g., `hybrid` is treated as `elk-then-fcose`). The viewer exposes a toolbar layout selector; the hybrid submode runs in sequential mode (constrained mode has been removed).
 ```typescript
 // Simplified
 const layoutName = normalizeLayoutName(vcfg.layout ?? 'elk-then-fcose');
@@ -195,7 +195,7 @@ class LayoutManager {
    ```typescript
    interface ViewerConfig {
      layout: 'elk' | 'fcose' | 'elk-then-fcose';
-     hybridMode?: 'sequential' | 'constrained' | 'subgraph';
+     hybridMode?: 'sequential';
    }
    ```
 
@@ -215,11 +215,7 @@ class LayoutManager {
    </label>
    <label id="hybridModeLabel">
      refine
-     <select id="hybridModeSelect">
-       <option value="sequential">sequential</option>
-       <option value="constrained">constrained</option>
-     </select>
-   </label>
+   <!-- Hybrid submode selector removed; sequential by default -->
    <button id="refineBtn">Refine</button>
    ```
 

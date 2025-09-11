@@ -8,7 +8,7 @@ The viewer uses a three-pane grid: a left widget pane for controls, a central gr
 
 ### Current state
 
-- Left widget pane (`.toolbar`): layout selection, hybrid refine controls, mode switching, edge/entity toggles, filter mode, refine button, and search.
+- Left widget pane (`.toolbar`): layout selection, mode switching, edge/entity toggles, filter mode, refine button, and search. Hybrid submode controls were removed; hybrid runs sequentially by default.
 - Center (`#cy`): Cytoscape.js graph.
 - Right details pane (`#details` within `.sidebar`): contextual information for the selected node or module.
 
@@ -26,7 +26,7 @@ The viewer uses a three-pane grid: a left widget pane for controls, a central gr
 
 ### See also
 
-- `../reference/LAYOUT.md`: General layout and visual design guidelines for the viewer.
+- `../reference/LAYOUT.md`: General layout and visual design guidelines for the viewer (includes hybrid details). See also `../reference/USER_GUIDE.md` for end‑user behavior.
 - `../reference/GUI_CONTROLS.md` (when available): Control semantics and expected behavior.
 - `../../ts/viewer/src/app.ts`: Event wiring for toolbar controls.
 - `../reference/libraries/FLOATING_UI_TOOLTIP_INTEGRATION.md`: Tooltip system used in the canvas.

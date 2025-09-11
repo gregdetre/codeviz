@@ -65,7 +65,7 @@ Start interactive viewer for exploring extracted codebase structure.
 - `--no-browser` - Don't automatically open browser
 - `--kill-existing` - Kill existing processes on port before starting (default: `true`)
 - `--mode <default|explore|modules>` - Initial viewer mode (default: `default`)
-- `--hybrid-mode <sequential|constrained>` - Hybrid submode when using ELK→fCoSE (default: `sequential`)
+- `--hybrid-mode <sequential>` - Hybrid submode when using ELK→fCoSE (default: `sequential`)
 
 #### Examples
 
@@ -82,8 +82,8 @@ npx codeviz view open --no-browser
 # Don't kill existing processes on port
 npx codeviz view open --no-kill-existing
 
-# Start with Modules mode and constrained hybrid refinement
-npx codeviz view open --mode modules --hybrid-mode constrained
+# Start with Modules mode and sequential hybrid refinement (default)
+npx codeviz view open --mode modules --hybrid-mode sequential
 ```
 
 #### One-command workflows

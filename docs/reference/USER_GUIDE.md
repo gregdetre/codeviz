@@ -1,6 +1,6 @@
 # CodeViz User Guide
 
-This guide covers the key features and modes of the CodeViz interactive viewer.
+This guide covers the key features and modes of the CodeViz interactive viewer. See also `UI_WIDGETS_ARRANGEMENT.md` for where controls live, and `LAYOUT.md` for layout details.
 
 ## Viewer Modes
 
@@ -37,19 +37,13 @@ Best for: Understanding overall project structure, identifying module dependenci
 
 **ELK → fCoSE (Hybrid)**: Combines both - starts with ELK's structure, then applies fCoSE refinement
 
-### Hybrid Layout Modes
+### Hybrid Layout Mode
 
-When using the hybrid ELK → fCoSE layout, you can choose between:
+When using the hybrid ELK → fCoSE layout, refinement runs in **sequential** mode:
 
-**Sequential**: 
-- Runs fCoSE freely after ELK
-- Allows complete repositioning for optimal layout
+- Runs fCoSE after ELK with `randomize:false`
+- Allows repositioning for optimal layout
 - Best for: General-purpose optimization
-
-**Constrained**:
-- Preserves ELK's horizontal layer structure
-- Runs fCoSE with alignment constraints to maintain layers
-- Best for: Keeping hierarchical structure while improving positioning
 
 ### Re-layout Feature
 
@@ -110,8 +104,7 @@ Use the control panel to show/hide different elements:
 1. Try **ELK** first for clear hierarchical view
 2. Use **fCoSE** for compact, optimized arrangements
 3. Use **hybrid sequential** for best of both worlds
-4. Try **hybrid constrained** to maintain structure while optimizing
-5. Use **Re-layout** button to iteratively improve hybrid layouts
+4. Use **Re-layout** button to iteratively improve hybrid layouts
 
 ### Performance Tips
 - Hide unnecessary element types (variables, etc.) for better performance

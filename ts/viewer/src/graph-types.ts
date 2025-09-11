@@ -48,7 +48,7 @@ export type ViewerMode = "explore" | "modules";
 export type ViewerConfig = {
   layout: "elk" | "fcose" | "elk-then-fcose";
   mode: ViewerMode;
-  hybridMode?: "sequential" | "constrained";
+  hybridMode?: "sequential";
   dark?: boolean;
 };
 

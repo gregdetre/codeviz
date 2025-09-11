@@ -76,7 +76,7 @@ Suggested minimal APIs
 - [x] Add `style-tokens.ts` with palette, sizes, state opacities; implement `hashHslForModule`, `contrastOn`
 - [x] Add `style.ts` that generates Cytoscape styles (node kind shapes, module background with contrast‑safe text, edge palettes by kind)
 - [x] Add `layout-manager.ts` with ELK default and fCoSE alternative
-- [x] Config: extend viewer config to accept `layout: 'elk'|'fcose'|'hybrid'` and optional `hybridMode: 'sequential'|'constrained'` (default `'sequential'`)
+- [x] Config: extend viewer config to accept `layout: 'elk'|'fcose'|'hybrid'` and optional `hybridMode: 'sequential'` (default `'sequential'`)
 - [x] CLI: `codeviz view open --mode default|explore|modules` maps to initial layout; pass through to `/viewer-config.json`
 - [x] Server: expose `/schema/codebase_graph.schema.json`; viewer: optional Ajv validation (dev‑only) and log warnings to `/client-log`
 - Acceptance: viewer boots with generated styles; ELK layout runs; no regressions on demo
@@ -138,10 +138,10 @@ Implementation pointers
 
 ### Stage: ELK→fCoSE layout (sequential refinement)
 - [x] Add third layout option `elk-then-fcose` (sequential) informed by `docs/reference/libraries/cyto/HYBRID_LAYOUTS.md` (aliases: `hybrid`, case-insensitive)
-- [x] Implement `applyLayout(cy, 'elk-then-fcose', { hybridMode?: 'sequential'|'constrained' })`
+- [x] Implement `applyLayout(cy, 'elk-then-fcose', { hybridMode?: 'sequential' })`
 - [x] Sequential: run ELK (no animation), on `layoutstop` run fCoSE with `randomize:false`, `numIter: 800–1200`
 - [x] Constrained (optional): derive layer groups from ELK and pass as fCoSE `alignmentConstraint.horizontal`
-- [x] UI: Add toolbar selector for layout (ELK→fCoSE | ELK | fCoSE) and hybrid submode (sequential|constrained); “Refine” re-runs fCoSE without re‑ELK
+- [x] UI: Add toolbar selector for layout (ELK→fCoSE | ELK | fCoSE); “Refine” re-runs fCoSE without re‑ELK
 - [x] Config: allow `viewer-config.json` to specify `{ layout: 'elk-then-fcose', hybridMode: 'sequential' }` (case-insensitive); `hybrid` remains an alias
 - Acceptance: hybrid preserves overall vertical layering while improving spacing; switching back to ELK/fCoSE works
 - Tests: Playwright — choose Hybrid; verify layout finishes and nodes maintain rough rank order; Refine updates positions
@@ -149,15 +149,11 @@ Implementation pointers
 Pseudo‑code (sequential)
 
 ```ts
-export async function applyLayout(cy: Core, name: 'elk'|'fcose'|'elk-then-fcose', opts?: { hybridMode?: 'sequential'|'constrained' }) {
+export async function applyLayout(cy: Core, name: 'elk'|'fcose'|'elk-then-fcose', opts?: { hybridMode?: 'sequential' }) {
   if (name === 'elk') return cy.layout({ name: 'elk', animate: false, nodeDimensionsIncludeLabels: true, elk: { 'elk.algorithm': 'layered', 'elk.direction': 'DOWN', 'elk.edgeRouting': 'ORTHOGONAL' } }).runPromise();
   if (name === 'fcose') return cy.layout({ name: 'fcose', animate: true }).runPromise();
   // elk-then-fcose
   await cy.layout({ name: 'elk', animate: false, nodeDimensionsIncludeLabels: true, elk: { 'elk.algorithm': 'layered', 'elk.direction': 'DOWN' } }).runPromise();
-  if ((opts?.hybridMode ?? 'sequential') === 'constrained') {
-    const layers = extractLayersFromPositions(cy.nodes());
-    return cy.layout({ name: 'fcose', animate: true, randomize: false, alignmentConstraint: { horizontal: layers } }).runPromise();
-  }
   return cy.layout({ name: 'fcose', animate: true, randomize: false, numIter: 1000 }).runPromise();
 }
 ```

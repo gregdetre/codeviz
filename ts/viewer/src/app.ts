@@ -78,13 +78,10 @@ export async function initApp() {
 
   // Layout selector wiring
   const layoutSelect = document.getElementById('layoutSelect') as HTMLSelectElement;
-  const hybridModeSelect = document.getElementById('hybridModeSelect') as HTMLSelectElement;
-  const hybridModeLabel = document.getElementById('hybridModeLabel') as HTMLLabelElement;
   if (layoutSelect) {
     layoutSelect.value = layoutName;
     const updateHybridVisibility = () => {
       const isHybrid = normalizeLayoutName(layoutSelect.value) === 'elk-then-fcose';
-      if (hybridModeLabel) hybridModeLabel.style.display = isHybrid ? 'inline-block' : 'none';
       const refineBtn = document.getElementById('refineBtn') as HTMLButtonElement | null;
       if (refineBtn) {
         refineBtn.disabled = !isHybrid;
@@ -101,13 +98,7 @@ export async function initApp() {
     });
   }
 
-  if (hybridModeSelect) {
-    hybridModeSelect.value = (vcfg.hybridMode as any) ?? 'sequential';
-    hybridModeSelect.addEventListener('change', async () => {
-      (vcfg as any).hybridMode = hybridModeSelect.value;
-      await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
-    });
-  }
+  // hybrid submode UI removed; sequential is default
 
   const refineBtn = document.getElementById('refineBtn') as HTMLButtonElement;
   if (refineBtn) {

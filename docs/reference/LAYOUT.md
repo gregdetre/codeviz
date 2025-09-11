@@ -20,7 +20,7 @@ This document explains how layout works in CodeViz, with a focus on execution/ca
 - Interactivity: basic toggles and neighbor highlight for MVP; expand/collapse via extension in future.
 
 ## Current state
-- Default layout is ELK→fCoSE (sequential hybrid). ELK provides layered structure and orthogonal routing; fCoSE refines spacing with `randomize:false`. Module groups as compounds, filtering toggles, neighbor highlight. A toolbar control allows switching layouts and choosing the hybrid submode (sequential|constrained).
+- Default layout is ELK→fCoSE (sequential hybrid). ELK provides layered structure and orthogonal routing; fCoSE refines spacing with `randomize:false`. Module groups as compounds, filtering toggles, neighbor highlight. A toolbar control allows switching layouts; hybrid runs in sequential mode by default (no constrained submode).
 
 ## Layout modes (high-level)
 - Default view: emphasizes function calls; imports available via `moduleImports`.
