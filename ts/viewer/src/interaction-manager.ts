@@ -21,6 +21,8 @@ export function InteractionManager(cy: Core) {
     }
     const node = cy.getElementById(nodeId);
     if (!node || node.empty()) return;
+    // Reset any previous fading/hiding first to avoid residual faded state on the focused node
+    cy.elements().removeClass('faded').style('display', 'element');
     const neighborhood = node.closedNeighborhood();
     const rest = cy.elements().difference(neighborhood);
     if (filterMode === 'fade') {
