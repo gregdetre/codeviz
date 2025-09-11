@@ -1,0 +1,6 @@
+[llm]
+model = "anthropic:claude-sonnet-4:20250514"
+# model = "anthropic:claude-opus-4:latest:thinking"  # Latest Opus 4.1 in thinking mode
+# model = "openai:gpt-5-high:latest:thinking"        # GPT-5-high with thinking mode (when available)
+temperature = 0.2
+maxTokens = 2000

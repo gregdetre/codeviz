@@ -7,8 +7,35 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { generateText, type CoreMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { parse as parseToml } from "toml";
 
 type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
+
+async function loadGlobalConfig() {
+  const repoRoot = resolve(fileURLToPath(new URL("../../../", import.meta.url)));
+  const configPath = join(repoRoot, "codeviz.config.toml");
+  
+  if (!existsSync(configPath)) {
+    return { llm: { model: "anthropic:claude-sonnet-4:20250514", temperature: 0.2, maxTokens: 2000 } };
+  }
+  
+  try {
+    const configContent = await readFile(configPath, "utf8");
+    return parseToml(configContent);
+  } catch {
+    return { llm: { model: "anthropic:claude-sonnet-4:20250514", temperature: 0.2, maxTokens: 2000 } };
+  }
+}
+
+async function loadAssistantPrompt() {
+  const promptPath = resolve(fileURLToPath(new URL("assistant_prompt.txt", import.meta.url)));
+  
+  try {
+    return await readFile(promptPath, "utf8");
+  } catch {
+    return "You are the CodeViz assistant inside a code visualization tool. Keep replies concise.";
+  }
+}
 
 export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string; dataFilePath?: string }) {
   const app = Fastify();
@@ -83,7 +110,7 @@ export async function startServer(opts: { host: string; port: number; openBrowse
     }
   });
 
-  // Minimal chat endpoint (v1): forwards conversation history to Anthropic via AI SDK
+  // Minimal chat endpoint (v1): forwards conversation history to LLM via AI SDK
   app.post("/api/chat", async (req, reply) => {
     try {
       const body: any = (req as any).body || {};
@@ -92,6 +119,18 @@ export async function startServer(opts: { host: string; port: number; openBrowse
         .map((m: any) => ({ role: m?.role, content: String(m?.content ?? "") }))
         .filter((m: any) => (m.role === "user" || m.role === "assistant" || m.role === "system"));
 
+      const config = await loadGlobalConfig();
+      const promptContent = await loadAssistantPrompt();
+      const modelString = config.llm?.model || "anthropic:claude-sonnet-4:20250514";
+      
+      // Parse model string: provider:model:version[:thinking]
+      const [provider, modelName, version, thinking] = modelString.split(":");
+      
+      if (provider !== "anthropic") {
+        reply.code(400).send({ error: "UNSUPPORTED_PROVIDER", message: `Provider '${provider}' not yet supported` });
+        return;
+      }
+
       if (!process.env.ANTHROPIC_API_KEY) {
         reply.code(400).send({ error: "NO_API_KEY", message: "Missing ANTHROPIC_API_KEY in .env.local" });
         return;
@@ -99,15 +138,22 @@ export async function startServer(opts: { host: string; port: number; openBrowse
 
       const systemMsg: CoreMessage = {
         role: "system",
-        content: "You are the CodeViz assistant inside a code visualization tool. Keep replies concise."
+        content: promptContent
       };
       const history: CoreMessage[] = [systemMsg, ...messages
         .filter(m => m.content.trim().length > 0)
         .map<CoreMessage>(m => ({ role: m.role, content: m.content }))];
 
+      // Construct Anthropic model identifier
+      const anthropicModelId = thinking === "thinking" 
+        ? `${modelName}-${version}` 
+        : `${modelName}-${version}`;
+
       const { text } = await generateText({
-        model: anthropic("claude-3-5-sonnet-20240620" as any),
-        messages: history
+        model: anthropic(anthropicModelId as any),
+        messages: history,
+        temperature: config.llm?.temperature || 0.2,
+        maxTokens: config.llm?.maxTokens || 2000
       });
 
       reply.type("application/json").send({ reply: text });

@@ -42,6 +42,10 @@ Short conversations with LLMs integrated into the CodeViz browser application fo
 
 **Library Choice**: Vercel AI SDK - meets all requirements with excellent multi-provider TypeScript support
 
+**Configuration**: Global config file (`codeviz.config.toml`) with model string format `provider:model:version[:thinking]`
+
+**Assistant Prompt**: Externalized to `ts/src/server/assistant_prompt.txt` for easy customization
+
 **Storage Strategy**: Start with in-memory storage, design for easy serialization later
 
 **Integration Point**: Left-hand pane UI component in existing TypeScript viewer
@@ -69,6 +73,22 @@ Short conversations with LLMs integrated into the CodeViz browser application fo
 **Integration**: Left-hand pane component in existing Vite + TypeScript + Cytoscape.js viewer
 **Command System**: Leverage existing JSON command architecture from LLM-Cytoscape design
 
+## Configuration
+
+**Global Config** (`codeviz.config.toml`):
+```toml
+[llm]
+model = "anthropic:claude-sonnet-4:20250514"
+# model = "anthropic:claude-opus-4:latest:thinking"  # Latest Opus 4.1 in thinking mode
+# model = "openai:gpt-5-high:latest:thinking"        # GPT-5-high with thinking mode (when available)
+temperature = 0.2
+maxTokens = 2000
+```
+
+**Assistant Prompt**: Located at `ts/src/server/assistant_prompt.txt` - contains context about CodeViz capabilities and visualization features.
+
+**Environment Variables**: Requires `ANTHROPIC_API_KEY` in `.env.local` for Anthropic models.
+
 ## Success Criteria
 
 1. User can type message in left pane and receive LLM response
@@ -76,3 +96,4 @@ Short conversations with LLMs integrated into the CodeViz browser application fo
 3. Conversation history maintained during session
 4. Clean, extensible codebase ready for future enhancements
 5. Smooth integration with existing CodeViz viewer architecture
+6. Configurable model selection and assistant behavior
