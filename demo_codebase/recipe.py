@@ -1,12 +1,7 @@
 # recipe.py - Recipe data structures and core functions
 from dataclasses import dataclass
 from typing import List, Dict
-
-@dataclass
-class Ingredient:
-    name: str
-    amount: float
-    unit: str
+from models.ingredient import Ingredient
 
 @dataclass
 class Recipe:
