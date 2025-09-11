@@ -23,14 +23,17 @@ export function InteractionManager(cy: Core) {
     if (!node || node.empty()) return;
     // Reset any previous fading/hiding first to avoid residual faded state on the focused node
     cy.elements().removeClass('faded').style('display', 'element');
-    const neighborhood = node.closedNeighborhood();
-    const rest = cy.elements().difference(neighborhood);
+    // Explicitly compute nodes + their connected edges to keep visible
+    const focusNodes = node.closedNeighborhood().nodes().union(node);
+    const focusEdges = focusNodes.connectedEdges();
+    const keep = focusNodes.union(focusEdges);
+    const rest = cy.elements().difference(keep);
     if (filterMode === 'fade') {
       rest.addClass('faded');
-      neighborhood.removeClass('faded');
+      keep.removeClass('faded');
     } else {
       rest.style('display', 'none');
-      neighborhood.style('display', 'element');
+      keep.style('display', 'element');
     }
   }
 
