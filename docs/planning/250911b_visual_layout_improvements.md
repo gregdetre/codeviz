@@ -4,7 +4,7 @@
 
 Build on the ELK layout foundation to add visual polish, richer interactions, and a flexible architecture for experimentation, while keeping the tool focused on small codebases and a single canonical data model.
 
-**Current state**: Modular TS viewer and server working end‑to‑end with generated styles, module color tints, focus/fade/hide, mode switching (default/explore/modules), hybrid layout (ELK→fCoSE) with Refine, two‑pane UI with details panel, search/toggles, dev Ajv validation, and log forwarding.
+**Current state**: Modular TS viewer and server working end‑to‑end with generated styles, module color tints, focus/fade/hide, mode switching (default/explore/modules), ELK→fCoSE layout (default) with Refine, two‑pane UI with details panel, search/toggles, dev Ajv validation, and log forwarding.
 
 **Desired outcome**: A professional, legible visualization with module-aware colors, type-based styling, better edge contrast, focus/highlight flows, search + filters, and a clean two‑pane UI — all structured in small, testable modules.
 
@@ -37,7 +37,7 @@ Build on the ELK layout foundation to add visual polish, richer interactions, an
 - `ts/viewer/src/elements.ts` — `graphToElements(graph, options)`; builds module→file→entity compounds
 - `ts/viewer/src/style-tokens.ts` — Design tokens (palette, sizes, radii, opacities)
 - `ts/viewer/src/style.ts` — `generateStyles(tokens, opts)`; node kind shapes, edge palettes, module color overrides with contrast‑safe labels
-- `ts/viewer/src/layout-manager.ts` — `applyLayout(cy, 'elk'|'fcose'|'hybrid', opts?)` and mode→layout mapping
+- `ts/viewer/src/layout-manager.ts` — `applyLayout(cy, 'elk'|'fcose'|'elk-then-fcose', opts?)` and mode→layout mapping
 - `ts/viewer/src/interaction-manager.ts` — Focus/highlight, hide vs fade vs disable, background reset, ESC behavior
 - `ts/viewer/src/search.ts` — Debounced search across id/label/module/file
 - `ts/viewer/src/details-panel.ts` — Render details (signature, doc, file:line, connected nodes)
@@ -49,7 +49,7 @@ Suggested minimal APIs
 - `loadGraph(): Promise<Graph>` — loads `/out/codebase_graph.json`, optionally validates with Ajv (dev)
 - `graphToElements(graph: Graph, opts: { mode: 'default'|'explore'|'modules' }): ElementDefinition[]`
 - `generateStyles(tokens: Tokens, opts?: { dark?: boolean }): StylesheetJson[]`
-- `applyLayout(cy: Core, layout: 'elk'|'fcose'|'hybrid', opts?: HybridOpts): Promise<void>`
+- `applyLayout(cy: Core, layout: 'elk'|'fcose'|'elk-then-fcose', opts?: HybridOpts): Promise<void>`
 - `InteractionManager(cy).setFilterMode('hide'|'fade'|'disable')`
 - `InteractionManager(cy).focus(nodeId?: string)` — focus target or clear
 - `search(cy, term: string, mode: 'hide'|'fade'): { matches: Collection }`
@@ -132,23 +132,23 @@ Implementation pointers
   - modules: only `module:` parents; synthesize edges from `moduleImports[]` with dashed styling and weight → width
 - `layout-manager`: map `mode` → `elk` or `fcose`; animate=false for ELK
 
-### Stage: Hybrid layout (ELK → fCoSE refinement)
-- [x] Add third layout option `hybrid` (sequential) informed by `docs/reference/cyto/HYBRID_LAYOUTS.md`
-- [x] Implement `applyLayout(cy, 'hybrid', { hybridMode?: 'sequential'|'constrained' })`
+### Stage: ELK→fCoSE layout (sequential refinement)
+- [x] Add third layout option `elk-then-fcose` (sequential) informed by `docs/reference/cyto/HYBRID_LAYOUTS.md` (aliases: `hybrid`, case-insensitive)
+- [x] Implement `applyLayout(cy, 'elk-then-fcose', { hybridMode?: 'sequential'|'constrained' })`
 - [x] Sequential: run ELK (no animation), on `layoutstop` run fCoSE with `randomize:false`, `numIter: 800–1200`
 - [x] Constrained (optional): derive layer groups from ELK and pass as fCoSE `alignmentConstraint.horizontal`
-- [x] UI: Add toolbar option “Hybrid (ELK→fCoSE)” and a “Refine” button to re-run the fCoSE phase without re‑ELK (Refine implemented; layout selector TBD)
-- [x] Config: allow `viewer-config.json` to specify `{ layout: 'hybrid', hybridMode: 'sequential' }`
+- [x] UI: Add toolbar selector for layout (ELK→fCoSE | ELK | fCoSE) and hybrid submode (sequential|constrained); “Refine” re-runs fCoSE without re‑ELK
+- [x] Config: allow `viewer-config.json` to specify `{ layout: 'elk-then-fcose', hybridMode: 'sequential' }` (case-insensitive); `hybrid` remains an alias
 - Acceptance: hybrid preserves overall vertical layering while improving spacing; switching back to ELK/fCoSE works
 - Tests: Playwright — choose Hybrid; verify layout finishes and nodes maintain rough rank order; Refine updates positions
 
 Pseudo‑code (sequential)
 
 ```ts
-export async function applyLayout(cy: Core, name: 'elk'|'fcose'|'hybrid', opts?: { hybridMode?: 'sequential'|'constrained' }) {
+export async function applyLayout(cy: Core, name: 'elk'|'fcose'|'elk-then-fcose', opts?: { hybridMode?: 'sequential'|'constrained' }) {
   if (name === 'elk') return cy.layout({ name: 'elk', animate: false, nodeDimensionsIncludeLabels: true, elk: { 'elk.algorithm': 'layered', 'elk.direction': 'DOWN', 'elk.edgeRouting': 'ORTHOGONAL' } }).runPromise();
   if (name === 'fcose') return cy.layout({ name: 'fcose', animate: true }).runPromise();
-  // hybrid
+  // elk-then-fcose
   await cy.layout({ name: 'elk', animate: false, nodeDimensionsIncludeLabels: true, elk: { 'elk.algorithm': 'layered', 'elk.direction': 'DOWN' } }).runPromise();
   if ((opts?.hybridMode ?? 'sequential') === 'constrained') {
     const layers = extractLayersFromPositions(cy.nodes());

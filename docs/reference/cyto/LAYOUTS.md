@@ -6,10 +6,11 @@ Guide to combining force-directed algorithms with fixed positioning constraints 
 
 Cytoscape.js supports hybrid layout approaches that combine the organic arrangement of force-directed algorithms with the precision of fixed positioning. This enables layouts where some nodes follow physics-based positioning while others remain anchored or constrained.
 
-## ELK vs fCoSE (quick guide)
+## ELK vs fCoSE vs ELK→fCoSE (quick guide)
 
 - **Use ELK**: when you want clear, hierarchical/DAG call flows, orthogonal edge routing, and minimal crossings (e.g., execution flow, module hierarchies). ELK is deterministic and great for “presentation-ready” structure.
 - **Use fCoSE**: when you want fast, interactive exploration on compound graphs with animation and constraint support (fixed nodes, alignments). fCoSE is excellent for iterative discovery and refinement.
+- **Use ELK→fCoSE (elk-then-fcose, default)**: when you want ELK’s clarity followed by an organic refinement to improve spacing. Start with ELK (animate: false), then apply fCoSE with `randomize:false`; optionally add `alignmentConstraint` (“constrained” mode) to preserve ELK’s layers.
 
 ### ELK (layered / hierarchical)
 

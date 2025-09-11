@@ -1,17 +1,16 @@
-## Runtime Logging Reference (TS Viewer + Server)
+## Runtime Logging Reference (Local-only)
 
 ### Overview
 
-The TS viewer forwards browser console logs/warns/errors to the server, which appends them to `out/viewer.log` as JSON Lines. This enables tailing logs while reproducing issues in the browser.
+Logging is local-only. The viewer writes developer-facing notes to the browser console. There is no HTTP log forwarding. For troubleshooting sessions, use your terminal to tail the local log file written by the server lifecycle.
 
 ### What gets captured
-- `console.log`, `console.warn`, `console.error`
-- Basic metadata: timestamp, user-agent, client IP (Fastify-reported)
+- The server resets (truncates) the log file on each start: `out/viewer.log`.
+- The viewer may print warnings to the browser console (e.g., schema validation warnings); these are not forwarded.
 
 ### Server endpoints
-- `POST /client-log`: accepts JSON body `{ level, message, data }` and appends a line to `out/viewer.log`.
-- `GET /out/viewer.log`: returns the full log file as `text/plain`.
-- `GET /favicon.ico`: returns 204 to avoid noisy 404s.
+- No logging endpoints are exposed.
+- The server still serves the viewer UI and JSON data.
 
 ### Log file location
 - Default: `out/viewer.log` under the repository (or current working directory if `out/` exists there).
@@ -19,27 +18,21 @@ The TS viewer forwards browser console logs/warns/errors to the server, which ap
 ### How to use
 1) Start the server (single-port viewer):
 ```bash
-node ts/dist/cli/index.js view open --port 3080 --no-browser
+node ts/dist/cli/index.js view open --no-browser
 ```
 2) Open the viewer and reproduce the issue:
 ```bash
-open http://127.0.0.1:3080
+open http://127.0.0.1:8080
 ```
 3) Tail logs locally:
 ```bash
 tail -f out/viewer.log
 ```
-   or via HTTP:
-```bash
-curl -s http://127.0.0.1:3080/out/viewer.log | tail -n 50
-```
 
 ### Notes
-- Logging is development-focused and lightweight; payloads are small and best-effort (network failures are ignored on the client).
-- The viewer also filters invalid edges to prevent Cytoscape crashes and logs the number of skipped edges.
+- Logging is development-focused and local-only.
+- The viewer filters invalid edges to prevent Cytoscape crashes and may warn in the browser console.
 
 ### Future improvements
-- Capture unhandled errors/rejections with stack traces.
-- Add a toggle to enable/disable logging from the UI or via `localStorage`.
-- Redact sensitive data if needed before forwarding.
+- Optional toggle to persist viewer warnings to file (local-only), gated behind a flag.
 

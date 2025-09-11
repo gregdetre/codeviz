@@ -1,4 +1,4 @@
-<!-- Migration note: The viewer uses Cytoscape.js with ELK (default) and fCoSE for compound graphs. This doc reflects the Cytoscape-first approach. -->
+<!-- Migration note: The viewer uses Cytoscape.js with ELK→fCoSE as the default ("elk-then-fcose") and also supports ELK-only and fCoSE-only. This doc reflects the Cytoscape-first approach. -->
 # CodeViz Layout Reference
 
 ## Introduction
@@ -15,12 +15,12 @@ This document explains how layout works in CodeViz, with a focus on execution/ca
 - External: Cytoscape.js: https://js.cytoscape.org/
 
 ## Principles and key decisions
-- Cytoscape-first for interactive rendering; default `elk` (layered) for hierarchical/call-flow clarity; `fcose` remains available for exploratory force-directed layouts.
+- Cytoscape-first for interactive rendering; default `elk-then-fcose` (ELK layered presentation, refined by fCoSE). ELK-only and fCoSE-only remain available from the toolbar.
 - Group semantics via compound nodes; default grouping by module, with room for nesting later.
 - Interactivity: basic toggles and neighbor highlight for MVP; expand/collapse via extension in future.
 
 ## Current state
-- ELK (layered) default layout with orthogonal edge routing; fCoSE also available. Module groups as compounds, filtering toggles, neighbor highlight.
+- Default layout is ELK→fCoSE (sequential hybrid). ELK provides layered structure and orthogonal routing; fCoSE refines spacing with `randomize:false`. Module groups as compounds, filtering toggles, neighbor highlight. A toolbar control allows switching layouts and choosing the hybrid submode (sequential|constrained).
 
 ## Layout modes (high-level)
 - Default view: emphasizes function calls; imports available via `moduleImports`.

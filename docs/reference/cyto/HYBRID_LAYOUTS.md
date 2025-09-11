@@ -1,4 +1,4 @@
-# Hybrid Layout Strategies: Combining ELK and fCoSE
+# ELK→fCoSE (Hybrid) Layout Strategies
 
 Research into combining hierarchical (ELK) and force-directed (fCoSE) layouts in Cytoscape.js for code visualization.
 
@@ -30,14 +30,13 @@ ELK and fCoSE layouts cannot be directly combined in a single Cytoscape.js layou
 3. **Different Coordinate Systems**: ELK produces fixed hierarchical coordinates; fCoSE expects flexible positioning
 
 ### Current Implementation Context
-CodeViz currently implements layout switching via configuration:
+CodeViz uses `elk-then-fcose` as the default and supports ELK or fCoSE individually. Layout names are case-insensitive and accept aliases (e.g., `hybrid` is treated as `elk-then-fcose`). The viewer exposes a toolbar layout selector and a hybrid submode selector (sequential|constrained).
 ```typescript
-const layoutName = (vcfg?.layout ?? 'elk').toLowerCase();
-const layout = layoutName === 'fcose'
-  ? { name: 'fcose', animate: true }
-  : { name: 'elk', animate: false, /* ... */ };
+// Simplified
+const layoutName = normalizeLayoutName(vcfg.layout ?? 'elk-then-fcose');
+await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode });
 ```
-*Source: ts/viewer/src/main.ts:29-68*
+*Source: ts/viewer/src/app.ts; ts/viewer/src/layout-manager.ts*
 
 ## Hybrid Strategies
 
@@ -195,7 +194,7 @@ class LayoutManager {
 1. **Extend Configuration Schema**
    ```typescript
    interface ViewerConfig {
-     layout: 'elk' | 'fcose' | 'hybrid';
+     layout: 'elk' | 'fcose' | 'elk-then-fcose';
      hybridMode?: 'sequential' | 'constrained' | 'subgraph';
    }
    ```
@@ -207,12 +206,21 @@ class LayoutManager {
 
 3. **User Interface Controls**
    ```html
-   <div class="layout-controls">
-     <button id="applyElk">Hierarchical (ELK)</button>
-     <button id="applyFcose">Force-directed (fCoSE)</button>
-     <button id="applyHybrid">Hybrid Layout</button>
-     <button id="refineLayout">Refine Current</button>
-   </div>
+   <label>layout
+     <select id="layoutSelect">
+       <option value="elk-then-fcose">ELK → fCoSE</option>
+       <option value="elk">ELK</option>
+       <option value="fcose">fCoSE</option>
+     </select>
+   </label>
+   <label id="hybridModeLabel">
+     refine
+     <select id="hybridModeSelect">
+       <option value="sequential">sequential</option>
+       <option value="constrained">constrained</option>
+     </select>
+   </label>
+   <button id="refineBtn">Refine</button>
    ```
 
 ### Performance Considerations

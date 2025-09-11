@@ -63,6 +63,8 @@ Start interactive viewer for exploring extracted codebase structure.
 - `--host <host>` - Host interface (default: `127.0.0.1`)
 - `--port <port>` - Port to serve on (default: `8080`)
 - `--no-browser` - Don't automatically open browser
+ - `--mode <default|explore|modules>` - Initial viewer mode (default: `default`)
+ - `--hybrid-mode <sequential|constrained>` - Hybrid submode when using ELK→fCoSE (default: `sequential`)
 
 #### Examples
 
@@ -75,6 +77,9 @@ npx codeviz view open --host 0.0.0.0 --port 3000
 
 # Don't open browser automatically
 npx codeviz view open --no-browser
+
+# Start with Modules mode and constrained hybrid refinement
+npx codeviz view open --mode modules --hybrid-mode constrained
 ```
 
 #### Prerequisites

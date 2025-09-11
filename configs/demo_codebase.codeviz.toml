@@ -1,12 +1,18 @@
 [analyzer]
 exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
+# Only analyze these files/dirs (optional). If commented out, analyze all .py files.
+# includeOnly = ["demo_codebase/**"]
+# Suppress edges/imports to these modules (e.g., external libs)
+excludeModules = []
 
 [output]
 path = "out/codebase_graph.json"
 
 [viewer]
 layout = "elk"
-# layout = "fcose"
+# mode = "default"
+# host = "127.0.0.1"
+# port = 8080
 
 
 
