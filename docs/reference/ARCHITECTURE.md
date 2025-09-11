@@ -29,7 +29,7 @@ CodeViz follows a **two-phase architecture**: static analysis extracts codebase 
 2. Parse with Tree-sitter
 3. Extract functions, simple call edges, imports
 4. Build module groups and moduleImports
-5. Emit `out/codebase_graph.json`
+5. Emit `out/<target>/codebase_graph.json`
 
 ### 2. Visualization Phase (TS)
 
@@ -40,7 +40,7 @@ CodeViz follows a **two-phase architecture**: static analysis extracts codebase 
 - `ts/src/server/server.ts` - Single-port Fastify server
 
 **Process**:
-1. Load JSON from `out/codebase_graph.json`
+1. Load JSON from `out/<target>/codebase_graph.json`
 2. Render with Cytoscape.js (compound nodes by module)
 3. Basic interactions: toggle edges, neighbor highlight
 4. Layout: `fcose` for compound support

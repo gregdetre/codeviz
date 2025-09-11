@@ -1,5 +1,5 @@
 import { Cli, Command, Option } from "clipanion";
-import { resolve, dirname, join } from "node:path";
+import { resolve, dirname, join, basename } from "node:path";
 import { homedir } from "node:os";
 import { runExtract } from "../analyzer/extract-python.js";
 import { loadConfigForTarget } from "../config/loadConfig.js";
@@ -13,12 +13,13 @@ import chalk from "chalk";
 class ExtractPython extends Command {
   static paths = [["extract", "python"]];
   dir = Option.String({ required: true });
-  out = Option.String("--out", "out/codebase_graph.json");
+  out = Option.String("--out");
   verbose = Option.Boolean("-v,--verbose", false);
   async execute() {
     const target = resolve(this.dir);
     const cfg = await loadConfigForTarget(target);
-    const configuredOut = cfg.output?.path ?? this.out ?? "out/codebase_graph.json";
+    const defaultOutByTarget = join("out", basename(target), "codebase_graph.json");
+    const configuredOut = cfg.output?.path ?? this.out ?? defaultOutByTarget;
     const outPath = resolve(configuredOut);
     await runExtract({
       targetDir: target,

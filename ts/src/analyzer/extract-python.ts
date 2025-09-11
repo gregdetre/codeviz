@@ -1,5 +1,5 @@
-import { readFile, writeFile, readdir } from "node:fs/promises";
-import { basename, join, relative } from "node:path";
+import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
+import { basename, join, relative, dirname } from "node:path";
 import { minimatch } from "minimatch";
 import Parser from "tree-sitter";
 import Python from "tree-sitter-python";
@@ -79,7 +79,8 @@ export async function runExtract(opts: { targetDir: string; outPath: string; ver
   // Filter edges to only include those whose endpoints exist as nodes
   const nodeIds = new Set(nodes.map(n => n.id));
   const edges = edgesRaw.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
-  const graph = { version: 1, schemaVersion: "1.0.0", id_prefix: "", defaultMode: "exec", nodes, edges, groups, moduleImports: moduleImportsArr };
+  const graph = { version: 1, schemaVersion: "1.0.0", id_prefix: "", defaultMode: "exec", rootDir: toUnix(opts.targetDir), nodes, edges, groups, moduleImports: moduleImportsArr };
+  await mkdir(dirname(opts.outPath), { recursive: true });
   await writeFile(opts.outPath, JSON.stringify(graph, null, 2), "utf8");
 }
 
@@ -244,11 +245,14 @@ function registerImportAliases(text: string, aliasToModule: Record<string, strin
 }
 
 function registerFromImports(text: string, importedNameToQualified: Record<string, string>) {
-  // Handles: from recipe import create_recipe, add_ingredient as addi
+  // Handles: from models.recipe import create_recipe, add_ingredient as addi
+  // Important: map to the LEAF module name so it matches our module ids (file basenames)
   const cleaned = text.replace(/\n/g, " ").replace(/\s+/g, " ");
   const m = /^from\s+([a-zA-Z0-9_\.]+)\s+import\s+\(?([^\)]+)\)?/.exec(cleaned);
   if (!m) return;
-  const mod = m[1].split(".")[0];
+  const modulePath = m[1];
+  const segments = modulePath.split(".").filter(Boolean);
+  const mod = segments[segments.length - 1]; // use leaf to align with basename-derived module ids
   const items = m[2].split(",").map(s => s.trim()).filter(Boolean);
   for (const it of items) {
     if (it === "*") continue; // skip star imports

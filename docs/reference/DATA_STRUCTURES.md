@@ -30,7 +30,7 @@ type CodevizConfig = {
 
 **Properties:**
 - **analyzer.exclude**: File patterns to exclude from analysis (glob patterns)
-- **output.path**: Custom output file path (default: `out/codebase_graph.json`)
+- **output.path**: Custom output file path (default: `out/<target>/codebase_graph.json`)
 - **viewer.layout**: Default layout algorithm for visualization
 
 **Usage:**

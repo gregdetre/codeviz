@@ -32,7 +32,7 @@ npm install
 npm run build
 
 # 3) Extract the demo codebase into JSON
-npm run extract -- demo_codebase --out out/codebase_graph.json
+npm run extract -- demo_codebase --out out/demo_codebase/codebase_graph.json
 
 # 4) Start the single-port viewer (no auto-browser)
 npm run view -- --port 8000 --no-browser
@@ -57,7 +57,7 @@ Example (`demo_codebase.codeviz.toml`):
 exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 
 [output]
-path = "out/codebase_graph.json"
+path = "out/demo_codebase/codebase_graph.json"
 
 [viewer]
 layout = "fcose"
@@ -67,7 +67,7 @@ layout = "fcose"
 
 Generate the visualization data (JSON):
 ```bash
-npm run extract -- demo_codebase --out out/codebase_graph.json
+npm run extract -- demo_codebase --out out/demo_codebase/codebase_graph.json
 ```
 
 ## Viewer (single-port)
@@ -101,7 +101,8 @@ ts/
     ├── src/main.ts
     └── vite.config.ts
 out/
-└── codebase_graph.json    # Generated data
+└── demo_codebase/
+    └── codebase_graph.json    # Generated data
 ```
 
 ## Verification
@@ -109,7 +110,7 @@ out/
 1. **Extraction works**
 ```bash
 npm run extract -- demo_codebase
-ls -la out/codebase_graph.json
+ls -la out/demo_codebase/codebase_graph.json
 ```
 
 2. **Viewer loads**
@@ -122,4 +123,4 @@ open http://127.0.0.1:8000
 
 - Port conflicts: pass `--port` (e.g., `--port 3000`) or kill existing process.
 - Tree-sitter native build issues: we can switch to web-tree-sitter (WASM) in a follow-up.
-- Ensure `out/codebase_graph.json` exists before starting the viewer.
+- Ensure `out/<target>/codebase_graph.json` exists before starting the viewer.

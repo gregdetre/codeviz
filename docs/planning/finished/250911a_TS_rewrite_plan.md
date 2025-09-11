@@ -48,13 +48,13 @@ Rewrite CodeViz to be pure TypeScript end-to-end. Focus on a simple, working MVP
 
 ### Stage: Viewer (Vite + TS + Cytoscape)
 - [x] Vite app with `index.html`, `src/main.ts`.
-- [x] Load `/out/codebase_graph.json`.
+- [x] Load `/out/<target>/codebase_graph.json`.
 - [x] Render nodes grouped by module (compound nodes), edges for calls/imports.
 - [x] Basic interactions: neighbor highlight; toggle for call edges; fcose layout.
 - [x] Guard against invalid edges (filter + warn) to avoid Cytoscape crash.
 
 ### Stage: Single-port server
-- [x] Fastify server serving built viewer and `out/codebase_graph.json`.
+- [x] Fastify server serving built viewer and `out/<target>/codebase_graph.json`.
 - [x] `view open` starts server; `--no-browser` supported.
 - [x] Dev logging endpoints: `POST /client-log` and `GET /out/viewer.log`; `favicon.ico` 204.
 
@@ -66,7 +66,7 @@ Rewrite CodeViz to be pure TypeScript end-to-end. Focus on a simple, working MVP
 - [ ] Tidy or archive legacy Python viewer/CLI after v1 validated.
 
 ### Stage: Validation & acceptance (demo_codebase)
-- [x] Run `codeviz extract python demo_codebase` to generate `out/codebase_graph.json`.
+- [x] Run `codeviz extract python demo_codebase` to generate `out/demo_codebase/codebase_graph.json`.
 - [x] Start viewer `codeviz view open` and verify render locally.
 - [x] Playwright smoke tests (homepage + JSON endpoint) passing.
 - [ ] Confirm schema validity parity with previous `demo_output.json`.

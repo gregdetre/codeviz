@@ -35,17 +35,17 @@ Extract static codebase graph from Python code using Tree-sitter.
 
 #### Options (pass after `--`)
 
-- `--out <path>` - Output path for codebase graph JSON (default: `out/codebase_graph.json`)
+- `--out <path>` - Output path for codebase graph JSON (default: `out/<target>/codebase_graph.json`)
 - `--verbose, -v` - Enable verbose output
 
 #### Examples
 
 ```bash
-# Basic extraction (outputs to out/codebase_graph.json, picks up configs/demo_codebase.codeviz.toml)
+# Basic extraction (outputs to out/<target>/codebase_graph.json, picks up configs/demo_codebase.codeviz.toml)
 npm run extract -- demo_codebase
 
 # With custom output location
-npm run extract -- /path/to/project --out out/my_graph.json
+npm run extract -- /path/to/project --out out/my_project/codebase_graph.json
 
 # With verbose output
 npm run extract -- demo_codebase --verbose
@@ -105,12 +105,12 @@ npm run dev -- --port 8000 --mode modules
 
 #### Prerequisites
 
-- Extracted codebase graph at `out/codebase_graph.json`
+- Extracted codebase graph at `out/<target>/codebase_graph.json`
 - Viewer is built (handled by `npm run build`)
 
 If graph data is missing:
 ```bash
-No codebase graph found at out/codebase_graph.json
+No codebase graph found at out/<target>/codebase_graph.json
 Run 'npm run extract -- <target_dir>' first
 ```
 

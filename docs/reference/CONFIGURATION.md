@@ -59,7 +59,7 @@ excludeModules = ["gjdutils"]
 
 [output]
 # Absolute or relative path for the graph JSON
-path = "out/codebase_graph.json"
+path = "out/<target>/codebase_graph.json"
 
 [viewer]
 # Default layout to use in the viewer ("elk" or "fcose")
@@ -79,7 +79,7 @@ port = 8000
 - **excludeModules**: array of top-level module names to suppress from import edges/call edges
 
 ### `[output]`
-- **path**: output path for the graph JSON (default: `out/codebase_graph.json`)
+- **path**: output path for the graph JSON (default: `out/<target>/codebase_graph.json`)
 
 ### `[viewer]`
 - **layout**: default layout to use in the viewer (`elk` by default; `fcose` also supported)
@@ -104,7 +104,7 @@ exclude = ["**/.venv/**", "**/__pycache__/**", "**/.mypy_cache/**"]
 - Custom output location:
 ```toml
 [output]
-path = "out/my_project_graph.json"
+path = "out/my_project/codebase_graph.json"
 ```
 
 - Whitelist a subset of files and hide external imports:

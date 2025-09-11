@@ -26,7 +26,7 @@ npm install
    ```bash
    npm run extract -- demo_codebase
    # or with explicit output
-   npm run extract -- demo_codebase --out out/codebase_graph.json
+   npm run extract -- demo_codebase --out out/demo_codebase/codebase_graph.json
    ```
 
 3. **Start the interactive viewer (single port):**
@@ -48,7 +48,7 @@ Create a per-target config with compound extension (example already included):
 exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 
 [output]
-path = "out/codebase_graph.json"
+path = "out/demo_codebase/codebase_graph.json"
 
 [viewer]
 layout = "fcose"
@@ -60,7 +60,7 @@ layout = "fcose"
 
 ```bash
 # Extract specific directory
-npm run extract -- /path/to/project --out out/codebase_graph.json
+npm run extract -- /path/to/project --out out/<your_project_name>/codebase_graph.json
 
 # Verbose extraction
 npm run extract -- demo_codebase --verbose
@@ -97,7 +97,7 @@ npm run dev -- --port 8000
 ## Troubleshooting
 
 **Common Issues:**
-- **Viewer not loading data**: Ensure extraction has run and created `out/codebase_graph.json`
+- **Viewer not loading data**: Ensure extraction has run and created `out/<target>/codebase_graph.json`
 - **Port conflicts**: Pass `--port` to `view open` or kill existing processes with `lsof -ti:8000 | xargs kill -9`
 - **Tree-sitter build issues**: If native issues arise, we can switch to web-tree-sitter (WASM) in a follow-up.
 

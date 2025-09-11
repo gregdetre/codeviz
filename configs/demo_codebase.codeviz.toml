@@ -6,7 +6,7 @@ exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 excludeModules = []
 
 [output]
-path = "out/codebase_graph.json"
+path = "out/demo_codebase/codebase_graph.json"
 
 [viewer]
 layout = "elk-then-fcose"

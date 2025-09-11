@@ -13,7 +13,7 @@ Build on the ELK layout foundation to add visual polish, richer interactions, an
 - `ts/viewer/src/app.ts` — Viewer app wiring (layouts, styles, interactions)
 - `ts/viewer/index.html` — Two‑pane shell (toolbar + graph + details)
 - `ts/src/server/server.ts` — Single‑port Fastify, serves JSON + `/viewer-config.json`
-- `out/codebase_graph.json` — Canonical graph data
+- `out/<target>/codebase_graph.json` — Canonical graph data
 - Legacy `src/codeviz/viewer/cyto/*` — Rich styles, color hashing, tooltips, expand/collapse, validation ideas
 
 

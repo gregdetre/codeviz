@@ -67,7 +67,7 @@ tsc --noEmit             # Type checking
 ```bash
 lsof -ti:8000 | xargs -r kill
 npm install && npm run build
-npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/codebase_graph.json
+npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/demo_codebase/codebase_graph.json
 npm run view -- --port 8000 --no-browser
 open http://127.0.0.1:8000
 ```
@@ -102,7 +102,7 @@ curl -s http://127.0.0.1:8000/out/viewer.log | tail -n 50
 
 ### Extract Commands
 - `codeviz extract python <dir>`: Extract Python codebase structure via tree-sitter
-  - `--out`: Custom output path (default: out/codebase_graph.json)
+  - `--out`: Custom output path (default: out/<target>/codebase_graph.json)
   - `--verbose, -v`: Verbose output
 
 ### Viewer Commands  
