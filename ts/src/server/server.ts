@@ -37,7 +37,7 @@ async function loadAssistantPrompt() {
   }
 }
 
-export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string; dataFilePath?: string }) {
+export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string; dataFilePath?: string; workspaceRoot?: string }) {
   const app = Fastify();
   // Resolve viewer dist robustly across run contexts (tsx, node, different CWDs)
   const candidates = [
@@ -96,7 +96,12 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       return "elk-then-fcose";
     }
     const inferredLayout = normalizeLayoutName(opts.viewerLayout);
-    const cfg = { layout: inferredLayout, mode: (opts.viewerMode ?? "default"), hybridMode: (opts.hybridMode ?? "sequential") };
+    const cfg = { 
+      layout: inferredLayout, 
+      mode: (opts.viewerMode ?? "default"), 
+      hybridMode: (opts.hybridMode ?? "sequential"),
+      workspaceRoot: opts.workspaceRoot
+    };
     reply.type("application/json").send(cfg);
   });
 
@@ -105,6 +110,16 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       const schemaPath = join(repoRoot, "schema", "codebase_graph.schema.json");
       const schema = await readFile(schemaPath, "utf8");
       reply.type("application/json").send(schema);
+    } catch (err: any) {
+      reply.code(500).send({ error: "ENOENT", message: String(err?.message || err) });
+    }
+  });
+
+  // Expose viewer log over HTTP for quick tailing in dev
+  app.get("/out/viewer.log", async (_req, reply) => {
+    try {
+      const content = await readFile(logFile, "utf8");
+      reply.type("text/plain").send(content);
     } catch (err: any) {
       reply.code(500).send({ error: "ENOENT", message: String(err?.message || err) });
     }
@@ -154,7 +169,7 @@ export async function startServer(opts: { host: string; port: number; openBrowse
         messages: history,
         temperature: config.llm?.temperature || 0.2,
         maxTokens: config.llm?.maxTokens || 2000
-      });
+      } as any);
 
       reply.type("application/json").send({ reply: text });
     } catch (err: any) {
