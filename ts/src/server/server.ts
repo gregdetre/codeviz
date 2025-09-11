@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string }) {
+export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string }) {
   const app = Fastify();
   // Resolve viewer dist robustly across run contexts (tsx, node, different CWDs)
   const candidates = [
@@ -42,8 +42,25 @@ export async function startServer(opts: { host: string; port: number; openBrowse
   });
 
   app.get("/viewer-config.json", async (_req, reply) => {
-    const cfg = { layout: opts.viewerLayout ?? "elk" };
-    reply.type("application/json").send(JSON.stringify(cfg));
+    function normalizeLayoutName(name?: string) {
+      const raw = (name ?? "").toString().trim().toLowerCase();
+      if (raw === "elk" || raw === "fcose") return raw;
+      if (raw === "hybrid" || raw === "elk-then-fcose" || raw === "elk_then_fcose" || raw === "elkthenfcose") return "elk-then-fcose";
+      return "elk-then-fcose";
+    }
+    const inferredLayout = normalizeLayoutName(opts.viewerLayout);
+    const cfg = { layout: inferredLayout, mode: (opts.viewerMode ?? "default"), hybridMode: (opts.hybridMode ?? "sequential") };
+    reply.type("application/json").send(cfg);
+  });
+
+  app.get("/schema/codebase_graph.schema.json", async (_req, reply) => {
+    try {
+      const schemaPath = join(repoRoot, "schema", "codebase_graph.schema.json");
+      const schema = await readFile(schemaPath, "utf8");
+      reply.type("application/json").send(schema);
+    } catch (err: any) {
+      reply.code(500).send({ error: "ENOENT", message: String(err?.message || err) });
+    }
   });
 
   // Minimal favicon to reduce noise in console

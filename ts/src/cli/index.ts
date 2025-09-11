@@ -22,17 +22,18 @@ class ViewOpen extends Command {
   host = Option.String("--host", "127.0.0.1");
   port = Option.String("--port", "8080");
   mode = Option.String("--mode", "default");
+  hybridMode = Option.String("--hybrid-mode", "sequential");
   target = Option.String("--target", "");
   noBrowser = Option.Boolean("--no-browser", false);
   async execute() {
-    let viewerLayout = "elk";
+    let viewerLayout = "elk-then-fcose";
     if (this.target) {
       try {
         const cfg = await loadConfigForTarget(resolve(this.target));
         viewerLayout = cfg.viewer?.layout ?? viewerLayout;
       } catch {}
     }
-    await startServer({ host: this.host, port: Number(this.port), openBrowser: !this.noBrowser, viewerLayout });
+    await startServer({ host: this.host, port: Number(this.port), openBrowser: !this.noBrowser, viewerLayout, viewerMode: this.mode, hybridMode: this.hybridMode });
   }
 }
 
