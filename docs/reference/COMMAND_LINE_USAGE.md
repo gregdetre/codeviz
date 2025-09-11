@@ -1,14 +1,13 @@
 # CodeViz Command Line Usage (TypeScript)
 
-CodeViz provides a Clipanion-based CLI for extracting codebase structure and viewing interactive visualizations. The tool follows a two-stage workflow: extraction followed by viewing.
+CodeViz provides npm scripts for extracting codebase structure and viewing interactive visualizations. The tool follows a two-stage workflow: extraction followed by viewing.
 
 ## Quick Reference
 
 | Command | Description |
 |---------|-------------|
-| `npx codeviz --help` | Show main help |
-| `npx codeviz extract python <target_dir>` | Extract Python codebase |
-| `npx codeviz view open` | Start viewer server |
+| `npm run extract -- <target_dir>` | Extract Python codebase |
+| `npm run view -- [options]` | Start viewer server |
 
 ## CLI Structure
 
@@ -26,15 +25,15 @@ cli/index.ts
 
 ## Extraction Commands
 
-### `npx codeviz extract python <target_dir>`
+### `npm run extract -- <target_dir>`
 
 Extract static codebase graph from Python code using Tree-sitter.
 
 #### Arguments
 
-- `target_dir` (required) - Directory containing Python code to analyze
+- `target_dir` (required) - Directory containing Python code to analyze. The per-target config is auto-discovered from `<basename(target_dir)>.codeviz.toml` in repo root or `configs/`.
 
-#### Options
+#### Options (pass after `--`)
 
 - `--out <path>` - Output path for codebase graph JSON (default: `out/codebase_graph.json`)
 - `--verbose, -v` - Enable verbose output
@@ -42,48 +41,49 @@ Extract static codebase graph from Python code using Tree-sitter.
 #### Examples
 
 ```bash
-# Basic extraction (outputs to out/codebase_graph.json)
-npx codeviz extract python demo_codebase
+# Basic extraction (outputs to out/codebase_graph.json, picks up configs/demo_codebase.codeviz.toml)
+npm run extract -- demo_codebase
 
 # With custom output location
-npx codeviz extract python /path/to/project --out out/my_graph.json
+npm run extract -- /path/to/project --out out/my_graph.json
 
 # With verbose output
-npx codeviz extract python demo_codebase --verbose
+npm run extract -- demo_codebase --verbose
 ```
 
 ## Viewer Commands
 
-### `npx codeviz view open`
+### `npm run view -- [options]`
 
 Start interactive viewer for exploring extracted codebase structure.
 
-#### Options
+#### Options (pass after `--`)
 
 - `--host <host>` - Host interface (default: `127.0.0.1`)
 - `--port <port>` - Port to serve on (default: `8000`)
 - `--no-browser` - Don't automatically open browser
-- `--kill-existing` - Kill existing processes on port before starting (default: `true`)
+- `--no-kill-existing` - Don't kill existing processes on port before starting
 - `--mode <default|explore|modules>` - Initial viewer mode (default: `default`)
 - `--hybrid-mode <sequential>` - Hybrid submode when using ELK→fCoSE (default: `sequential`)
+- `--target <path>` - Optional target directory to influence viewer defaults (host/port/mode) via its `.codeviz.toml`
 
 #### Examples
 
 ```bash
 # Start viewer with defaults
-npx codeviz view open
+npm run view --
 
 # Custom host and port
-npx codeviz view open --host 0.0.0.0 --port 3000
+npm run view -- --host 0.0.0.0 --port 3000
 
 # Don't open browser automatically
-npx codeviz view open --no-browser
+npm run view -- --no-browser
 
 # Don't kill existing processes on port
-npx codeviz view open --no-kill-existing
+npm run view -- --no-kill-existing
 
 # Start with Modules mode and sequential hybrid refinement (default)
-npx codeviz view open --mode modules --hybrid-mode sequential
+npm run view -- --mode modules --hybrid-mode sequential
 ```
 
 #### One-command workflows
@@ -96,11 +96,12 @@ npm run up -- --port 8000 --mode modules
 npm run dev -- --port 8000 --mode modules
 ```
 
-### When to use npx vs npm run
+### Usage guidance
 
-- Use `npx codeviz ...` to call the CLI directly (extract, view). This always runs the built CLI in `ts/dist` and accepts all CLI flags.
-- Use `npm run up` for a one-shot build + serve with auto-open and kill-existing by default. Append CLI flags after `--`.
-- Use `npm run dev` during development to auto-rebuild the viewer and auto-restart the server. Append CLI flags after `--`. Browser is not auto-opened.
+- Use `npm run extract -- <dir>` for extraction (canonical).
+- Use `npm run view -- [options]` to start the viewer.
+- Avoid `npx codeviz` due to an npm package name collision; it may pull an unrelated package.
+- During development, `npm run dev` auto-rebuilds the viewer and restarts the server. Append flags after `--`.
 
 #### Prerequisites
 
@@ -110,7 +111,7 @@ npm run dev -- --port 8000 --mode modules
 If graph data is missing:
 ```bash
 No codebase graph found at out/codebase_graph.json
-Run 'npx codeviz extract python <target_dir>' first
+Run 'npm run extract -- <target_dir>' first
 ```
 
 ## Configuration

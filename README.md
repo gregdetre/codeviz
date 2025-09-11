@@ -24,14 +24,16 @@ npm install
 
 2. **Extract codebase structure (Python):**
    ```bash
-   npx codeviz extract python demo_codebase --out out/codebase_graph.json
+   npm run extract -- demo_codebase
+   # or with explicit output
+   npm run extract -- demo_codebase --out out/codebase_graph.json
    ```
 
 3. **Start the interactive viewer (single port):**
    ```bash
-   npx codeviz view open
+   npm run view --
    # If port in use
-   npx codeviz view open --port 3000
+   npm run view -- --port 3000
    ```
 
 4. **Open your browser** to explore the visualization (e.g. http://127.0.0.1:8000)
@@ -58,23 +60,23 @@ layout = "fcose"
 
 ```bash
 # Extract specific directory
-npx codeviz extract python /path/to/project --out out/codebase_graph.json
+npm run extract -- /path/to/project --out out/codebase_graph.json
 
 # Verbose extraction
-npx codeviz extract python demo_codebase --verbose
+npm run extract -- demo_codebase --verbose
 ```
 
 ### Viewer Commands
 
 ```bash
 # Start with defaults
-npx codeviz view open
+npm run view --
 
 # Custom host and port
-npx codeviz view open --host 0.0.0.0 --port 3000
+npm run view -- --host 0.0.0.0 --port 3000
 
 # Don't auto-open browser
-npx codeviz view open --no-browser
+npm run view -- --no-browser
 
 # One-command workflows
 # Build + serve (auto-open; kills existing)

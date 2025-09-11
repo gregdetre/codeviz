@@ -34,12 +34,13 @@ npm install
 # Build TypeScript CLI and viewer
 npm run build
 
-# Extract codebase structure
-npx codeviz extract python <target_directory>
-# OR: npm run dev:cli extract python <target_directory>
+# Extract codebase structure (canonical)
+npm run extract -- <target_directory>
+# OR: dev CLI
+npm run dev:cli -- extract python <target_directory>
 
 # Start interactive viewer
-npx codeviz view open
+npm run view --
 
 # One-command shortcuts
 # Build + serve (auto-open; kills existing)
@@ -47,10 +48,10 @@ npm run up -- --port 8000
 # Dev auto-reload (rebuilds viewer, restarts server; auto-open)
 npm run dev -- --port 8000
 
-# Help for any command
-npx codeviz --help
-npx codeviz extract --help
-npx codeviz view --help
+# Dev help: run the dev CLI without args
+npm run dev:cli -- --help
+npm run dev:cli -- extract --help
+npm run dev:cli -- view --help
 ```
 
 ## Testing & Code Quality
@@ -134,8 +135,8 @@ Main config files:
 ## Development Workflow
 
 1. **Setup**: `npm install && npm run build`
-2. **Extract**: `npx codeviz extract python /path/to/project`
-3. **Visualize**: `npx codeviz view open`
+2. **Extract**: `npm run extract -- /path/to/project`
+3. **Visualize**: `npm run view --`
 4. **Configure**: Create/edit `<target>.codeviz.toml` for custom exclusions
 5. **Develop**: Use `npm run dev` for auto-reload (or `npm run dev:view` for viewer-only)
 6. **Extend**: Add new language support or viewer features in TypeScript

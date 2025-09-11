@@ -32,7 +32,7 @@ npm install
 npm run build
 
 # 3) Extract the demo codebase into JSON
-npx codeviz extract python demo_codebase --out out/codebase_graph.json
+npm run extract -- demo_codebase --out out/codebase_graph.json
 
 # 4) Start the single-port viewer (no auto-browser)
 npm run view -- --port 8000 --no-browser
@@ -67,7 +67,7 @@ layout = "fcose"
 
 Generate the visualization data (JSON):
 ```bash
-npx codeviz extract python demo_codebase --out out/codebase_graph.json
+npm run extract -- demo_codebase --out out/codebase_graph.json
 ```
 
 ## Viewer (single-port)
@@ -78,9 +78,9 @@ Serve the built viewer and JSON on one port:
 npm run build
 
 # Start server
-npx codeviz view open
+npm run view --
 # If 8000 is in use
-npx codeviz view open --port 3000
+npm run view -- --port 3000
 ```
 
 Open the printed URL (default http://127.0.0.1:8000).
@@ -108,13 +108,13 @@ out/
 
 1. **Extraction works**
 ```bash
-npx codeviz extract python demo_codebase
+npm run extract -- demo_codebase
 ls -la out/codebase_graph.json
 ```
 
 2. **Viewer loads**
 ```bash
-npx codeviz view open --no-browser
+npm run view -- --no-browser
 open http://127.0.0.1:8000
 ```
 
