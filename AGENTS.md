@@ -4,64 +4,78 @@ Generic codebase visualization tool for exploring code structure and dependencie
 
 ## Essential Context
 
-- **Framework**: Python CLI (Typer), AST analysis, web-based viewer  
-- **Purpose**: Generic codebase visualization (Python, future TypeScript support)
-- **Status**: ✓ Migrated from gdwebgen, extraction working, viewer needs fixes
-- **Core features**: AST extraction, interactive viewer, dependency mapping
+- **Framework**: TypeScript CLI (Clipanion), Tree-sitter analysis, Vite + Cytoscape.js viewer
+- **Purpose**: Generic codebase visualization (Python support, TypeScript analyzer planned)
+- **Status**: ✅ Rewritten in TypeScript, fully functional end-to-end
+- **Core features**: Tree-sitter AST extraction, interactive Cytoscape.js viewer, dependency mapping
 
 ## Current Status & Known Issues
 
 **✅ Working:**
-- Extraction: `python codeviz.py extract python <target>` successfully processes Python codebases
-- CLI: Full Typer-based command structure functional
-- Configuration: Project-specific configs working (see `docs/reference/CONFIGURATION.md`)
-- Dependencies: gjdutils integration for shared webserver utilities
-
-**⚠️ Known Issues:**
-- **Viewer startup**: Two-server architecture needs coordination fixes
-- **Vite dependencies**: May need `npm install` in `src/codeviz/viewer/cyto/`  
-- **Data serving**: Viewer expects data at `/gdviz/out/codebase_graph.json` - path hardcoded
+- Extraction: `codeviz extract python <target>` processes Python codebases via tree-sitter
+- CLI: Clipanion-based TypeScript command structure fully functional  
+- Configuration: Per-target `.codeviz.toml` files (e.g., `demo_codebase.codeviz.toml`)
+- Viewer: Single-port Fastify server with Vite-built Cytoscape.js frontend
+- Integration: End-to-end TypeScript workflow from extraction to visualization
 
 **📋 Testing Results:**
-- Extraction from gdwebgen: ✅ 147 functions extracted successfully
-- JSON output: ✅ Valid schema, properly structured
-- CLI help: ✅ All commands documented and working
+- TypeScript CLI: ✅ All commands working with proper help
+- Python extraction: ✅ Tree-sitter successfully extracts functions, imports, calls
+- JSON output: ✅ Schema-compliant graph data
+- Viewer: ✅ Interactive Cytoscape.js with fcose layout, compound nodes
+- Server: ✅ Single-port serving both static files and graph data
 
 ## Build Commands
 
 ```bash
-# Install Python dependencies
-pip install -r requirements.txt
+# Install TypeScript dependencies
+cd ts && npm install
 
-# Install viewer dependencies (if viewer issues occur)
-cd src/codeviz/viewer/cyto && npm install
+# Build TypeScript CLI and viewer
+npm run build
 
 # Extract codebase structure
-python codeviz.py extract python <target_directory>
+npx codeviz extract python <target_directory>
+# OR: npm run dev:cli extract python <target_directory>
 
-# Start interactive viewer (may have startup issues - see troubleshooting)
-python codeviz.py view open
+# Start interactive viewer
+npx codeviz view open
+# OR: npm run dev:cli view open
+
+# Development mode viewer (Vite dev server)
+npm run dev:view
 
 # Help for any command
-python codeviz.py --help
-python codeviz.py extract --help
-python codeviz.py view --help
+npx codeviz --help
+npx codeviz extract --help
+npx codeviz view --help
 ```
 
 ## Testing & Code Quality
 
 ```bash
-pytest                    # Run all tests
-pytest-watch             # Continuous testing  
-black .                  # Format code
+npm test                 # Run Playwright tests
+npm run test:ui          # Run tests with UI
+tsc --noEmit             # Type checking
+```
+
+### Quick demo (visualize `demo_codebase/`)
+
+```bash
+lsof -ti:3080 | xargs -r kill
+npm install --prefix ts && npm run --prefix ts build
+npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/codebase_graph.json
+node ts/dist/cli/index.js view open --port 3080 --no-browser
+open http://127.0.0.1:3080
 ```
 
 ## Project Structure
 
-- **Core**: `codeviz.py` (CLI), `src/codeviz/extractor/main.py` (extraction), `src/codeviz/viewer/` (web viewer)
-- **Config**: `codeviz_conf.py` (settings and exclusion patterns)
-- **Standalone**: `standalone_extractor.py` (core AST analysis logic)
-- **Viewer**: `src/codeviz/viewer/cyto/` (Vite-based web interface)
+- **TypeScript Core**: `ts/src/cli/index.ts` (Clipanion CLI), `ts/src/analyzer/extract-python.ts` (tree-sitter extraction)
+- **Config**: `ts/src/config/loadConfig.ts` (per-target `.codeviz.toml` loading)
+- **Server**: `ts/src/server/server.ts` (Fastify server serving viewer + data)
+- **Viewer**: `ts/viewer/` (Vite + TypeScript + Cytoscape.js frontend)
+- **Legacy Python**: `codeviz.py`, `src/codeviz/` (archived, use TypeScript version)
 
 ## Key Features
 
@@ -74,15 +88,15 @@ black .                  # Format code
 ## CLI Structure
 
 ### Extract Commands
-- `codeviz extract python <dir>`: Extract Python codebase structure
-  - `--out, -o`: Custom output path
+- `codeviz extract python <dir>`: Extract Python codebase structure via tree-sitter
+  - `--out`: Custom output path (default: out/codebase_graph.json)
   - `--verbose, -v`: Verbose output
 
 ### Viewer Commands  
-- `codeviz view open`: Start interactive web viewer
-  - `--host, -h`: Server host (default: 127.0.0.1)
-  - `--port, -p`: Server port (default: 8080)
-  - `--mode, -m`: Viewer mode
+- `codeviz view open`: Start single-port Fastify server with built viewer
+  - `--host`: Server host (default: 127.0.0.1)
+  - `--port`: Server port (default: 8080)
+  - `--mode`: Viewer mode (default: default)
   - `--no-browser`: Don't auto-open browser
 
 ## Documentation
@@ -92,19 +106,25 @@ black .                  # Format code
 - **docs/reference/SETUP.md**: Development environment setup
 - **docs/reference/ARCHITECTURE.md**: System architecture overview
 - **docs/reference/TROUBLESHOOTING.md**: Common issues and solutions
+- **docs/planning/**: Recent work documentation (in progress projects)
+- **docs/planning/finished/**: Completed project documentation
+- Planning docs use `yyMMdd` datetime prefix (see `gjdutils/src/ts/cli/sequential-datetime-prefix.ts`)
 
 ## Configuration
 
 Main config files:
-- **codeviz_conf.py**: Global defaults and exclusion patterns
-- **configs/project_conf.py**: Project-specific configurations (see CONFIGURATION.md)
+- **Per-target configs**: `<target>.codeviz.toml` (e.g., `demo_codebase.codeviz.toml`)
+- **Config sections**: `[analyzer]` (exclude patterns), `[output]` (path), `[viewer]` (layout)
+- **Auto-resolution**: Config loader finds appropriate `.codeviz.toml` for target directory
 
 ## Development Workflow
 
-1. **Extract**: `python codeviz.py extract python /path/to/project`
-2. **Visualize**: `python codeviz.py view open`  
-3. **Configure**: Edit `codeviz_conf.py` for custom exclusions
-4. **Extend**: Add new language support or viewer features
+1. **Setup**: `cd ts && npm install && npm run build`
+2. **Extract**: `npx codeviz extract python /path/to/project`
+3. **Visualize**: `npx codeviz view open`
+4. **Configure**: Create/edit `<target>.codeviz.toml` for custom exclusions
+5. **Develop**: Use `npm run dev:cli` and `npm run dev:view` for development
+6. **Extend**: Add new language support or viewer features in TypeScript
 
 ## Output Format
 
@@ -122,9 +142,10 @@ JSON graph structure:
 
 ## Viewer Technology
 
-- **Frontend**: Vite + TypeScript + Cytoscape.js
-- **Backend**: Python HTTP server (simple or Vite dev server)
-- **Modes**: Different visualization perspectives (exec, modules, etc.)
+- **Frontend**: Vite + TypeScript + Cytoscape.js with fcose layout
+- **Backend**: Fastify server serving both static files and graph JSON
+- **Features**: Compound nodes (module grouping), neighbor highlighting, edge toggling
+- **Modes**: Different visualization perspectives (configurable via viewer settings)
 
 ## Common Use Cases
 
@@ -135,21 +156,31 @@ JSON graph structure:
 
 ## Future Expansion
 
-- **TypeScript support**: Extend to JavaScript/TypeScript projects
-- **Additional languages**: Framework ready for multi-language support
-- **Advanced analysis**: Control flow, data flow analysis
+- **TypeScript/JavaScript support**: Add tree-sitter parsers for JS/TS
+- **Additional languages**: Framework ready for multi-language support via tree-sitter
+- **Advanced analysis**: Cross-file call analysis, data flow
 - **Integration**: IDE plugins, CI/CD integration
+- **Performance**: Large codebase optimizations
 
 ## Implementation Notes
 
-- **Modular design**: Clear separation of extraction and visualization
-- **Generic foundation**: Easy to extend for new languages  
-- **Configuration-driven**: Exclude patterns and analysis options
-- **Web-based UI**: Modern, interactive visualization
+- **Pure TypeScript**: End-to-end TypeScript from CLI to viewer
+- **Tree-sitter based**: Robust, language-agnostic parsing
+- **Single-port architecture**: Simplified deployment and development
+- **Schema-stable**: Maintains backward compatibility with JSON graph format
+- **Modular design**: Clear separation of CLI, analyzer, server, and viewer
+
+## TypeScript Development Context
+
+- **Primary codebase**: `ts/` directory contains active TypeScript implementation
+- **Legacy Python**: Still present but archived; TypeScript version is canonical
+- **Configuration**: Uses TOML format with per-target configs
+- **Documentation**: See `docs/reference/` for architecture and format specs
 
 ## Claude Code Specific
 
 - Use parallel tool calls for file operations
-- Include absolute file paths in responses
+- Include absolute file paths in responses  
 - Prefer Task tool for open-ended searches
-- Follow Python best practices and project structure
+- Follow TypeScript best practices and existing project patterns
+- Work primarily in `ts/` directory for active development
