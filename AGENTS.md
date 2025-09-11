@@ -40,10 +40,12 @@ npx codeviz extract python <target_directory>
 
 # Start interactive viewer
 npx codeviz view open
-# OR: npm run dev:cli view open
 
-# Development mode viewer (Vite dev server)
-npm run dev:view
+# One-command shortcuts
+# Build + serve (auto-open; kills existing)
+npm run up -- --port 3080
+# Dev auto-reload (rebuilds viewer, restarts server; no auto-open)
+npm run dev -- --port 3080
 
 # Help for any command
 npx codeviz --help
@@ -131,11 +133,11 @@ Main config files:
 
 ## Development Workflow
 
-1. **Setup**: `cd ts && npm install && npm run build`
+1. **Setup**: `npm install && npm run build`
 2. **Extract**: `npx codeviz extract python /path/to/project`
 3. **Visualize**: `npx codeviz view open`
 4. **Configure**: Create/edit `<target>.codeviz.toml` for custom exclusions
-5. **Develop**: Use `npm run dev:cli` and `npm run dev:view` for development
+5. **Develop**: Use `npm run dev` for auto-reload (or `npm run dev:view` for viewer-only)
 6. **Extend**: Add new language support or viewer features in TypeScript
 
 ## Output Format

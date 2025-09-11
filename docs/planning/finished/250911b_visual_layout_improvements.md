@@ -4,30 +4,6 @@
 
 Build on the ELK layout foundation to add visual polish, richer interactions, and a flexible architecture for experimentation, while keeping the tool focused on small codebases and a single canonical data model.
 
-**Current state**: Modular TS viewer and server working end‑to‑end with generated styles, module color tints, focus/fade/hide, mode switching (default/explore/modules), ELK→fCoSE layout with Refine, two‑pane UI with details panel, search/toggles, dev Ajv validation, and log forwarding. **Implementation ~70% complete** - all core architectural foundations working.
-
-**Desired outcome**: A professional, legible visualization with module-aware colors, type-based styling, better edge contrast, focus/highlight flows, search + filters, and a clean two‑pane UI — all structured in small, testable modules.
-
-## Current Implementation Status (as of 2025-01-11)
-
-**✅ Completed (Stages: Foundations, Visual wins, Interaction, Two-pane UI, Modes, ELK→fCoSE):**
-- End-to-end TypeScript pipeline working
-- Module color hashing with contrast-safe labels  
-- Focus/highlight with ESC reset and background click
-- Two-pane UI with resizable details panel
-- Mode switching (Default/Explore/Modules) 
-- ELK→fCoSE hybrid layout with toolbar controls
-- Search and filtering functionality
-- Schema validation and logging
-
-**🔄 Remaining (Optional enhancements, Tests, Final validation):**
-- Enhanced arrowheads and edge styling verification
-- Tooltips, context menus, expand/collapse (tooltips implemented; others stubbed)
-- Comprehensive Playwright test suite (only 2 basic tests exist)
-- Final validation and cleanup phase
-
-**⚠️ Known Issues:**
-- None currently identified
 
 ## References
 
@@ -40,10 +16,11 @@ Build on the ELK layout foundation to add visual polish, richer interactions, an
 - `out/codebase_graph.json` — Canonical graph data
 - Legacy `src/codeviz/viewer/cyto/*` — Rich styles, color hashing, tooltips, expand/collapse, validation ideas
 
+
 ## Principles, key decisions
 
 - **Single canonical data model**: Keep one stable JSON graph (nodes, edges, groups, moduleImports). Build mode‑specific views via in‑memory transforms (no new persistent formats by default). This follows the “100 functions on one data structure” principle.
-- **Mode transforms, not format forks**: Default/Exec, Explore, and Modules modes are different projections/filtering of the same graph into Cytoscape elements.
+- **Mode transforms, not format forks**: Different modes (e.g. Explore, Modules) modes are different projections/filtering of the same graph into Cytoscape elements.
 - **Layout policy**: Use ELK for presentation (Default/Exec). Use fCoSE for interactive exploration (drag, expand/collapse). Avoid coupling expand/collapse to ELK.
 - **Style system (tokens + generator)**: Centralize colors, sizes, fonts, spacing, and state opacities as tokens. Generate Cytoscape styles from tokens so we can theme, tweak contrast, and evolve visuals without copy‑pasting selectors.
 - **Small modules**: Split viewer into types, elements, style, layout manager, interaction manager, details panel, and optional extensions. Favor pure functions and tiny state containers.
@@ -103,7 +80,7 @@ Suggested minimal APIs
 - [x] CLI: `codeviz view open --mode default|explore|modules` maps to initial layout; pass through to `/viewer-config.json`
 - [x] Server: expose `/schema/codebase_graph.schema.json`; viewer: optional Ajv validation (dev‑only) and log warnings to `/client-log`
 - Acceptance: viewer boots with generated styles; ELK layout runs; no regressions on demo
-- Health: `npm run build --prefix ts`, `tsc --noEmit`, smoke open
+- Health: `npm run build`, `tsc --noEmit`, smoke open
 
 ### Stage: Quick visual wins (module colors, edge palette, contrast)
 - [x] Apply module color hashing to entity nodes; ensure label contrast is AA‑ish
@@ -214,7 +191,7 @@ Implementation notes
 - [ ] Test end‑to‑end on multiple small Python projects; solicit feedback
 - [ ] Trim dead code and noisy logs; keep style tokens concise
 - [ ] Commit with summary and screenshots/GIFs
-- Health: `npm run build --prefix ts`, `tsc --noEmit`, smoke open
+- Health: `npm run build`, `tsc --noEmit`, smoke open
 
 **Status**: Not yet started; foundation solid for final validation phase
 

@@ -75,6 +75,12 @@ npx codeviz view open --host 0.0.0.0 --port 3000
 
 # Don't auto-open browser
 npx codeviz view open --no-browser
+
+# One-command workflows
+# Build + serve (auto-open; kills existing)
+npm run up -- --port 3080
+# Dev auto-reload (rebuilds viewer, restarts server; no auto-open)
+npm run dev -- --port 3080
 ```
 
 ## See Also

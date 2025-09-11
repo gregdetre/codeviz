@@ -96,6 +96,12 @@ npm run up -- --port 3080 --mode modules
 npm run dev -- --port 3080 --mode modules
 ```
 
+### When to use npx vs npm run
+
+- Use `npx codeviz ...` to call the CLI directly (extract, view). This always runs the built CLI in `ts/dist` and accepts all CLI flags.
+- Use `npm run up` for a one-shot build + serve with auto-open and kill-existing by default. Append CLI flags after `--`.
+- Use `npm run dev` during development to auto-rebuild the viewer and auto-restart the server. Append CLI flags after `--`. Browser is not auto-opened.
+
 #### Prerequisites
 
 - Extracted codebase graph at `out/codebase_graph.json`
