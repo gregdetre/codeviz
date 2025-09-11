@@ -6,7 +6,7 @@ Visual symbols, iconography, and graphical representations used throughout the C
 
 ### External Editor Integration
 
-- **VS Code Icon**: Official Microsoft Visual Studio Code SVG icon (`static/img/vscode-icon.svg`) used in the right details pane next to file paths to indicate external editor integration. Clicking opens files directly in VS Code via `vscode://file/path:line` protocol.
+- **VS Code Icon**: Official Visual Studio Code SVG served from `/img/vscode.svg` (source: `ts/viewer/public/img/vscode.svg`). Appears in the right details pane next to file paths. Clicking opens files directly in VS Code via `vscode://file/path:line` protocol.
 - **⚡ Lightning bolt**: Previously used for Cursor integration (deprecated in favor of VS Code)
 
 ### Test & Debug Icons  
@@ -30,10 +30,10 @@ Visual symbols, iconography, and graphical representations used throughout the C
 ## Integration Points
 
 ### Details Panel (`ts/viewer/src/details-panel.ts`)
-- Lightning bolt icon appears next to file paths
-- Double-click functionality opens files in Cursor via `cursor://` protocol
-- Icon opacity set to 0.7 for subtle visual presence
-- 16px font size for inline context
+- VS Code icon appears next to file paths
+- Clicking the link opens files in VS Code via `vscode://file/path:line`
+- Icon opacity set to 0.9 for subtle visual presence
+- 16px inline size
 
 ### Left Toolbar (`ts/viewer/index.html`)
 - Document icon used in test links for external editor integration
@@ -64,7 +64,7 @@ As the CodeViz interface grows, consider adding:
 ## Technical Implementation
 
 ### Current Approach
-- **SVG assets**: Official editor icons stored in `static/img/` directory
+- **SVG assets**: Viewer public assets in `ts/viewer/public/img/` (served under `/img/`)
 - **Unicode symbols**: Simple symbols embedded directly in HTML strings
 - **CSS styling**: Size, opacity, and positioning via stylesheets
 - **Inline SVG**: External SVG icons loaded and styled dynamically
