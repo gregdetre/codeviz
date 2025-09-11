@@ -10,6 +10,8 @@ maxTokens = 2000
 [viewer]
 host = "127.0.0.1"
 port = 8000
+# how much the mouse wheel zooms
+wheelSensitivity = 0.4
 
 [viewer.highlight]
 # Number of hops to highlight (1 = neighbors only, 2 = include neighbors-of-neighbors)
@@ -34,3 +36,11 @@ edge = 2
 edgeHighlighted = 3
 nodeBorder = 1
 nodeBorderHighlighted = 3
+
+[tags]
+# Global extraction-time tag vocabulary (starter set; can be refined per project)
+global = [
+  "util", "config", "testing",
+  "backend", "frontend", "risky-or-sensitive",
+  "entrypoint", "experimental", "deprecated", "important"
+]

@@ -23,4 +23,14 @@ export async function loadGraph(validate = false): Promise<Graph> {
   return json as Graph;
 }
 
+export async function loadAnnotations(): Promise<any | null> {
+  try {
+    const res = await fetch('/out/llm_annotation.json');
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 

@@ -21,7 +21,7 @@
         "dev:view": "vite --config ts/viewer/vite.config.ts",
         "dev:cli": "tsx ts/src/cli/index.ts",
         "start": "node ts/dist/cli/index.js",
-        "pretest": "npm run build:cli && npm run extract:demo",
+        "pretest": "npm run build:cli",
         "test": "tsx ts/tests/commands.node.test.ts && tsx ts/tests/annotate.server.test.ts",
         "test:ui": "playwright test --ui --config ts/playwright.config.ts",
         "test:playwright": "playwright test --config ts/playwright.config.ts"
@@ -56,5 +56,11 @@
         "tsx": "^4.19.0",
         "typescript": "^5.6.2",
         "vite": "^5.4.7"
+    },
+    "engines": {
+        "node": ">=20 <21"
+    },
+    "volta": {
+        "node": "20.19.5"
     }
 }

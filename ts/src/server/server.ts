@@ -103,6 +103,18 @@ export async function startServer(opts: { host: string; port: number; openBrowse
     }
   });
 
+  // Serve LLM annotations from the same output directory as the graph
+  app.get("/out/llm_annotation.json", async (_req, reply) => {
+    try {
+      const dir = dirname(resolvedDataFile);
+      const annPath = join(dir, "llm_annotation.json");
+      const json = await readFile(annPath, "utf8");
+      reply.type("application/json").send(json);
+    } catch (err: any) {
+      reply.code(404).send({ error: "ENOENT", message: "llm_annotation.json not found" });
+    }
+  });
+
   app.get("/viewer-config.json", async (_req, reply) => {
     function normalizeLayoutName(name?: string) {
       const raw = (name ?? "").toString().trim().toLowerCase();
