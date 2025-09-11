@@ -84,6 +84,23 @@ async function testHideVariables() {
   assert.equal(hiddenCls.length, 0, 'class nodes should be visible');
 }
 
+(async function testViewportAndLock() {
+  const { cy, res } = await run([
+    { op: 'batch', arg: { commands: [
+      { q: "node[label *= 'main']", op: 'lock' },
+      { op: 'viewport', arg: { zoom: 1.1, pan: { x: 5, y: -5 } } },
+      { q: "node[type = 'function']", op: 'style', arg: { 'border-width': 1, 'border-color': '#999' } }
+    ] } },
+    { q: "node[label *= 'main']", op: 'showConnectedEdges' }
+  ]);
+  // Verify locked node remains locked
+  const main = cy.$("node[label *= 'main']");
+  if (main.length > 0) {
+    assert.ok(main.locked(), 'main node should be locked');
+  }
+  assert.ok(res.appliedCount >= 1, 'some commands should be applied');
+})();
+
 (async function main() {
   await testHighlightSubsetByLabel();
   await testHideVariables();

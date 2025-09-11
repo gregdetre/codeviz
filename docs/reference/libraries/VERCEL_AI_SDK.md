@@ -113,54 +113,77 @@ class LLMProvider {
 
 ## Tool Calling for CodeViz Commands
 
-Perfect integration with CodeViz's JSON command system from the architectural discussion:
+Perfect fit for CodeViz’s compact command schema from `VIEWER_COMMANDS.md`. We use tool calls only (no JSON-in-prose parsing), and the client auto-applies returned commands.
 
-### Basic Tool Definition
+### Basic Tool Definition (viewerCommands)
 ```typescript
 import { generateText, tool } from 'ai';
 import { z } from 'zod';
 
-// Define CodeViz command schema
-const cytoscapeCommandTool = tool({
-  description: 'Execute Cytoscape.js commands to manipulate the code visualization',
-  inputSchema: z.object({
-    commands: z.array(z.object({
-      type: z.enum(['highlight', 'fade', 'hide', 'style', 'layout']),
-      target: z.object({
-        type: z.enum(['nodes', 'edges', 'union', 'intersection', 'difference']),
-        nodeType: z.string().optional(),
-        search: z.string().optional(),
-        ids: z.array(z.string()).optional(),
-      }),
-      params: z.record(z.any()).optional(),
-    }))
-  }),
+// Compact command aligned with VIEWER_COMMANDS.md
+const CompactCommand = z.object({
+  q: z.string().optional(),
+  op: z.string().optional(),
+  arg: z.any().optional(),
+  ops: z.array(z.tuple([z.string(), z.any()])).optional(),
+});
+
+export const viewerCommands = tool({
+  description: 'Execute Cytoscape viewer commands (compact, Cytoscape-aligned)',
+  inputSchema: z.object({ commands: z.array(CompactCommand) }),
   execute: async ({ commands }) => {
-    // Execute commands on Cytoscape instance
-    return { success: true, commandsExecuted: commands.length };
-  }
+    // Server captures commands; actual execution happens on the client
+    return { accepted: commands.length };
+  },
 });
 ```
 
-### Advanced Tool Usage
+### Invoke with tool calling (model replies with prose + tool calls)
 ```typescript
-// CodeViz LLM integration
-async function processCodeAnalysisRequest(userPrompt: string) {
-  const { text, toolCalls } = await generateText({
-    model: openai('gpt-4o'),
-    system: `You are a code analysis assistant. When users ask to highlight, 
-             fade, or manipulate the code visualization, use the cytoscape 
-             command tool to generate appropriate JSON commands.`,
-    prompt: userPrompt,
-    tools: {
-      cytoscape: cytoscapeCommandTool,
-    },
-    maxToolRoundtrips: 3, // Allow multi-step analysis
-  });
+const result = await generateText({
+  model: anthropic('claude-3-5-sonnet-latest'),
+  messages: history,
+  tools: { viewerCommands },
+  maxToolRoundtrips: 1,
+});
 
-  return { response: text, commands: toolCalls };
+const prose = result.text; // Assistant explanation
+const toolCalls = result.toolCalls; // Contains any viewerCommands invocations
+```
+
+### Server integration (CodeViz)
+```typescript
+// In /api/chat handler: define the tool, capture commands, return prose + commands
+const CompactCommandSchema = z.object({ q: z.string().optional(), op: z.string().optional(), arg: z.any().optional(), ops: z.array(z.tuple([z.string(), z.any()])).optional() });
+const captured: any[] = [];
+const viewerCommandsTool = tool({
+  description: 'Execute Cytoscape viewer commands (auto-applied on client)',
+  inputSchema: z.object({ commands: z.array(CompactCommandSchema) }),
+  execute: async ({ commands }) => { captured.push(...commands); return { accepted: commands.length }; }
+});
+
+const result = await generateText({
+  model: anthropic(modelId),
+  messages: history,
+  tools: { viewerCommands: viewerCommandsTool },
+  maxToolRoundtrips: 1,
+});
+
+reply.send({ reply: result.text, commands: captured.length ? captured : undefined });
+```
+
+### Client auto-apply
+```typescript
+// ts/viewer/src/chat/chat.ts (simplified)
+const data = await fetch('/api/chat', { method: 'POST', body: JSON.stringify(payload) }).then(r => r.json());
+messages.push({ role: 'assistant', content: data.reply });
+if (Array.isArray(data.commands)) {
+  const { executeCompactCommands } = await import('../command-executor.js');
+  await executeCompactCommands(cy, data.commands); // auto-apply
 }
 ```
+
+Policy: assistant must use the tool for commands; do not include the JSON array in the prose. This removes brittle parsing and keeps channels clean (text vs. commands).
 
 ### Structured Output Pattern
 ```typescript

@@ -51,12 +51,15 @@ node:not([module = 'tests'])
 *
 ```
 
-## Allowed operations (v1)
+## Allowed operations (v1.1)
 
-- Collection: `addClass`, `removeClass`, `show`, `hide`, `style` (restricted keys)
-- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`
+- Collection: `addClass`, `removeClass`, `show`, `hide`, `style` (restricted keys), `lock`, `unlock`, `showConnectedEdges`, `hideConnectedEdges`
+- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`
 - Allowed classes: `highlighted`, `faded`
-- Allowed style keys: `opacity`, `background-color`, `line-color`, `width`, `text-opacity`
+- Allowed style keys:
+  - Base: `opacity`, `background-color`, `line-color`, `width`, `text-opacity`
+  - Nodes: `border-width`, `border-color`, `shape`, `font-size`, `text-outline-width`, `text-outline-color`
+  - Edges: `line-style`, `line-opacity`, `curve-style`, `target-arrow-shape`, `target-arrow-color`
 
 ## Common recipes
 
@@ -119,6 +122,25 @@ cy.layout({ name: 'fcose', animate: true }).run();
 cy.fit();
 ```
 Explanation: removes highlight/fade classes, shows all elements, re-runs the default layout, and fits the viewport.
+
+- Batch, viewport and locking:
+```json
+[
+  { "op": "batch", "arg": { "commands": [
+    { "q": "node[label *= 'main']", "op": "lock" },
+    { "op": "viewport", "arg": { "zoom": 1.2, "pan": { "x": 0, "y": 0 } } },
+    { "q": "node[type = 'function']", "op": "style", "arg": { "border-width": 2, "border-color": "#888" } }
+  ] } }
+]
+```
+
+- Show connected edges for a focus set:
+```json
+[
+  { "q": "node[label *= 'render']", "op": "addClass", "arg": "highlighted" },
+  { "q": "node[label *= 'render']", "op": "showConnectedEdges" }
+]
+```
 
 ## Notes
 

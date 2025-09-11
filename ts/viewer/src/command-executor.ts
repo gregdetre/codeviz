@@ -13,10 +13,17 @@ export type ExecutionResult = {
   errors: string[];
 };
 
-const ALLOWED_COLLECTION_OPS = new Set(["addClass", "removeClass", "show", "hide", "style"]);
-const ALLOWED_CORE_OPS = new Set(["layout", "fit", "center", "zoom", "resetViewport", "resetAll"]);
+const ALLOWED_COLLECTION_OPS = new Set(["addClass", "removeClass", "show", "hide", "style", "lock", "unlock", "showConnectedEdges", "hideConnectedEdges"]);
+const ALLOWED_CORE_OPS = new Set(["layout", "fit", "center", "zoom", "resetViewport", "resetAll", "pan", "viewport", "batch"]);
 const ALLOWED_CLASSES = new Set(["highlighted", "faded"]);
-const ALLOWED_STYLE_KEYS = new Set(["opacity", "background-color", "line-color", "width", "text-opacity"]);
+const ALLOWED_STYLE_KEYS = new Set([
+  // existing
+  "opacity", "background-color", "line-color", "width", "text-opacity",
+  // node styles
+  "border-width", "border-color", "shape", "font-size", "text-outline-width", "text-outline-color",
+  // edge styles
+  "line-style", "line-opacity", "curve-style", "target-arrow-shape", "target-arrow-color"
+]);
 
 function isCollectionOp(op: string): boolean {
   return ALLOWED_COLLECTION_OPS.has(op);
@@ -62,6 +69,24 @@ async function execCollectionOp(cy: Core, q: string | undefined, op: string, arg
     }
     return;
   }
+  if (op === "lock") {
+    eles.nodes().lock();
+    return;
+  }
+  if (op === "unlock") {
+    eles.nodes().unlock();
+    return;
+  }
+  if (op === "showConnectedEdges") {
+    const edges = eles.connectedEdges();
+    edges.style("display", "element");
+    return;
+  }
+  if (op === "hideConnectedEdges") {
+    const edges = eles.connectedEdges();
+    edges.style("display", "none");
+    return;
+  }
 }
 
 async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any): Promise<void> {
@@ -96,6 +121,31 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
     cy.elements().style("display", "element");
     await applyLayout(cy, "fcose");
     cy.fit();
+    return;
+  }
+  if (op === "pan") {
+    if (arg && typeof arg.x === "number" && typeof arg.y === "number") {
+      cy.pan({ x: arg.x, y: arg.y });
+    }
+    return;
+  }
+  if (op === "viewport") {
+    const zoom = typeof arg?.zoom === "number" ? arg.zoom : undefined;
+    const panArg = arg?.pan;
+    if (typeof zoom === "number" && isFinite(zoom) && zoom > 0) cy.zoom(zoom);
+    if (panArg && typeof panArg.x === "number" && typeof panArg.y === "number") cy.pan({ x: panArg.x, y: panArg.y });
+    return;
+  }
+  if (op === "batch") {
+    const commands: CompactCommand[] = Array.isArray(arg?.commands) ? arg.commands : [];
+    if (commands.length > 0) {
+      cy.batch(() => {
+        // Note: executeCompactCommands applies ops synchronously where possible
+        // Await not used here as cytoscape ops are mostly sync; layout ops are queued.
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        void executeCompactCommands(cy, commands);
+      });
+    }
     return;
   }
 }
