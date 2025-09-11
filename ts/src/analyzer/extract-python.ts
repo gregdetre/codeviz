@@ -57,7 +57,8 @@ export async function runExtract(opts: { targetDir: string; outPath: string; ver
       if (node.type === "function_definition") {
         const name = findIdentifier(node) || "<anon>";
         const id = `${moduleName}.${name}`;
-        nodes.push({ id, label: name, file: toUnix(relFile), line: node.startPosition.row + 1, module: moduleName, kind: "function", tags: {}, signature: `${name}()`, doc: null });
+        const signature = extractFunctionSignature(node);
+        nodes.push({ id, label: name, file: toUnix(relFile), line: node.startPosition.row + 1, module: moduleName, kind: "function", tags: {}, signature, doc: null });
         groupsMap.get(moduleName)!.push(id);
         currentFuncId = id;
       } else if (node.type === "call" && currentFuncId) {
@@ -119,6 +120,88 @@ function findIdentifier(node: any): string | null {
     if (ch.type === "identifier" || ch.type === "name") return ch.text;
   }
   return null;
+}
+
+function extractFunctionSignature(node: any): string {
+  const name = findIdentifier(node) || "<anon>";
+  
+  // Find the parameters child node
+  let parametersNode = null;
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i);
+    if (child.type === "parameters") {
+      parametersNode = child;
+      break;
+    }
+  }
+  
+  if (!parametersNode) {
+    return `${name}()`;
+  }
+  
+  const params: string[] = [];
+  
+  // Walk through parameter children
+  for (let i = 0; i < parametersNode.childCount; i++) {
+    const param = parametersNode.child(i);
+    
+    if (param.type === "identifier") {
+      params.push(param.text);
+    } else if (param.type === "typed_parameter") {
+      // For typed parameters like "x: int"
+      const paramName = findIdentifier(param) || "?";
+      let typeAnnotation = "";
+      
+      // Find type annotation
+      for (let j = 0; j < param.childCount; j++) {
+        const child = param.child(j);
+        if (child.type === "type") {
+          // Get the type text, skip the colon
+          const typeText = child.text;
+          typeAnnotation = `: ${typeText}`;
+          break;
+        }
+      }
+      
+      params.push(`${paramName}${typeAnnotation}`);
+    } else if (param.type === "default_parameter") {
+      // For parameters with defaults like "x=5" or "x: int = 5"
+      let paramText = "";
+      for (let j = 0; j < param.childCount; j++) {
+        const child = param.child(j);
+        if (child.type === "identifier") {
+          paramText = child.text;
+          break;
+        } else if (child.type === "typed_parameter") {
+          const subName = findIdentifier(child) || "?";
+          let subType = "";
+          for (let k = 0; k < child.childCount; k++) {
+            const subChild = child.child(k);
+            if (subChild.type === "type") {
+              subType = `: ${subChild.text}`;
+              break;
+            }
+          }
+          paramText = `${subName}${subType}`;
+          break;
+        }
+      }
+      
+      // Find the default value
+      let defaultValue = "";
+      for (let j = 0; j < param.childCount; j++) {
+        const child = param.child(j);
+        if (child.previousSibling && child.previousSibling.text === "=") {
+          defaultValue = `=${child.text}`;
+          break;
+        }
+      }
+      
+      params.push(`${paramText}${defaultValue}`);
+    }
+  }
+  
+  return `${name}(${params.join(', ')})`;
 }
 
 function getCallCalleeText(callNode: any): string | null {
