@@ -34,7 +34,7 @@ npm install
    npx codeviz view open --port 3000
    ```
 
-4. **Open your browser** to explore the visualization (e.g. http://127.0.0.1:8080)
+4. **Open your browser** to explore the visualization (e.g. http://127.0.0.1:8000)
 
 ### Per-target config
 
@@ -78,9 +78,9 @@ npx codeviz view open --no-browser
 
 # One-command workflows
 # Build + serve (auto-open; kills existing)
-npm run up -- --port 3080
+npm run up -- --port 8000
 # Dev auto-reload (rebuilds viewer, restarts server; auto-open)
-npm run dev -- --port 3080
+npm run dev -- --port 8000
 ```
 
 ## See Also
@@ -96,7 +96,7 @@ npm run dev -- --port 3080
 
 **Common Issues:**
 - **Viewer not loading data**: Ensure extraction has run and created `out/codebase_graph.json`
-- **Port conflicts**: Pass `--port` to `view open` or kill existing processes with `lsof -ti:8080 | xargs kill -9`
+- **Port conflicts**: Pass `--port` to `view open` or kill existing processes with `lsof -ti:8000 | xargs kill -9`
 - **Tree-sitter build issues**: If native issues arise, we can switch to web-tree-sitter (WASM) in a follow-up.
 
 ## Legacy (Python CLI)

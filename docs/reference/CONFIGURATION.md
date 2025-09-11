@@ -26,6 +26,11 @@ model = "anthropic:claude-sonnet-4:20250514"
 # model = "openai:gpt-5-high:latest:thinking"        # GPT-5-high with thinking mode (when available)
 temperature = 0.2
 maxTokens = 2000
+
+[viewer]
+# Optional defaults for the view server
+host = "127.0.0.1"
+port = 8000
 ```
 
 **Model String Format**: `provider:model:version[:thinking]`
@@ -63,7 +68,7 @@ layout = "elk"
 mode = "default"
 # Optional defaults for the view server
 host = "127.0.0.1"
-port = 8080
+port = 8000
 ```
 
 ## Sections
@@ -84,6 +89,7 @@ port = 8080
 
 ## Loading order and overrides
 
+- CLI precedence for viewer settings: `CLI flags` > `per-target .codeviz.toml` > `global codeviz.config.toml` > built-in defaults (host `127.0.0.1`, port `8000`).
 - The CLI looks up `<target>.codeviz.toml` by the folder name passed to `extract`. Files are resolved from repo root, then `configs/`.
 - CLI flags (e.g., `--out`, `--host`, `--port`, `--mode`) override values from the config file.
 

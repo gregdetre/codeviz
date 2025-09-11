@@ -1,7 +1,9 @@
 import { Cli, Command, Option } from "clipanion";
 import { resolve, dirname, join } from "node:path";
+import { homedir } from "node:os";
 import { runExtract } from "../analyzer/extract-python.js";
 import { loadConfigForTarget } from "../config/loadConfig.js";
+import { loadGlobalConfig } from "../config/loadGlobalConfig.js";
 import { startServer } from "../server/server.js";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
@@ -51,28 +53,49 @@ class ViewOpen extends Command {
     const timestamp = `${yy}${MM}${dd}_${HH}${mm}`;
     
     let viewerLayout = "elk-then-fcose";
-    let host = this.host || "127.0.0.1";
-    let port = this.port ? Number(this.port) : 8080;
+    let resolvedHost = this.host || "127.0.0.1";
+    let resolvedPort: number | undefined = this.port ? Number(this.port) : undefined;
     let mode = this.mode || "default";
+
+    // Per-target config (if provided)
     if (this.target) {
       try {
         const cfg = await loadConfigForTarget(resolve(this.target));
         viewerLayout = cfg.viewer?.layout ?? viewerLayout;
-        host = this.host || cfg.viewer?.host || host;
-        port = this.port ? Number(this.port) : (cfg.viewer?.port ?? port);
+        if (!this.host && cfg.viewer?.host) resolvedHost = cfg.viewer.host;
+        if (!this.port && typeof cfg.viewer?.port === "number") resolvedPort = cfg.viewer.port;
         mode = this.mode || cfg.viewer?.mode || mode;
       } catch {}
     }
+
+    // Global config fallback (only when CLI flag not provided and nothing set yet)
+    try {
+      const globalCfg = await loadGlobalConfig();
+      if (!this.host && globalCfg.viewer?.host) {
+        resolvedHost = globalCfg.viewer.host;
+      }
+      if (!this.port && typeof resolvedPort !== "number" && typeof globalCfg.viewer?.port === "number") {
+        resolvedPort = globalCfg.viewer.port;
+      }
+    } catch {}
+
+    // Built-in defaults
+    if (typeof resolvedPort !== "number" || Number.isNaN(resolvedPort)) {
+      resolvedPort = 8000;
+    }
     
     if (this.killExisting) {
-      await this.killProcessOnPort(port);
+      await this.killProcessOnPort(resolvedPort);
     }
     
     console.log(chalk.green(`[${timestamp}] Starting CodeViz viewer server`));
     console.log(chalk.blue(`Log file: out/viewer.log`));
-    console.log(chalk.cyan(`Browser URL: http://${host}:${port}`));
+    console.log(chalk.cyan(`Browser URL: http://${resolvedHost}:${resolvedPort}`));
     
-    await startServer({ host, port, openBrowser: !this.noBrowser, viewerLayout, viewerMode: mode, hybridMode: this.hybridMode });
+    // Prefer the provided target as the workspace root if available. Expand '~'.
+    const expandHome = (p: string) => p.startsWith('~') ? join(homedir(), p.slice(1)) : p;
+    const workspaceRoot = this.target ? resolve(expandHome(this.target)) : undefined;
+    await startServer({ host: resolvedHost, port: resolvedPort, openBrowser: !this.noBrowser, viewerLayout, viewerMode: mode, hybridMode: this.hybridMode, workspaceRoot });
   }
   
   private async killProcessOnPort(port: number) {

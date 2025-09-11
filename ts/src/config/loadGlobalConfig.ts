@@ -11,6 +11,10 @@ export type GlobalConfig = {
     temperature?: number;
     maxTokens?: number;
   };
+  viewer?: {
+    host?: string;
+    port?: number;
+  };
 };
 
 function getGlobalConfigCandidatePaths(): string[] {

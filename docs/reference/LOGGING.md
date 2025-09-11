@@ -22,16 +22,16 @@ node ts/dist/cli/index.js view open --no-browser
 ```
 2) Open the viewer and reproduce the issue:
 ```bash
-open http://127.0.0.1:8080
+open http://127.0.0.1:8000
 ```
 3) Tail the last lines of logs locally:
 ```bash
 tail -n 50 out/viewer.log
 ```
 
-Or via HTTP (default port 8080 unless overridden):
+Or via HTTP (default port 8000 unless overridden):
 ```bash
-curl -s http://127.0.0.1:8080/out/viewer.log | tail -n 50
+curl -s http://127.0.0.1:8000/out/viewer.log | tail -n 50
 ```
 
 ### Notes

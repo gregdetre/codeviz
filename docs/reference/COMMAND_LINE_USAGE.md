@@ -61,7 +61,7 @@ Start interactive viewer for exploring extracted codebase structure.
 #### Options
 
 - `--host <host>` - Host interface (default: `127.0.0.1`)
-- `--port <port>` - Port to serve on (default: `8080`)
+- `--port <port>` - Port to serve on (default: `8000`)
 - `--no-browser` - Don't automatically open browser
 - `--kill-existing` - Kill existing processes on port before starting (default: `true`)
 - `--mode <default|explore|modules>` - Initial viewer mode (default: `default`)
@@ -90,10 +90,10 @@ npx codeviz view open --mode modules --hybrid-mode sequential
 
 ```bash
 # Build + serve (auto-open, kills existing by default)
-npm run up -- --port 3080 --mode modules
+npm run up -- --port 8000 --mode modules
 
 # Dev auto-reload (rebuilds on change, restarts server, auto-open)
-npm run dev -- --port 3080 --mode modules
+npm run dev -- --port 8000 --mode modules
 ```
 
 ### When to use npx vs npm run

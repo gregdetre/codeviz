@@ -25,7 +25,7 @@ npm install
 
 ```bash
 # 1) Ensure the demo port is free
-lsof -ti:3080 | xargs -r kill
+lsof -ti:8000 | xargs -r kill
 
 # 2) Install deps and build the viewer/CLI
 npm install
@@ -35,16 +35,16 @@ npm run build
 npx codeviz extract python demo_codebase --out out/codebase_graph.json
 
 # 4) Start the single-port viewer (no auto-browser)
-npm run view -- --port 3080 --no-browser
+npm run view -- --port 8000 --no-browser
 
 # 5) Open the viewer
-open http://127.0.0.1:3080
+open http://127.0.0.1:8000
 
 # Optional: run smoke tests (Playwright)
 npm test
 
 # When finished: stop the server
-lsof -ti:3080 | xargs -r kill
+lsof -ti:8000 | xargs -r kill
 ```
 
 ## Configuration
@@ -79,11 +79,11 @@ npm run build
 
 # Start server
 npx codeviz view open
-# If 8080 is in use
+# If 8000 is in use
 npx codeviz view open --port 3000
 ```
 
-Open the printed URL (default http://127.0.0.1:8080).
+Open the printed URL (default http://127.0.0.1:8000).
 
 ## File Structure (TS components)
 
@@ -115,7 +115,7 @@ ls -la out/codebase_graph.json
 2. **Viewer loads**
 ```bash
 npx codeviz view open --no-browser
-open http://127.0.0.1:8080
+open http://127.0.0.1:8000
 ```
 
 ## Troubleshooting

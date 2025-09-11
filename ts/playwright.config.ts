@@ -7,7 +7,7 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   use: {
-    baseURL: process.env.CODEVIZ_BASE_URL || 'http://127.0.0.1:3080',
+    baseURL: process.env.CODEVIZ_BASE_URL || 'http://127.0.0.1:8000',
     trace: 'on-first-retry',
     browserName: 'chromium'
   },

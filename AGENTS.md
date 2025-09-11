@@ -43,9 +43,9 @@ npx codeviz view open
 
 # One-command shortcuts
 # Build + serve (auto-open; kills existing)
-npm run up -- --port 3080
+npm run up -- --port 8000
 # Dev auto-reload (rebuilds viewer, restarts server; auto-open)
-npm run dev -- --port 3080
+npm run dev -- --port 8000
 
 # Help for any command
 npx codeviz --help
@@ -64,11 +64,11 @@ tsc --noEmit             # Type checking
 ### Quick demo (visualize `demo_codebase/`)
 
 ```bash
-lsof -ti:3080 | xargs -r kill
+lsof -ti:8000 | xargs -r kill
 npm install && npm run build
 npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/codebase_graph.json
-npm run view -- --port 3080 --no-browser
-open http://127.0.0.1:3080
+npm run view -- --port 8000 --no-browser
+open http://127.0.0.1:8000
 ```
 
 ### Logging (dev)
@@ -78,7 +78,7 @@ open http://127.0.0.1:3080
 ```bash
 tail -f out/viewer.log
 # or via HTTP
-curl -s http://127.0.0.1:3080/out/viewer.log | tail -n 50
+curl -s http://127.0.0.1:8000/out/viewer.log | tail -n 50
 ```
 
 ## Project Structure
@@ -107,7 +107,7 @@ curl -s http://127.0.0.1:3080/out/viewer.log | tail -n 50
 ### Viewer Commands  
 - `codeviz view open`: Start single-port Fastify server with built viewer
   - `--host`: Server host (default: 127.0.0.1)
-  - `--port`: Server port (default: 8080)
+  - `--port`: Server port (default: 8000)
   - `--mode`: Viewer mode (default: default)
   - `--no-browser`: Don't auto-open browser
 
