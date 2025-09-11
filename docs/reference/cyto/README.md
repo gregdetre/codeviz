@@ -25,6 +25,8 @@ Complete guide to using Cytoscape.js for interactive network visualization, focu
 - [Architecture](../ARCHITECTURE.md) - CodeViz system architecture and data flow
 - [Cytoscape.js Official Docs](https://js.cytoscape.org/) - Complete API reference
 - [Extension Library](https://js.cytoscape.org/#extensions) - Community extensions
+- [Floating UI Integration](../FLOATING_UI_TOOLTIP_INTEGRATION.md) - Interactive tooltip positioning for graph nodes
+- [Text Formatting](../WORD_WRAP_LIBRARY_INTEGRATION.md) - Text wrapping utilities for tooltips and labels
 
 ## About This Guide
 

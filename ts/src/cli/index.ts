@@ -6,6 +6,7 @@ import { startServer } from "../server/server.js";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 
+
 class ExtractPython extends Command {
   static paths = [["extract", "python"]];
   dir = Option.String({ required: true });

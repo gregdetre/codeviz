@@ -6,6 +6,8 @@ Development environment setup and dependencies for the CodeViz visualization too
 
 - `../../README.md` - Project overview and quick start commands
 - `ARCHITECTURE.md` - System architecture overview
+- `WORD_WRAP_LIBRARY_INTEGRATION.md` - Text wrapping utility for CLI output formatting
+- `FLOATING_UI_TOOLTIP_INTEGRATION.md` - Interactive tooltip positioning for viewer
 
 ## Prerequisites
 

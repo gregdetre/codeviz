@@ -116,6 +116,8 @@ curl -s http://127.0.0.1:3080/out/viewer.log | tail -n 50
 - **docs/reference/SETUP.md**: Development environment setup
 - **docs/reference/ARCHITECTURE.md**: System architecture overview
 - **docs/reference/TROUBLESHOOTING.md**: Common issues and solutions
+- **docs/reference/WORD_WRAP_LIBRARY_INTEGRATION.md**: Text wrapping utility for CLI output formatting
+- **docs/reference/FLOATING_UI_TOOLTIP_INTEGRATION.md**: Interactive tooltip positioning for viewer
 - **docs/planning/**: Recent work documentation (in progress projects)
 - **docs/planning/finished/**: Completed project documentation
 - Planning docs use `yyMMdd` datetime prefix (see `gjdutils/src/ts/cli/sequential-datetime-prefix.ts`)

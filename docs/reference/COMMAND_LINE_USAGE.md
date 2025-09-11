@@ -107,3 +107,7 @@ Run 'npx codeviz extract python <target_dir>' first
 - Port conflicts: use `--port`
 - Missing JSON: run extraction first
 - Tree-sitter build issues: consider switching to web-tree-sitter in a follow-up
+
+## See Also
+
+- `WORD_WRAP_LIBRARY_INTEGRATION.md` - Text formatting and CLI output utilities
