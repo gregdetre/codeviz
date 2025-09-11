@@ -20,13 +20,14 @@ function renderMessages(container: HTMLElement): void {
   container.innerHTML = '';
   for (const m of messages) {
     const bubble = document.createElement('div');
-    bubble.style.padding = '6px 8px';
+    bubble.style.padding = '8px 10px';
     bubble.style.borderRadius = '6px';
     bubble.style.maxWidth = '100%';
     bubble.style.whiteSpace = 'pre-wrap';
     bubble.style.wordBreak = 'break-word';
     bubble.style.fontSize = '13px';
-    bubble.style.lineHeight = '1.35';
+    bubble.style.lineHeight = '1.5';
+    bubble.style.margin = '2px 0';
     if (m.role === 'user') {
       bubble.style.background = '#e8f0fe';
       bubble.style.alignSelf = 'flex-end';
@@ -44,15 +45,25 @@ function renderMessages(container: HTMLElement): void {
           (a as HTMLAnchorElement).rel = 'noopener noreferrer nofollow';
         } catch {}
       });
+      bubble.querySelectorAll('p').forEach((p) => {
+        (p as HTMLElement).style.margin = '6px 0 8px';
+      });
+      bubble.querySelectorAll('ul,ol').forEach((list) => {
+        (list as HTMLElement).style.margin = '6px 0 8px 18px';
+      });
       bubble.querySelectorAll('pre').forEach((pre) => {
         (pre as HTMLElement).style.overflow = 'auto';
         (pre as HTMLElement).style.background = '#f6f8fa';
-        (pre as HTMLElement).style.padding = '8px';
+        (pre as HTMLElement).style.padding = '10px';
         (pre as HTMLElement).style.borderRadius = '4px';
+        (pre as HTMLElement).style.margin = '6px 0';
       });
       bubble.querySelectorAll('code').forEach((code) => {
         (code as HTMLElement).style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
         (code as HTMLElement).style.fontSize = '12px';
+        (code as HTMLElement).style.background = (code.parentElement?.tagName.toLowerCase() === 'pre') ? '' : '#f6f8fa';
+        (code as HTMLElement).style.padding = (code.parentElement?.tagName.toLowerCase() === 'pre') ? '' : '1px 4px';
+        (code as HTMLElement).style.borderRadius = (code.parentElement?.tagName.toLowerCase() === 'pre') ? '' : '3px';
       });
     } else {
       bubble.textContent = m.content;
@@ -104,7 +115,12 @@ export function initChat(): void {
       const payload = { messages: messages.map(({ role, content }) => ({ role, content })), viewer: { snapshot } };
       const data = await sendToServer(payload);
       const replyText = String(data.reply ?? '');
-      messages.push({ id: uid(), role: 'assistant', content: replyText || '(empty reply)', timestamp: Date.now() });
+      let combined = replyText;
+      if (data.toolOutput) {
+        const codeBlock = '```json\n' + String(data.toolOutput).trim() + '\n```';
+        combined = combined ? (combined + '\n\n' + codeBlock) : codeBlock;
+      }
+      messages.push({ id: uid(), role: 'assistant', content: combined || '(empty reply)', timestamp: Date.now() });
 
       // Try to parse and execute commands if provided
       const commands = data.commands;

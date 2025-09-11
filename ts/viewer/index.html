@@ -136,10 +136,10 @@
             </select>
             <button id="refineBtn" title="Re-run layout optimization">Re-layout</button>
             <input type="search" id="searchBox" placeholder="Search…" />
-            <div id="chat" style="border-top: 1px solid #e5e7eb; padding-top: 8px;">
+            <div id="chat" style="border-top: 1px solid #e5e7eb; padding-top: 8px; display:flex; flex-direction:column; flex:1; min-height:0;">
                 <div style="font-weight:600; margin-bottom:6px;">Chat</div>
                 <div id="chatMessages"
-                    style="display:flex; flex-direction:column; gap:6px; max-height: 220px; overflow:auto; border:1px solid #e5e7eb; padding:6px; border-radius:6px; background:#fafafa;">
+                    style="display:flex; flex-direction:column; gap:6px; overflow:auto; border:1px solid #e5e7eb; padding:6px; border-radius:6px; background:#fafafa; flex:1; min-height:0;">
                 </div>
                 <form id="chatForm" style="margin-top:6px; display:flex; gap:6px;">
                     <input type="text" id="chatInput" placeholder="Ask the assistant…" autocomplete="off"
