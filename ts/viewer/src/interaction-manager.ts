@@ -1,8 +1,10 @@
 import type { Core, NodeSingular, Collection } from "cytoscape";
+import type { Graph } from "./graph-types.js";
+import { openFileInEditor } from "./file-opener.js";
 
 export type FilterMode = 'hide' | 'fade';
 
-export function InteractionManager(cy: Core) {
+export function InteractionManager(cy: Core, graph: Graph) {
   let filterMode: FilterMode = 'fade';
 
   function setFilterMode(mode: FilterMode) {
@@ -37,10 +39,25 @@ export function InteractionManager(cy: Core) {
     }
   }
 
+  function handleNodeClick(evt: any) {
+    const nodeId = evt.target.id();
+    
+    // Check for Cmd+click (Mac) or Ctrl+click (Windows/Linux) for file opening
+    if (evt.originalEvent && (evt.originalEvent.metaKey || evt.originalEvent.ctrlKey)) {
+      // Find the node data from the graph
+      const nodeData = graph.nodes.find(n => n.id === nodeId);
+      if (nodeData && nodeData.file && nodeData.line) {
+        openFileInEditor(nodeData.file, nodeData.line);
+        return; // Don't focus when opening file
+      }
+    }
+    
+    // Normal click behavior - focus on the node
+    focus(nodeId);
+  }
+
   function installBasics() {
-    cy.on('tap', 'node', (evt) => {
-      focus(evt.target.id());
-    });
+    cy.on('tap', 'node', handleNodeClick);
     cy.on('tap', (evt) => {
       if (evt.target === cy) clearFocus();
     });

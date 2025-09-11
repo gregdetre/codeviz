@@ -11,6 +11,7 @@ import { search } from "./search.js";
 import type { Graph, ViewerConfig, ViewerMode } from "./graph-types.js";
 import { applyLayout, normalizeLayoutName } from "./layout-manager.js";
 import { loadGraph as loadGraphRaw } from "./load-graph.js";
+import { initFileOpener } from "./file-opener.js";
 
 async function loadGraph(): Promise<Graph> { return await loadGraphRaw(process.env.NODE_ENV !== 'production'); }
 
@@ -21,6 +22,9 @@ async function loadViewerConfig(): Promise<ViewerConfig> {
 
 export async function initApp() {
   const [graph, vcfg] = await Promise.all([loadGraph(), loadViewerConfig()]);
+
+  // Initialize file opener with workspace root
+  initFileOpener(vcfg);
 
   let mode: ViewerMode = (vcfg.mode ?? 'explore') as ViewerMode;
   let layoutName = normalizeLayoutName(vcfg.layout);
@@ -36,7 +40,7 @@ export async function initApp() {
   if (modeInfo) modeInfo.textContent = `Mode: ${mode}`;
   await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
 
-  const im = InteractionManager(cy);
+  const im = InteractionManager(cy, graph);
   im.installBasics();
 
   // Lazy-init tooltips (modules + functions)

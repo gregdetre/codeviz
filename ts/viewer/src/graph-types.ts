@@ -50,6 +50,7 @@ export type ViewerConfig = {
   mode: ViewerMode;
   hybridMode?: "sequential";
   dark?: boolean;
+  workspaceRoot?: string;
 };
 
 

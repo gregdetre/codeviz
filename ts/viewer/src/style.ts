@@ -17,7 +17,10 @@ export function generateStyles(tokens: Tokens = defaultTokensLight, opts?: { dar
     { selector: 'edge[type = "moduleImport"]', style: { 'line-color': t.colors.edges.imports, 'target-arrow-color': t.colors.edges.imports, 'line-style': 'dashed', 'width': 'mapData(weight, 1, 10, 1, 4)' } },
     { selector: '.faded', style: { 'opacity': t.colors.states.fadedOpacity, 'text-opacity': 0.4 } },
     // Module color tints for children labels via data(module)
-    { selector: 'node[type != "module"]', style: { 'text-outline-width': 2, 'text-outline-color': '#fff' } }
+    { selector: 'node[type != "module"]', style: { 'text-outline-width': 2, 'text-outline-color': '#fff' } },
+    // Hover effects to indicate clickable files
+    { selector: 'node[type != "module"]:hover', style: { 'border-width': 2, 'border-color': '#007acc', 'border-opacity': 0.8 } },
+    { selector: 'node[type = "module"]:hover', style: { 'border-color': '#007acc', 'border-opacity': 0.6 } }
   ];
 }
 
