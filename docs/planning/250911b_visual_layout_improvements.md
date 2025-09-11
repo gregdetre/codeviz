@@ -37,12 +37,24 @@ Build on the ELK layout foundation to add visual polish, richer interactions, an
 - `ts/viewer/src/elements.ts` — `graphToElements(graph, options)`; builds module→file→entity compounds
 - `ts/viewer/src/style-tokens.ts` — Design tokens (palette, sizes, radii, opacities)
 - `ts/viewer/src/style.ts` — `generateStyles(tokens, opts)`; node kind shapes, edge palettes, module color overrides with contrast‑safe labels
-- `ts/viewer/src/layout-manager.ts` — `applyLayout(cy, 'elk'|'fcose'|...)` and mode→layout mapping
+- `ts/viewer/src/layout-manager.ts` — `applyLayout(cy, 'elk'|'fcose'|'hybrid', opts?)` and mode→layout mapping
 - `ts/viewer/src/interaction-manager.ts` — Focus/highlight, hide vs fade vs disable, background reset, ESC behavior
 - `ts/viewer/src/search.ts` — Debounced search across id/label/module/file
 - `ts/viewer/src/details-panel.ts` — Render details (signature, doc, file:line, connected nodes)
 - `ts/viewer/src/extensions.ts` — Lazy load expand/collapse, context menus, popper/tippy
 - `ts/viewer/src/app.ts` — Wire‑up shell, small `ViewerState` (mode, filters, selection, sidebar width)
+
+Suggested minimal APIs
+
+- `loadGraph(): Promise<Graph>` — loads `/out/codebase_graph.json`, optionally validates with Ajv (dev)
+- `graphToElements(graph: Graph, opts: { mode: 'default'|'explore'|'modules' }): ElementDefinition[]`
+- `generateStyles(tokens: Tokens, opts?: { dark?: boolean }): StylesheetJson[]`
+- `applyLayout(cy: Core, layout: 'elk'|'fcose'|'hybrid', opts?: HybridOpts): Promise<void>`
+- `InteractionManager(cy).setFilterMode('hide'|'fade'|'disable')`
+- `InteractionManager(cy).focus(nodeId?: string)` — focus target or clear
+- `search(cy, term: string, mode: 'hide'|'fade'): { matches: Collection }`
+- `renderDetails(targetEl: HTMLElement, node: NodeSingular | null): void`
+- `Extensions.enable(name: 'contextMenus'|'tooltips'|'expandCollapse')` — lazy-imported, Explore-only by default
 
 ## Data modes: transforms vs extra files
 
@@ -66,6 +78,8 @@ Build on the ELK layout foundation to add visual polish, richer interactions, an
 - [ ] Add `style-tokens.ts` with palette, sizes, state opacities; implement `hashHslForModule`, `contrastOn`
 - [ ] Add `style.ts` that generates Cytoscape styles (node kind shapes, module background with contrast‑safe text, edge palettes by kind)
 - [ ] Add `layout-manager.ts` with ELK default and fCoSE alternative
+- [ ] Config: extend viewer config to accept `layout: 'elk'|'fcose'|'hybrid'` and optional `hybridMode: 'sequential'|'constrained'` (default `'sequential'`)
+- [ ] CLI: `codeviz view open --mode default|explore|modules` maps to initial layout; pass through to `/viewer-config.json`
 - [ ] Server: expose `/schema/codebase_graph.schema.json`; viewer: optional Ajv validation (dev‑only) and log warnings to `/client-log`
 - Acceptance: viewer boots with generated styles; ELK layout runs; no regressions on demo
 - Health: `npm run build --prefix ts`, `tsc --noEmit`, smoke open
@@ -83,12 +97,26 @@ Build on the ELK layout foundation to add visual polish, richer interactions, an
 - Acceptance: predictable focus/reset behavior; toggles work without relayout
 - Tests: Playwright — click focus and reset; toggle edges; check visible counts
 
+Implementation pointers
+
+- `InteractionManager`
+  - `onNodeTap(node)`: if focusMode, call `focus(node)`, else add `.highlighted` to node + neighbors
+  - `onBackgroundTap()`: clear highlights and selections
+  - `.faded` class styles pulled from tokens (node text-opacity and edge opacity too)
+- Toggles use selectors: `edge[type = "calls"]`, `node[type = "function"]`, etc.
+
 ### Stage: Two‑pane UI (major UX upgrade)
 - [ ] Replace `ts/viewer/index.html` with a clean two‑pane shell (graph left; resizable 340–380px details sidebar right; toolbar on top)
 - [ ] Implement `details-panel.ts` to show label, kind, signature, doc, file:line, in/out degree, connected nodes (click to navigate)
 - [ ] Persist sidebar width and last chosen mode to `localStorage`
 - Acceptance: details update on node click; navigation via connected nodes works; resize persists
 - Tests: Playwright — node click populates details; sidebar resizes and persists
+
+Implementation pointers
+
+- Sidebar: CSS flex with drag handle; persist width under `localStorage['viewer.sidebar.width']`
+- Details rendering: `renderDetails(el, node)` pure function; add `data-testid` hooks for tests
+- Connected nodes: list outgoers/incomers; tap navigates and calls `focus`
 
 ### Stage: Modes (Default/Exec, Explore, Modules)
 - [ ] Default/Exec (ELK): presentation‑ready view with calls emphasized
@@ -97,6 +125,39 @@ Build on the ELK layout foundation to add visual polish, richer interactions, an
 - [ ] Mode selector and status indicator; store in `localStorage`
 - Acceptance: modes switch without errors; layouts apply; indicator updates
 - Tests: Playwright — switch modes; verify edge visibility and module imports view
+
+Implementation pointers
+
+- `graphToElements(..., { mode })`:
+  - default|explore: add entity nodes under `file:` parents; keep `module:` compounds; route edges by `edges[]`
+  - modules: only `module:` parents; synthesize edges from `moduleImports[]` with dashed styling and weight → width
+- `layout-manager`: map `mode` → `elk` or `fcose`; animate=false for ELK
+
+### Stage: Hybrid layout (ELK → fCoSE refinement)
+- [ ] Add third layout option `hybrid` (sequential) informed by `docs/reference/cyto/HYBRID_LAYOUTS.md`
+- [ ] Implement `applyLayout(cy, 'hybrid', { hybridMode?: 'sequential'|'constrained' })`
+- [ ] Sequential: run ELK (no animation), on `layoutstop` run fCoSE with `randomize:false`, `numIter: 800–1200`
+- [ ] Constrained (optional): derive layer groups from ELK and pass as fCoSE `alignmentConstraint.horizontal`
+- [ ] UI: Add toolbar option “Hybrid (ELK→fCoSE)” and a “Refine” button to re-run the fCoSE phase without re‑ELK
+- [ ] Config: allow `viewer-config.json` to specify `{ layout: 'hybrid', hybridMode: 'sequential' }`
+- Acceptance: hybrid preserves overall vertical layering while improving spacing; switching back to ELK/fCoSE works
+- Tests: Playwright — choose Hybrid; verify layout finishes and nodes maintain rough rank order; Refine updates positions
+
+Pseudo‑code (sequential)
+
+```ts
+export async function applyLayout(cy: Core, name: 'elk'|'fcose'|'hybrid', opts?: { hybridMode?: 'sequential'|'constrained' }) {
+  if (name === 'elk') return cy.layout({ name: 'elk', animate: false, nodeDimensionsIncludeLabels: true, elk: { 'elk.algorithm': 'layered', 'elk.direction': 'DOWN', 'elk.edgeRouting': 'ORTHOGONAL' } }).runPromise();
+  if (name === 'fcose') return cy.layout({ name: 'fcose', animate: true }).runPromise();
+  // hybrid
+  await cy.layout({ name: 'elk', animate: false, nodeDimensionsIncludeLabels: true, elk: { 'elk.algorithm': 'layered', 'elk.direction': 'DOWN' } }).runPromise();
+  if ((opts?.hybridMode ?? 'sequential') === 'constrained') {
+    const layers = extractLayersFromPositions(cy.nodes());
+    return cy.layout({ name: 'fcose', animate: true, randomize: false, alignmentConstraint: { horizontal: layers } }).runPromise();
+  }
+  return cy.layout({ name: 'fcose', animate: true, randomize: false, numIter: 1000 }).runPromise();
+}
+```
 
 ### Stage: Optional enhancements (gated + lazy loaded)
 - [ ] Tooltips (popper/tippy) for entity nodes with signature/doc; enabled in Explore mode only
