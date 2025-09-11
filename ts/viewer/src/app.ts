@@ -22,10 +22,11 @@ async function loadViewerConfig(): Promise<ViewerConfig> {
 export async function initApp() {
   const [graph, vcfg] = await Promise.all([loadGraph(), loadViewerConfig()]);
 
-  let mode: ViewerMode = (vcfg.mode ?? 'default') as ViewerMode;
+  let mode: ViewerMode = (vcfg.mode ?? 'explore') as ViewerMode;
   let layoutName = normalizeLayoutName(vcfg.layout);
   const elements = graphToElements(graph, { mode });
   const cy = cytoscape({ container: document.getElementById('cy') as HTMLElement, elements, style: generateStyles() });
+  (window as any).__cy = cy; // expose for e2e tests
 
   applyModuleColorTint(cy);
 
@@ -37,6 +38,15 @@ export async function initApp() {
 
   const im = InteractionManager(cy);
   im.installBasics();
+
+  // Lazy-init tooltips (modules + functions)
+  try {
+    const mod = await import('./tooltips/TooltipManager.js');
+    mod.installTooltips(cy);
+  } catch (err) {
+    // Non-fatal if tooltips are not available
+    console.warn('Tooltips not available:', err);
+  }
 
   const callsToggle = document.getElementById('toggleCalls') as HTMLInputElement;
   if (callsToggle) callsToggle.addEventListener('change', () => { cy.edges('[type = "calls"]').style('display', callsToggle.checked ? 'element' : 'none'); });

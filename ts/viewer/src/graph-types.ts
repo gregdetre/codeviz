@@ -43,7 +43,7 @@ export type ModuleImportEdge = {
   weight?: number;
 };
 
-export type ViewerMode = "default" | "explore" | "modules";
+export type ViewerMode = "explore" | "modules";
 
 export type ViewerConfig = {
   layout: "elk" | "fcose" | "elk-then-fcose";
