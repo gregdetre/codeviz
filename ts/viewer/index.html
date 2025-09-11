@@ -15,24 +15,38 @@
 
         :root {
             --sidebar-width: 360px;
+            --widgets-width: 280px;
         }
 
         .shell {
             display: grid;
-            grid-template-rows: 40px 1fr;
-            grid-template-columns: 1fr var(--sidebar-width);
-            grid-template-areas: 'toolbar toolbar' 'graph sidebar';
+            grid-template-rows: 1fr;
+            grid-template-columns: var(--widgets-width) 1fr var(--sidebar-width);
+            grid-template-areas: 'toolbar graph sidebar';
             height: 100%;
         }
 
         .toolbar {
             grid-area: toolbar;
             display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 6px 10px;
-            border-bottom: 1px solid #e5e7eb;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 10px;
+            border-right: 1px solid #e5e7eb;
             font-family: sans-serif;
+            overflow: auto;
+            min-width: 240px;
+        }
+
+        .toolbar label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toolbar #searchBox {
+            width: 100%;
         }
 
         .graph {
@@ -72,6 +86,22 @@
             bottom: 0;
             width: 2px;
             background: #e5e7eb;
+        }
+
+        /* Tooltip base class used by Floating UI */
+        .codeviz-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.35;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            max-width: 320px;
+            word-wrap: break-word;
         }
     </style>
 </head>
