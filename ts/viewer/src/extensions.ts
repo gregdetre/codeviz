@@ -5,7 +5,7 @@ export const Extensions = {
         // Placeholder for lazy import
         return;
       case 'tooltips':
-        return;
+        return (await import('./tooltips/TooltipManager.js')).installTooltips;
       case 'expandCollapse':
         return;
     }
