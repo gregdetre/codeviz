@@ -5,18 +5,10 @@ import { existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
-import { generateText } from "ai";
+import { generateText, type CoreMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 
 type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
-
-function formatPromptFromMessages(messages: ChatMessage[]): string {
-  const header = "System: You are CodeViz assistant inside a code visualization tool. Keep replies concise.";
-  const lines = messages
-    .filter(m => typeof m?.content === "string" && m.content.trim().length > 0)
-    .map(m => `${m.role[0].toUpperCase()}${m.role.slice(1)}: ${m.content.trim()}`);
-  return [header, "", ...lines, "", "Assistant:"].join("\n");
-}
 
 export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string; dataFilePath?: string }) {
   const app = Fastify();
@@ -91,7 +83,7 @@ export async function startServer(opts: { host: string; port: number; openBrowse
     }
   });
 
-  // Minimal chat endpoint (v1): forwards conversation to Anthropic via AI SDK
+  // Minimal chat endpoint (v1): forwards conversation history to Anthropic via AI SDK
   app.post("/api/chat", async (req, reply) => {
     try {
       const body: any = (req as any).body || {};
@@ -105,10 +97,17 @@ export async function startServer(opts: { host: string; port: number; openBrowse
         return;
       }
 
-      const prompt = formatPromptFromMessages(messages);
+      const systemMsg: CoreMessage = {
+        role: "system",
+        content: "You are the CodeViz assistant inside a code visualization tool. Keep replies concise."
+      };
+      const history: CoreMessage[] = [systemMsg, ...messages
+        .filter(m => m.content.trim().length > 0)
+        .map<CoreMessage>(m => ({ role: m.role, content: m.content }))];
+
       const { text } = await generateText({
         model: anthropic("claude-3-5-sonnet-20240620" as any),
-        prompt
+        messages: history
       });
 
       reply.type("application/json").send({ reply: text });

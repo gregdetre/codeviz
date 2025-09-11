@@ -65,18 +65,13 @@ export function initChat(): void {
     inputEl.value = '';
     messages.push({ id: uid(), role: 'user', content: text, timestamp: Date.now() });
     renderMessages(messagesEl);
-    const pendingId = uid();
-    messages.push({ id: pendingId, role: 'assistant', content: '…', timestamp: Date.now() });
-    renderMessages(messagesEl);
 
     try {
       const reply = await sendToServer();
-      const idx = messages.findIndex(m => m.id === pendingId);
-      if (idx >= 0) messages[idx] = { ...messages[idx], content: reply || '(empty reply)' };
+      messages.push({ id: uid(), role: 'assistant', content: reply || '(empty reply)', timestamp: Date.now() });
     } catch (err: any) {
-      const idx = messages.findIndex(m => m.id === pendingId);
       const msg = String(err?.message || err) || 'Unknown error';
-      if (idx >= 0) messages[idx] = { ...messages[idx], content: `Error: ${msg}` };
+      messages.push({ id: uid(), role: 'assistant', content: `Error: ${msg}` , timestamp: Date.now()});
     } finally {
       renderMessages(messagesEl);
     }
