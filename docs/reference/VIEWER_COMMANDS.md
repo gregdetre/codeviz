@@ -85,6 +85,22 @@ Notes:
 - Unknown keys are ignored; numbers are clamped (e.g. `numIter ≤ 5000`).
 - Defaults preserved when options omitted.
 
+## Grouping
+
+- Folder grouping: The viewer can display nested folder → file → function compounds.
+  - Toggle: left pane “Group folders” checkbox enables/disables folder grouping at runtime.
+  - Default: folders deeper than 2 levels are auto-collapsed on load and when toggled on.
+  - Expand/collapse: If the expand/collapse extension is available, `collapse`, `expand`, `collapseAll`, `expandAll` operate on selected nodes (parents) and groups.
+
+Examples (optional, no-op if extension unavailable):
+```json
+[{ "q": "node[type = 'folder']", "op": "collapse" }]
+```
+
+Notes:
+- Grouping is viewer-only; underlying JSON nodes/edges remain unchanged.
+- Aggregated edges for collapsed groups are not yet shown; detailed edges remain visible when expanded (planned).
+
 ## Common recipes
 - Multi-step focus with named sets and halos:
 ```json
