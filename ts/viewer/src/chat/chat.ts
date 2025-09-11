@@ -1,3 +1,6 @@
+import DOMPurify from 'dompurify';
+import { marked } from 'marked';
+
 type Role = 'user' | 'assistant' | 'system';
 
 interface ChatMessage {
@@ -30,24 +33,46 @@ function renderMessages(container: HTMLElement): void {
     } else {
       bubble.style.background = '#ffffff';
     }
-    bubble.textContent = m.content;
+    if (m.role === 'assistant') {
+      const rawHtml = String(marked.parse(m.content, { breaks: true } as any) || '');
+      const cleanHtml = DOMPurify.sanitize(rawHtml);
+      bubble.innerHTML = cleanHtml || m.content;
+      // Post-process links and code blocks for better UX
+      bubble.querySelectorAll('a').forEach((a) => {
+        try {
+          (a as HTMLAnchorElement).target = '_blank';
+          (a as HTMLAnchorElement).rel = 'noopener noreferrer nofollow';
+        } catch {}
+      });
+      bubble.querySelectorAll('pre').forEach((pre) => {
+        (pre as HTMLElement).style.overflow = 'auto';
+        (pre as HTMLElement).style.background = '#f6f8fa';
+        (pre as HTMLElement).style.padding = '8px';
+        (pre as HTMLElement).style.borderRadius = '4px';
+      });
+      bubble.querySelectorAll('code').forEach((code) => {
+        (code as HTMLElement).style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+        (code as HTMLElement).style.fontSize = '12px';
+      });
+    } else {
+      bubble.textContent = m.content;
+    }
     container.appendChild(bubble);
   }
   container.scrollTop = container.scrollHeight;
 }
 
-async function sendToServer(): Promise<string> {
+async function sendToServer(payload: any): Promise<any> {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: messages.map(({ role, content }) => ({ role, content })) })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
     throw new Error(`Chat error ${res.status}: ${errText || res.statusText}`);
   }
-  const data = await res.json();
-  return String(data.reply ?? '');
+  return await res.json();
 }
 
 export function initChat(): void {
@@ -67,8 +92,30 @@ export function initChat(): void {
     renderMessages(messagesEl);
 
     try {
-      const reply = await sendToServer();
-      messages.push({ id: uid(), role: 'assistant', content: reply || '(empty reply)', timestamp: Date.now() });
+      const cy: any = (window as any).__cy;
+      let snapshot: any = undefined;
+      try {
+        const mod = await import('../state-snapshot.js');
+        const exMod = await import('../command-executor.js');
+        const supported = exMod.getSupportedOpsSummary();
+        snapshot = mod.computeSnapshot(cy, supported, { mode: (document.getElementById('modeInfo')?.textContent || '').replace('Mode: ', ''), layout: (document.getElementById('layoutInfo')?.textContent || '').replace('Layout: ', '') });
+      } catch {}
+
+      const payload = { messages: messages.map(({ role, content }) => ({ role, content })), viewer: { snapshot } };
+      const data = await sendToServer(payload);
+      const replyText = String(data.reply ?? '');
+      messages.push({ id: uid(), role: 'assistant', content: replyText || '(empty reply)', timestamp: Date.now() });
+
+      // Try to parse and execute commands if provided
+      const commands = data.commands;
+      if (Array.isArray(commands) && cy) {
+        try {
+          const { executeCompactCommands } = await import('../command-executor.js');
+          await executeCompactCommands(cy, commands);
+        } catch (err) {
+          console.warn('Command execution error:', err);
+        }
+      }
     } catch (err: any) {
       const msg = String(err?.message || err) || 'Unknown error';
       messages.push({ id: uid(), role: 'assistant', content: `Error: ${msg}` , timestamp: Date.now()});
