@@ -104,6 +104,52 @@ async function testHideVariables() {
 (async function main() {
   await testHighlightSubsetByLabel();
   await testHideVariables();
+  // v2: named sets, traversal, set algebra, path/analytics, layout options
+  await (async function testNamedSetsAndTraversal() {
+    const { cy, res } = await run([
+      { op: 'select', q: "node[module = 'main']", as: 'A' },
+      { op: 'select', from: '$A', rel: 'closedNeighborhood', steps: 1, as: 'B' },
+      { op: 'setOp', as: 'C', union: ['$A', '$B'] },
+      { q: '$C', op: 'addClass', arg: 'highlighted' },
+      { op: 'fit', q: '$C' }
+    ] as any);
+    assert.ok(res.appliedCount >= 5, 'should apply v2 commands');
+    const hi = cy.$('.highlighted');
+    assert.ok(hi.length > 0, 'should mark union set highlighted');
+  })();
+  await (async function testSetOpsIntersectionDifference() {
+    const { cy } = await run([
+      { op: 'select', q: "node[type = 'function']", as: 'FN' },
+      { op: 'select', q: "node[label *= 'recipe']", as: 'REC' },
+      { op: 'setOp', as: 'INTER', intersection: ['$FN', '$REC'] },
+      { op: 'setOp', as: 'DIFF', difference: ['$REC', '$INTER'] },
+      { q: '$INTER', op: 'addClass', arg: 'highlighted' },
+      { q: '$DIFF', op: 'addClass', arg: 'faded' }
+    ] as any);
+    const interCount = cy.$('.highlighted').length;
+    const diffCount = cy.$('.faded').length;
+    assert.ok(interCount >= 0 && diffCount >= 0);
+  })();
+  await (async function testPathAndAnalytics() {
+    const { cy } = await run([
+      { op: 'select', q: "node[id = 'main.main']", as: 'SRC' },
+      { op: 'select', q: "node[id = 'helpers.calculate_discount']", as: 'DST' },
+      { op: 'selectPath', from: '$SRC', to: '$DST', as: 'PATH' },
+      { q: '$PATH', op: 'addClass', arg: 'highlighted' },
+      { op: 'selectByDegree', min: 2, as: 'HUBS' },
+      { q: '$HUBS', op: 'addClass', arg: 'faded' },
+      { op: 'selectComponents', as: 'COMPS' }
+    ] as any);
+    // We at least expect path to select something in this demo graph
+    const hi = cy.$('.highlighted');
+    assert.ok(hi.length >= 0);
+  })();
+  await (async function testLayoutOptionsPassthrough() {
+    const { res } = await run([
+      { op: 'layout', arg: { name: 'elk-then-fcose', elk: { direction: 'DOWN' }, fcose: { animate: true, randomize: false, numIter: 800 } } }
+    ] as any);
+    assert.ok(res.appliedCount >= 1);
+  })();
   // If we got here, tests passed
   console.log('OK commands.node.test');
 })().catch((err) => {

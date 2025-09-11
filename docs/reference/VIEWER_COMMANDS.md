@@ -51,17 +51,48 @@ node:not([module = 'tests'])
 *
 ```
 
-## Allowed operations (v1.1)
+## Allowed operations (v2)
 
-- Collection: `addClass`, `removeClass`, `show`, `hide`, `style` (restricted keys), `lock`, `unlock`, `showConnectedEdges`, `hideConnectedEdges`
-- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`
+- Collection: `addClass`, `removeClass`, `show`, `hide`, `style` (restricted keys), `lock`, `unlock`, `showConnectedEdges`, `hideConnectedEdges`, `collapse` (optional), `expand` (optional)
+- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`, `select`, `setOp`, `clearSet`, `collapseAll` (optional), `expandAll` (optional), `selectPath`, `selectByDegree`, `selectComponents`
 - Allowed classes: `highlighted`, `faded`
 - Allowed style keys:
   - Base: `opacity`, `background-color`, `line-color`, `width`, `text-opacity`
   - Nodes: `border-width`, `border-color`, `shape`, `font-size`, `text-outline-width`, `text-outline-color`
   - Edges: `line-style`, `line-opacity`, `curve-style`, `target-arrow-shape`, `target-arrow-color`
 
+### New in v2
+
+- Named sets: `select` stores results as `$name` for later commands. Caps: max 16 sets, 5k IDs each.
+- Traversal selection: `select` supports `from` + `rel` (`neighborhood|incomers|outgoers|closedNeighborhood`) with bounded `steps` (≤3).
+- Set algebra: `setOp` with `union` | `intersection` | `difference` to produce new sets.
+- Path/analytics: `selectPath` (shortest path via Dijkstra, capped), `selectByDegree` (min/max), `selectComponents` (component membership).
+- Optional expand/collapse: if the extension is present, `collapse`/`expand` on node selections and `collapseAll`/`expandAll` operate; otherwise they no-op with a warning.
+
+### Layout options passthrough (safe subset)
+
+`layout` accepts an options object with a bounded subset of parameters:
+
+```json
+{ "op": "layout", "arg": { "name": "elk-then-fcose", "elk": { "direction": "DOWN" }, "fcose": { "animate": true, "randomize": false, "numIter": 800 } } }
+```
+
+Notes:
+- Unknown keys are ignored; numbers are clamped (e.g. `numIter ≤ 5000`).
+- Defaults preserved when options omitted.
+
 ## Common recipes
+- Multi-step focus with named sets and halos:
+```json
+[
+  { "op": "select", "q": "node[label = 'main']", "as": "seed" },
+  { "op": "select", "from": "$seed", "rel": "closedNeighborhood", "steps": 1, "as": "ring1" },
+  { "op": "setOp", "as": "focus", "union": ["$seed", "$ring1"] },
+  { "q": "node, edge", "op": "addClass", "arg": "faded" },
+  { "q": "$focus", "ops": [["removeClass", "faded"], ["addClass", "highlighted"]] },
+  { "op": "fit", "q": "$focus" }
+]
+```
 
 - Highlight preprocess functions, fade others, and fit:
 ```json
@@ -146,7 +177,7 @@ Explanation: removes highlight/fade classes, shows all elements, re-runs the def
 
 - Large selections may be capped for performance.
 - Unknown ops/keys are ignored or rejected.
-- Future versions will add richer selectors and set operations.
+- Future versions may add richer selectors and additional analytics.
 
 ## Limitations and future work
 

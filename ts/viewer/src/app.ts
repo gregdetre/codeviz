@@ -53,6 +53,14 @@ export async function initApp() {
     }
   };
 
+  // Optional: expose sets listing for snapshot without leaking IDs
+  try {
+    const mod = await import('./command-executor.js');
+    if (typeof (mod as any).listNamedSets === 'function') {
+      (window as any).__codevizSets = { list: () => (mod as any).listNamedSets() };
+    }
+  } catch {}
+
   // Lazy-init tooltips (modules + functions)
   try {
     const mod = await import('./tooltips/TooltipManager.js');

@@ -10,6 +10,8 @@ export type ViewerSnapshot = {
   supportedOps: { collection: string[]; core: string[]; classes: string[]; styleKeys: string[] };
   selectorHints: { nodeDataKeys: string[]; edgeDataKeys: string[]; examples: string[] };
   samples: { topNodesByDegree: Array<{ id: string; label: string; type: string; degree: number }> };
+  features?: { expandCollapse?: boolean; sets?: { maxSets: number; maxSize: number } };
+  sets?: { names: string[]; counts: Record<string, number> };
 };
 
 export function computeSnapshot(cy: Core, supportedOps: ViewerSnapshot["supportedOps"], opts?: { mode?: string; layout?: string }): ViewerSnapshot {
@@ -41,7 +43,17 @@ export function computeSnapshot(cy: Core, supportedOps: ViewerSnapshot["supporte
     .map((n) => ({ id: n.id(), label: String(n.data("label") || ""), type: String(n.data("type") || ""), degree: n.degree() }))
     .sort((a, b) => b.degree - a.degree)
     .slice(0, 20);
-  return { schemaVersion: "1.0.0", mode, layout, totals, countsByType, visibleCounts, supportedOps, selectorHints, samples: { topNodesByDegree } };
+  const hasExpandCollapse = Boolean((cy as any).expandCollapse);
+  // Named set details are not exposed; we only surface names+counts via a global hook if present
+  let setsSummary: { names: string[]; counts: Record<string, number> } | undefined = undefined;
+  try {
+    const setsApi = (window as any).__codevizSets as { list: () => Array<{ name: string; count: number }> } | undefined;
+    if (setsApi && typeof setsApi.list === 'function') {
+      const list = setsApi.list();
+      setsSummary = { names: list.map((x) => x.name), counts: Object.fromEntries(list.map((x) => [x.name, x.count])) };
+    }
+  } catch {}
+  return { schemaVersion: "1.0.0", mode, layout, totals, countsByType, visibleCounts, supportedOps, selectorHints, samples: { topNodesByDegree }, features: { expandCollapse: hasExpandCollapse, sets: { maxSets: 16, maxSize: 5000 } }, sets: setsSummary };
 }
 
 function groupCount<T>(col: any, keyFn: (x: any) => string): Record<string, number> {
