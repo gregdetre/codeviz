@@ -177,3 +177,102 @@ interface Command {
 - `ts/viewer/src/app.ts` - Main Cytoscape.js initialization and current command patterns
 - `ts/viewer/src/interaction-manager.ts` - Existing focus/fade functionality 
 - `ts/viewer/src/search.ts` - Text-based search with visual treatment patterns
+
+## 2025-09-11 Decision Update: Compact Cytoscape-Aligned Command Schema (v1)
+
+### Summary
+
+For v1 we will not use `eval`. Instead, we adopt a compact, Cytoscape-like JSON command format that mirrors selector and method semantics while remaining strictly validated and whitelisted. The LLM outputs a small array of commands that we execute deterministically in the viewer.
+
+### Rationale
+
+- Keeps the LLM’s mental model close to Cytoscape (selectors + ops) → easier prompts, fewer mapping mistakes
+- Safer than `eval` (no DOM/window access, no arbitrary code)
+- Compact (string selectors and operator chaining) → efficient token usage
+- Extensible (whitelist more ops/selectors later)
+
+### Command Schema (v1)
+
+- Each item targets either a collection (`cy.$(q)`) or the core (`cy`) depending on the op.
+- Use Cytoscape selector strings in `q` with a restricted feature set.
+- Allow single op (`op`/`arg`) or chained ops (`ops`).
+
+Examples:
+
+```json
+{ "q": "node[kind = 'function'][label *= 'preprocess']", "op": "addClass", "arg": "highlighted" }
+```
+
+```json
+{ "q": "node[kind = 'function'][label *= 'preprocess']", "ops": [["removeClass", "faded"], ["addClass", "highlighted"]] }
+```
+
+```json
+{ "op": "layout", "arg": { "name": "fcose", "animate": true } }
+```
+
+```json
+{ "op": "fit", "q": "node[module = 'shopping']" }
+```
+
+```json
+{ "q": "*", "ops": [["removeClass", "highlighted"], ["removeClass", "faded"], ["show"]] }
+```
+
+Array form (batch, sequential, last-wins):
+
+```json
+[
+  { "q": "node", "ops": [["addClass", "faded"]] },
+  { "q": "node[label *= 'preprocess']", "ops": [["removeClass", "faded"], ["addClass", "highlighted"]] },
+  { "op": "fit", "q": "node[label *= 'preprocess']" }
+]
+```
+
+### Whitelisted Operations (v1)
+
+- Collection ops: `addClass`, `removeClass`, `show`, `hide`, `style` (restricted keys)
+- Core ops: `layout` (names: `elk`, `fcose`, `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`
+
+Notes:
+- Allowed classes: `highlighted`, `faded`.
+- `style` keys (initial): `opacity`, `background-color`, `line-color`, `width`.
+- `resetAll` convenience op performs: remove known classes, show all, clear residual filters, apply default layout, fit viewport.
+
+### Selector Feature Set (v1)
+
+- Element kinds: `node`, `edge`, `*`
+- Data attributes (as exported in elements): `[type = 'function' | 'class' | 'variable' | 'module']`, `[module = '...']`, `[label *= '...']`, `[id = '...']`
+- Boolean/negation: `:not(...)`
+- Unions with commas: `node, edge`
+- Disallow traversals and neighborhood/graph operators in v1; add later.
+
+### State Snapshot for LLM
+
+Provide a compact, per-request system message with:
+- `schemaVersion`, `mode`, `layout`, counts (`totalNodes`, `totalEdges`)
+- counts by `type` for nodes/edges; hidden vs visible counts
+- top nodes by degree (up to 20: `id`, `label`, `type`, `degree`)
+- `supportedOps` and allowed classes
+- selector notes: allowed data fields and examples
+
+This avoids streaming the full graph while giving adequate grounding for suggestions.
+
+### Safety and Limits
+
+- Validate command JSON with a schema; reject unknown ops/args
+- Cap selection size for high-cost operations; provide summary counts
+- Batch execution; stop on hard errors with partial reporting
+
+### Migration Path
+
+- v1: compact commands + Level 1 selectors (this document)
+- v2: set operations (union/intersection/difference) expressed in selector form or JSON
+- v3: relationship selectors (e.g., callers-of) and semantic operators
+
+### Implementation Notes
+
+- Viewer: add executor mapping compact ops to Cytoscape and to `applyLayout`
+- Styles: add `.highlighted` class alongside `.faded`
+- Chat: send snapshot with each request; require JSON-only responses per schema
+- Server: inject schema + snapshot into system message, preserve provider config

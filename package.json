@@ -15,7 +15,7 @@
         "view": "node ts/dist/cli/index.js view open",
         "preextract": "npm run build:cli",
         "extract": "node ts/dist/cli/index.js extract python",
-        "extract:demo": "npm run extract -- demo_codebase --out out/codebase_graph.json",
+        "extract:demo": "npm run extract -- demo_codebase --out out/demo_codebase/codebase_graph.json",
         "dev:view": "vite --config ts/viewer/vite.config.ts",
         "dev:cli": "tsx ts/src/cli/index.ts",
         "start": "node ts/dist/cli/index.js",

@@ -43,6 +43,16 @@ export async function initApp() {
   const im = InteractionManager(cy, graph);
   im.installBasics();
 
+  // Test hook: allow E2E tests (and dev console) to execute compact commands
+  (window as any).__execCommands = async (commands: any[]) => {
+    try {
+      const mod = await import('./command-executor.js');
+      await mod.executeCompactCommands(cy, commands);
+    } catch (err) {
+      console.warn('execCommands error:', err);
+    }
+  };
+
   // Lazy-init tooltips (modules + functions)
   try {
     const mod = await import('./tooltips/TooltipManager.js');

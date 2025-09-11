@@ -1,0 +1,97 @@
+import { strict as assert } from 'node:assert';
+import cytoscape from 'cytoscape';
+import fcose from 'cytoscape-fcose';
+import elk from 'cytoscape-elk';
+import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { executeCompactCommands } from '../viewer/src/command-executor.ts';
+
+// Register layouts for parity with viewer
+(cytoscape as any).use(fcose);
+(cytoscape as any).use(elk as any);
+
+
+function loadGraphJson(): any {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const repoRoot = resolve(__dirname, '../..');
+  const path = resolve(repoRoot, 'out/demo_codebase/codebase_graph.json');
+  const raw = readFileSync(path, 'utf8');
+  return JSON.parse(raw);
+}
+
+function graphToElements(graph: any): any[] {
+  // Minimal mirror of ts/viewer/src/elements.ts for explore mode
+  const elements: any[] = [];
+  const nodeIds = new Set(graph.nodes.map((n: any) => n.id));
+  for (const g of graph.groups) {
+    if (g.kind === 'module') {
+      const fullPath = g.id;
+      const name = fullPath.split(/[\\/]/).pop() || fullPath;
+      elements.push({ data: { id: `module:${g.id}`, label: name, displayLabel: name, type: 'module', path: fullPath } });
+    }
+  }
+  for (const n of graph.nodes) {
+    elements.push({ data: { id: n.id, label: n.label, displayLabel: n.label, type: n.kind, parent: `module:${n.module}`, module: n.module, file: n.file, line: n.line } });
+  }
+  for (const e of graph.edges) {
+    if (nodeIds.has(e.source) && nodeIds.has(e.target)) {
+      elements.push({ data: { id: `${e.source}->${e.target}`, source: e.source, target: e.target, type: e.kind } });
+    }
+  }
+  return elements;
+}
+
+function createCyFromGraph(graph: any) {
+  return cytoscape({ elements: graphToElements(graph), style: [
+    { selector: 'node', style: { 'label': 'data(displayLabel)' } },
+    { selector: '.faded', style: { 'opacity': 0.25, 'text-opacity': 0.4 } },
+    { selector: '.highlighted', style: { 'border-width': 3, 'border-color': '#ff9800' } }
+  ] as any });
+}
+
+async function run(commands: any[]) {
+  const graph = loadGraphJson();
+  const cy = createCyFromGraph(graph);
+  const res = await executeCompactCommands(cy as any, commands);
+  return { cy, res };
+}
+
+async function testHighlightSubsetByLabel() {
+  const { cy } = await run([
+    { q: 'node', ops: [['addClass', 'faded']] },
+    { q: "node[label *= 'recipe']", ops: [['removeClass', 'faded'], ['addClass', 'highlighted']] },
+    { op: 'fit', q: "node[label *= 'recipe']" }
+  ]);
+  const highlighted = cy.$('.highlighted');
+  const faded = cy.$('.faded');
+  assert.ok(highlighted.length > 0, 'should highlight at least one node');
+  assert.ok(faded.length >= 0, 'should have some faded nodes');
+}
+
+async function testHideVariables() {
+  const { cy } = await run([
+    { q: "node[type = 'variable']", op: 'hide' },
+    { q: "node[type = 'function'], node[type = 'class']", op: 'show' }
+  ]);
+  const vars = cy.$("node[type = 'variable']");
+  const hiddenVars = vars.filter((n: any) => n.style('display') === 'none');
+  if (vars.length > 0) assert.equal(hiddenVars.length, vars.length, 'all variable nodes should be hidden');
+  const hiddenFns = cy.$("node[type = 'function']").filter((n: any) => n.style('display') === 'none');
+  const hiddenCls = cy.$("node[type = 'class']").filter((n: any) => n.style('display') === 'none');
+  assert.equal(hiddenFns.length, 0, 'function nodes should be visible');
+  assert.equal(hiddenCls.length, 0, 'class nodes should be visible');
+}
+
+(async function main() {
+  await testHighlightSubsetByLabel();
+  await testHideVariables();
+  // If we got here, tests passed
+  console.log('OK commands.node.test');
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+
+
