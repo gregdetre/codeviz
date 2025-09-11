@@ -1,6 +1,9 @@
 # main.py - Main recipe planning workflow
 from recipe import create_recipe, add_ingredient, add_instruction, get_total_ingredients_count
 from shopping import extract_shopping_items, calculate_total_cost, group_by_category, create_price_database
+from utils.helpers import format_price, validate_positive_number
+from models.recipe import Recipe
+from models.ingredient import Ingredient
 
 def build_pancake_recipe():
     recipe = create_recipe("Fluffy Pancakes", 15)
@@ -46,8 +49,11 @@ def main():
     shopping_list, cost, grouped = plan_shopping(recipe)
     
     print(f"Shopping items: {shopping_list}")
-    print(f"Total estimated cost: ${cost:.2f}")
+    print(f"Total estimated cost: {format_price(cost)}")
     print(f"Grouped by category: {list(grouped.keys())}")
+    
+    # Validate costs are positive
+    validate_positive_number(cost, "total cost")
 
 if __name__ == "__main__":
     main()
