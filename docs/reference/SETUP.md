@@ -30,7 +30,7 @@ npm install --prefix ts
 npm run --prefix ts build
 
 # 3) Extract the demo codebase into JSON
-npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/codebase_graph.json
+npx codeviz extract python demo_codebase --out out/codebase_graph.json
 
 # 4) Start the single-port viewer (no auto-browser)
 node ts/dist/cli/index.js view open --port 3080 --no-browser
@@ -65,7 +65,7 @@ layout = "fcose"
 
 Generate the visualization data (JSON):
 ```bash
-npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/codebase_graph.json
+npx codeviz extract python demo_codebase --out out/codebase_graph.json
 ```
 
 ## Viewer (single-port)
@@ -76,9 +76,9 @@ Serve the built viewer and JSON on one port:
 npm run build --prefix ts
 
 # Start server
-npx tsx ts/src/cli/index.ts view open
+npx codeviz view open
 # If 8080 is in use
-npx tsx ts/src/cli/index.ts view open --port 3000
+npx codeviz view open --port 3000
 ```
 
 Open the printed URL (default http://127.0.0.1:8080).
@@ -106,13 +106,13 @@ out/
 
 1. **Extraction works**
 ```bash
-npx tsx ts/src/cli/index.ts extract python demo_codebase
+npx codeviz extract python demo_codebase
 ls -la out/codebase_graph.json
 ```
 
 2. **Viewer loads**
 ```bash
-npx tsx ts/src/cli/index.ts view open --no-browser
+npx codeviz view open --no-browser
 open http://127.0.0.1:8080
 ```
 

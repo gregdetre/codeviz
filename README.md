@@ -17,19 +17,24 @@ npm install --prefix ts
 
 ### Basic Usage
 
-1. **Extract codebase structure (Python):**
+1. **Build the CLI:**
    ```bash
-   npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/codebase_graph.json
+   npm run --prefix ts build
    ```
 
-2. **Start the interactive viewer (single port):**
+2. **Extract codebase structure (Python):**
    ```bash
-   npx tsx ts/src/cli/index.ts view open
+   npx codeviz extract python demo_codebase --out out/codebase_graph.json
+   ```
+
+3. **Start the interactive viewer (single port):**
+   ```bash
+   npx codeviz view open
    # If port in use
-   npx tsx ts/src/cli/index.ts view open --port 3000
+   npx codeviz view open --port 3000
    ```
 
-3. **Open your browser** to explore the visualization (e.g. http://127.0.0.1:8080)
+4. **Open your browser** to explore the visualization (e.g. http://127.0.0.1:8080)
 
 ### Per-target config
 
@@ -53,23 +58,23 @@ layout = "fcose"
 
 ```bash
 # Extract specific directory
-npx tsx ts/src/cli/index.ts extract python /path/to/project --out out/codebase_graph.json
+npx codeviz extract python /path/to/project --out out/codebase_graph.json
 
 # Verbose extraction
-npx tsx ts/src/cli/index.ts extract python demo_codebase --verbose
+npx codeviz extract python demo_codebase --verbose
 ```
 
 ### Viewer Commands
 
 ```bash
 # Start with defaults
-npx tsx ts/src/cli/index.ts view open
+npx codeviz view open
 
 # Custom host and port
-npx tsx ts/src/cli/index.ts view open --host 0.0.0.0 --port 3000
+npx codeviz view open --host 0.0.0.0 --port 3000
 
 # Don't auto-open browser
-npx tsx ts/src/cli/index.ts view open --no-browser
+npx codeviz view open --no-browser
 ```
 
 ## See Also
@@ -89,19 +94,12 @@ npx tsx ts/src/cli/index.ts view open --no-browser
 
 ## Legacy (Python CLI)
 
-The previous Python CLI remains in the repo for reference:
-
-```bash
-python codeviz.py extract python /path/to/project
-python codeviz.py view open
-```
-
-This will be deprecated once the TS tool fully replaces it.
+The previous Python CLI has been removed. The TypeScript version is now the canonical implementation.
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Add tests if applicable
-4. Format code (`black .` for legacy Python, Prettier/ESLint for TS if configured)
+4. Format code (Prettier/ESLint for TypeScript if configured)
 5. Submit a pull request

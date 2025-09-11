@@ -27,6 +27,8 @@ async function main() {
   const graph = await graphRes.json();
   const vcfg = await cfgRes.json();
   const layoutName = (vcfg?.layout ?? 'elk').toLowerCase();
+  const layoutInfo = document.getElementById('layoutInfo');
+  if (layoutInfo) layoutInfo.textContent = `Layout: ${layoutName}`;
 
   const elements: any[] = [];
   for (const g of graph.groups) {

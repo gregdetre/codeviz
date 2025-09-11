@@ -6,6 +6,7 @@ Rewrite CodeViz to be pure TypeScript end-to-end. Focus on a simple, working MVP
 
 - `docs/reference/PRODUCT_VISION_FEATURES.md` — Feature priorities (grouping, filtering, mixed layouts, interactivity, GUI)
 - `docs/reference/cyto/*` — Cytoscape.js guides (grouping, filtering, layouts, interactivity, extensions, best practices)
+- `docs/reference/LOGGING.md` — Runtime logging (browser console → server file)
 - `schema/codebase_graph.schema.json` — Graph JSON schema to preserve
 - `README.md` — Needs rewrite to TS-first
 - `gjdutils/src/ts/cli/sequential-datetime-prefix.ts` — Used to generate this doc prefix
@@ -50,18 +51,24 @@ Rewrite CodeViz to be pure TypeScript end-to-end. Focus on a simple, working MVP
 - [x] Load `/out/codebase_graph.json`.
 - [x] Render nodes grouped by module (compound nodes), edges for calls/imports.
 - [x] Basic interactions: neighbor highlight; toggle for call edges; fcose layout.
+- [x] Guard against invalid edges (filter + warn) to avoid Cytoscape crash.
 
 ### Stage: Single-port server
 - [x] Fastify server serving built viewer and `out/codebase_graph.json`.
 - [x] `view open` starts server; `--no-browser` supported.
+- [x] Dev logging endpoints: `POST /client-log` and `GET /out/viewer.log`; `favicon.ico` 204.
 
 ### Stage: Docs & cleanup
+- [x] Add quick demo steps to `docs/reference/SETUP.md`.
+- [x] Document logging behavior in `docs/reference/LOGGING.md`.
+- [x] Add concise demo + logging notes in `AGENTS.md`.
 - [ ] Update `README.md` to TS-first install/usage; add legacy Python note.
 - [ ] Tidy or archive legacy Python viewer/CLI after v1 validated.
 
 ### Stage: Validation & acceptance (demo_codebase)
 - [x] Run `codeviz extract python demo_codebase` to generate `out/codebase_graph.json`.
 - [x] Start viewer `codeviz view open` and verify render locally.
+- [x] Playwright smoke tests (homepage + JSON endpoint) passing.
 - [ ] Confirm schema validity parity with previous `demo_output.json`.
 
 # Risks & mitigations
@@ -76,10 +83,15 @@ Rewrite CodeViz to be pure TypeScript end-to-end. Focus on a simple, working MVP
 - Added minimal type shim for `tree-sitter-python`.
 - Created `demo_codebase.codeviz.toml` per target convention.
 - Single-port server implemented; avoid port conflicts by allowing `--port` override.
+- Implemented dev logging: viewer forwards console to server; logs saved at `out/viewer.log`.
+- Viewer now filters invalid edges and logs a summary to avoid blank screen on bad data.
+- Added Playwright smoke tests to verify the viewer homepage and JSON endpoint.
 
 # Next steps (immediately actionable)
 
 - Update `README.md` to TS-first usage and troubleshooting.
+- Fix Python analyzer to emit fully-qualified edge endpoints that match node ids across modules (remove skipped edges).
 - Add a short "Legacy" section pointing to Python CLI.
-- Optional: add `--port` flag in examples to avoid EADDRINUSE.
-- Optional: schema validation via `zod` or AJV.
+- Optional: enforce schema validation (zod/AJV) in CLI and CI.
+- Optional: UI toggle for logging and capture of unhandled errors/rejections.
+- Optional: add `--port` flag in examples where helpful; keep quick demo in `SETUP.md`.

@@ -6,9 +6,9 @@ CodeViz provides a Clipanion-based CLI for extracting codebase structure and vie
 
 | Command | Description |
 |---------|-------------|
-| `npx tsx ts/src/cli/index.ts --help` | Show main help |
-| `npx tsx ts/src/cli/index.ts extract python <target_dir>` | Extract Python codebase |
-| `npx tsx ts/src/cli/index.ts view open` | Start viewer server |
+| `npx codeviz --help` | Show main help |
+| `npx codeviz extract python <target_dir>` | Extract Python codebase |
+| `npx codeviz view open` | Start viewer server |
 
 ## CLI Structure
 
@@ -26,7 +26,7 @@ cli/index.ts
 
 ## Extraction Commands
 
-### `npx tsx ts/src/cli/index.ts extract python <target_dir>`
+### `npx codeviz extract python <target_dir>`
 
 Extract static codebase graph from Python code using Tree-sitter.
 
@@ -43,18 +43,18 @@ Extract static codebase graph from Python code using Tree-sitter.
 
 ```bash
 # Basic extraction (outputs to out/codebase_graph.json)
-npx tsx ts/src/cli/index.ts extract python demo_codebase
+npx codeviz extract python demo_codebase
 
 # With custom output location
-npx tsx ts/src/cli/index.ts extract python /path/to/project --out out/my_graph.json
+npx codeviz extract python /path/to/project --out out/my_graph.json
 
 # With verbose output
-npx tsx ts/src/cli/index.ts extract python demo_codebase --verbose
+npx codeviz extract python demo_codebase --verbose
 ```
 
 ## Viewer Commands
 
-### `npx tsx ts/src/cli/index.ts view open`
+### `npx codeviz view open`
 
 Start interactive viewer for exploring extracted codebase structure.
 
@@ -68,13 +68,13 @@ Start interactive viewer for exploring extracted codebase structure.
 
 ```bash
 # Start viewer with defaults
-npx tsx ts/src/cli/index.ts view open
+npx codeviz view open
 
 # Custom host and port
-npx tsx ts/src/cli/index.ts view open --host 0.0.0.0 --port 3000
+npx codeviz view open --host 0.0.0.0 --port 3000
 
 # Don't open browser automatically
-npx tsx ts/src/cli/index.ts view open --no-browser
+npx codeviz view open --no-browser
 ```
 
 #### Prerequisites
@@ -85,7 +85,7 @@ npx tsx ts/src/cli/index.ts view open --no-browser
 If graph data is missing:
 ```bash
 No codebase graph found at out/codebase_graph.json
-Run 'npx tsx ts/src/cli/index.ts extract python <target_dir>' first
+Run 'npx codeviz extract python <target_dir>' first
 ```
 
 ## Configuration

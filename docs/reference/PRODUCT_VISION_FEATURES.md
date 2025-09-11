@@ -25,8 +25,21 @@ We're interested in Cytoscape.js features such as:
 - interactivity (clicking to trigger custom actions), tooltips
 - and then various GUI widgets
 
-v1:
-- Static analysis of Python codebases only
 
-FUTURE:
-- Use similar tools to analyse a large prose essay or book
+# Versions
+
+## v1 (CURRENT)
+- Static analysis of Python codebases only
+- Don't worry about performance/scalability. We'll be using it on small codebases.
+
+## FUTURE
+- Use similar tools to analyse a large prose essay or book (i.e. not just code, also text)
+
+
+## Principles
+
+- Get a simple version working end-to-end first, then gradually layer in complexity in stages
+- Emphasise speed of experimentation rather than bullet-proofing things
+- Avoid fallbacks & defaults - better to fail if input assumptions aren't being met
+
+
