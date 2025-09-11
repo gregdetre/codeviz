@@ -5,7 +5,7 @@ Date: 2025-09-11
 Duration: ~45 minutes
 Type: Decision-making, Strategy Planning
 Status: Active
-Related Docs: `docs/planning/250911b_visual_layout_improvements.md`
+Related Docs: `docs/planning/finished/250911b_visual_layout_improvements.md`
 ---
 
 ## Context & Goals
@@ -132,7 +132,7 @@ The Radon Python-only limitation raised: Should you implement Python-specific to
 **Internal References:**
 - `docs/reference/PRODUCT_VISION_FEATURES.md` - Project vision and Cytoscape features
 - `docs/reference/LAYOUT.md` - Current layout strategy and principles
-- `docs/planning/250911b_visual_layout_improvements.md` - Implementation plan and progress
+- `docs/planning/finished/250911b_visual_layout_improvements.md` - Implementation plan and progress
 - `ts/viewer/src/` - Current viewer implementation
 - `gjdutils/docs/instructions/GENERATE_MERMAID_DIAGRAM.md` - Design guidance (noted as outdated)
 
