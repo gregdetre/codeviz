@@ -4,6 +4,19 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+import { generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+
+type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
+
+function formatPromptFromMessages(messages: ChatMessage[]): string {
+  const header = "System: You are CodeViz assistant inside a code visualization tool. Keep replies concise.";
+  const lines = messages
+    .filter(m => typeof m?.content === "string" && m.content.trim().length > 0)
+    .map(m => `${m.role[0].toUpperCase()}${m.role.slice(1)}: ${m.content.trim()}`);
+  return [header, "", ...lines, "", "Assistant:"].join("\n");
+}
 
 export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string; dataFilePath?: string }) {
   const app = Fastify();
@@ -15,6 +28,16 @@ export async function startServer(opts: { host: string; port: number; openBrowse
   ];
   const root = candidates.find(p => existsSync(join(p, "index.html"))) || candidates[0];
   const repoRoot = resolve(fileURLToPath(new URL("../../../", import.meta.url)));
+  // Load environment variables from .env.local (prefer CWD, then repo root)
+  try {
+    const envCandidates = [
+      join(process.cwd(), ".env.local"),
+      join(repoRoot, ".env.local")
+    ];
+    const envPath = envCandidates.find(p => existsSync(p));
+    if (envPath) dotenv.config({ path: envPath });
+    else dotenv.config();
+  } catch {}
   const defaultOut = join(process.cwd(), "out/codebase_graph.json");
   const repoOut = join(repoRoot, "out/codebase_graph.json");
   const resolvedDataFile = opts.dataFilePath
@@ -65,6 +88,32 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       reply.type("application/json").send(schema);
     } catch (err: any) {
       reply.code(500).send({ error: "ENOENT", message: String(err?.message || err) });
+    }
+  });
+
+  // Minimal chat endpoint (v1): forwards conversation to Anthropic via AI SDK
+  app.post("/api/chat", async (req, reply) => {
+    try {
+      const body: any = (req as any).body || {};
+      const rawMessages = Array.isArray(body.messages) ? body.messages : [];
+      const messages: ChatMessage[] = rawMessages
+        .map((m: any) => ({ role: m?.role, content: String(m?.content ?? "") }))
+        .filter((m: any) => (m.role === "user" || m.role === "assistant" || m.role === "system"));
+
+      if (!process.env.ANTHROPIC_API_KEY) {
+        reply.code(400).send({ error: "NO_API_KEY", message: "Missing ANTHROPIC_API_KEY in .env.local" });
+        return;
+      }
+
+      const prompt = formatPromptFromMessages(messages);
+      const { text } = await generateText({
+        model: anthropic("claude-3-5-sonnet-20240620" as any),
+        prompt
+      });
+
+      reply.type("application/json").send({ reply: text });
+    } catch (err: any) {
+      reply.code(500).send({ error: "CHAT_ERROR", message: String(err?.message || err) });
     }
   });
 

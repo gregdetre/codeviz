@@ -135,6 +135,17 @@ export async function initApp() {
       if (evt.target === cy) import('./details-panel.js').then(m => m.renderDetails(detailsEl, null));
     });
   }
+
+  // Lazy-load chat client
+  try {
+    const chatRoot = document.getElementById('chat');
+    if (chatRoot) {
+      const mod = await import('./chat/chat.js');
+      mod.initChat();
+    }
+  } catch (err) {
+    console.warn('Chat unavailable:', err);
+  }
 }
 
 
