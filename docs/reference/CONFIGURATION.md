@@ -47,8 +47,11 @@ Notes:
 
 ## File format
 
-Example:
+Example (strict, no magic):
 ```toml
+[target]
+dir = "/abs/path/to/code/dir" # or relative to this TOML file
+
 [analyzer]
 # Exclude and include globs relative to the target directory
 exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
@@ -58,8 +61,8 @@ includeOnly = []
 excludeModules = ["gjdutils"]
 
 [output]
-# Absolute or relative path for the graph JSON
-path = "out/<target>/codebase_graph.json"
+# Absolute or relative directory for outputs (relative is resolved to the TOML location)
+dir = "out/<target>"  # the file will be written as <dir>/codebase_graph.json
 
 [viewer]
 # Default layout to use in the viewer ("elk" or "fcose")
@@ -103,7 +106,7 @@ nodeBorderHighlighted = 3
 - **excludeModules**: array of top-level module names to suppress from import edges/call edges
 
 ### `[output]`
-- **path**: output path for the graph JSON (default: `out/<target>/codebase_graph.json`)
+- **dir**: output directory for the graph JSON; the file name is always `codebase_graph.json`
 
 ### `[viewer]`
 - **layout**: default layout to use in the viewer (`elk` by default; `fcose` also supported)
@@ -119,11 +122,11 @@ nodeBorderHighlighted = 3
 - **opacity.secondDegreeNodes | opacity.secondDegreeEdges**: emphasis for second‑degree
 - **widths.edge | widths.edgeHighlighted | widths.nodeBorder | widths.nodeBorderHighlighted**: basic stroke widths
 
-## Loading order and overrides
+## Loading and overrides
 
-- CLI precedence for viewer settings: `CLI flags` > `per-target .codeviz.toml` > `global codeviz.config.toml` > built-in defaults (host `127.0.0.1`, port `8000`).
-- The CLI looks up `<target>.codeviz.toml` by the folder name passed to `extract`. Files are resolved from repo root, then `configs/`.
-- CLI flags (e.g., `--out`, `--host`, `--port`, `--mode`) override values from the config file.
+- CLI now requires a single argument `--config <file.toml>` for both extract and view.
+- Paths in the config may be absolute, or relative to the config file's directory.
+- Viewer host/port/layout/mode are taken from `[viewer]` unless overridden by CLI flags.
 
 ## Common patterns
 
@@ -148,5 +151,4 @@ excludeModules = ["gjdutils"]
 
 ## Troubleshooting
 
-- If the config isn't applied, ensure the file name matches the target directory (e.g., `demo_codebase` → `demo_codebase.codeviz.toml`).
-- Use CLI overrides to verify behavior (e.g., change `--out` path and confirm output).
+- If the server fails with `dataFilePath must be provided by the CLI`, ensure you started the viewer with `--config <file.toml>` so the CLI can compute the exact `codebase_graph.json` path.

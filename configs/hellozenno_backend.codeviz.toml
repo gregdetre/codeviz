@@ -1,3 +1,6 @@
+[target]
+dir = "/absolute/path/to/hellozenno/backend"
+
 [analyzer]
 exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 # Only analyze these files/dirs (optional). If commented out, analyze all .py files.
@@ -6,7 +9,10 @@ exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 excludeModules = []
 
 [output]
-path = "out/hellozenno_backend/codebase_graph.json"
+dir = "out/hellozenno_backend"  # Folder relative to this config; will contain codebase_graph.json
+
+[tags]
+project = ["llm", "expensive", "cli-entrypoint"]
 
 [viewer]
 layout = "elk-then-fcose"

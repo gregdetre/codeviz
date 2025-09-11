@@ -1,3 +1,6 @@
+[target]
+dir = "./demo_codebase"
+
 [analyzer]
 exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 # Only analyze these files/dirs (optional). If commented out, analyze all .py files.
@@ -6,7 +9,10 @@ exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 excludeModules = []
 
 [output]
-path = "out/demo_codebase/codebase_graph.json"
+dir = "out/demo_codebase"  # Folder relative to this config; will contain codebase_graph.json
+
+[tags]
+project = ["llm", "expensive", "cli-entrypoint"]
 
 [viewer]
 layout = "elk-then-fcose"

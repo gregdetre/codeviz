@@ -6,17 +6,19 @@ CodeViz provides npm scripts for extracting codebase structure and viewing inter
 
 | Command | Description |
 |---------|-------------|
-| `npm run extract -- <target_dir>` | Extract Python codebase |
-| `npm run view -- [options]` | Start viewer server |
+| `npm run extract -- --config <file.toml>` | Extract Python codebase |
+| `npm run annotate -- --config <file.toml>` | Generate LLM annotations/tags |
+| `npm run view -- --config <file.toml> [options]` | Start viewer server |
 
 ## CLI Structure
 
 ```
 cli/index.ts
 ├── extract/
-│   └── python <target_dir>
+│   └── python --config <file.toml>
+├── annotate --config <file.toml>
 └── view/
-    └── open
+    └── open --config <file.toml>
 ```
 
 ### Global Options
@@ -25,35 +27,54 @@ cli/index.ts
 
 ## Extraction Commands
 
-### `npm run extract -- <target_dir>`
+### `npm run extract -- --config <file.toml>`
 
 Extract static codebase graph from Python code using Tree-sitter.
 
 #### Arguments
 
-- `target_dir` (required) - Directory containing Python code to analyze. The per-target config is auto-discovered from `<basename(target_dir)>.codeviz.toml` in repo root or `configs/`.
+- `--config <file.toml>` (required) - Per-target TOML config. All paths are absolute or resolved relative to the TOML file location.
 
 #### Options (pass after `--`)
 
-- `--out <path>` - Output path for codebase graph JSON (default: `out/<target>/codebase_graph.json`)
 - `--verbose, -v` - Enable verbose output
 
 #### Examples
 
 ```bash
-# Basic extraction (outputs to out/<target>/codebase_graph.json, picks up configs/demo_codebase.codeviz.toml)
-npm run extract -- demo_codebase
-
-# With custom output location
-npm run extract -- /path/to/project --out out/my_project/codebase_graph.json
+# Basic extraction with explicit config
+npm run extract -- --config ./configs/demo_codebase.codeviz.toml
 
 # With verbose output
-npm run extract -- demo_codebase --verbose
+npm run extract -- --config ./configs/demo_codebase.codeviz.toml --verbose
+```
+
+## Annotation Command
+
+### `npm run annotate -- <target_dir>`
+
+Generate LLM-based tags for function nodes and write `llm_annotation.json` alongside the graph in the same output folder.
+
+#### Options (pass after `--`)
+
+- `--vocab <closed|open|suggest>` - Vocabulary mode for tags (default: `closed`)
+- `--limit <int>` - Max nodes to annotate (default: `0` = no limit)
+- `--rank <mixed|centrality|fanin|fanout|loc>` - Ordering used if limiting (default: `mixed`)
+- `--verbose <int>` - Verbosity level (default: `0`)
+
+#### Examples
+
+```bash
+# Annotate all functions in the project with closed vocabulary
+npm run annotate -- demo_codebase
+
+# Suggest new tags (not applied), limited to top 300 by mixed ranking
+npm run annotate -- demo_codebase --vocab suggest --limit 300 --rank mixed
 ```
 
 ## Viewer Commands
 
-### `npm run view -- [options]`
+### `npm run view -- --config <file.toml> [options]`
 
 Start interactive viewer for exploring extracted codebase structure.
 
@@ -65,59 +86,56 @@ Start interactive viewer for exploring extracted codebase structure.
 - `--no-kill-existing` - Don't kill existing processes on port before starting
 - `--mode <default|explore|modules>` - Initial viewer mode (default: `default`)
 - `--hybrid-mode <sequential>` - Hybrid submode when using ELK→fCoSE (default: `sequential`)
-- `--target <path>` - Optional target directory to influence viewer defaults (host/port/mode) via its `.codeviz.toml`
+  (No target guessing; the CLI computes the exact data file from the config.)
 
 #### Examples
 
 ```bash
-# Start viewer with defaults
-npm run view --
+# Start viewer with config
+npm run view -- --config ./configs/demo_codebase.codeviz.toml
 
 # Custom host and port
-npm run view -- --host 0.0.0.0 --port 3000
+npm run view -- --config ./configs/demo_codebase.codeviz.toml --host 0.0.0.0 --port 3000
 
 # Don't open browser automatically
-npm run view -- --no-browser
+npm run view -- --config ./configs/demo_codebase.codeviz.toml --no-browser
 
 # Don't kill existing processes on port
 npm run view -- --no-kill-existing
 
 # Start with Modules mode and sequential hybrid refinement (default)
-npm run view -- --mode modules --hybrid-mode sequential
+npm run view -- --config ./configs/demo_codebase.codeviz.toml --mode modules --hybrid-mode sequential
 ```
 
 #### One-command workflows
 
 ```bash
 # Build + serve (auto-open, kills existing by default)
-npm run up -- --port 8000 --mode modules
+npm run up -- --config ./configs/demo_codebase.codeviz.toml --port 8000 --mode modules
 
 # Dev auto-reload (rebuilds on change, restarts server, auto-open)
-npm run dev -- --port 8000 --mode modules
+npm run dev -- --config ./configs/demo_codebase.codeviz.toml --port 8000 --mode modules
 ```
 
 ### Usage guidance
 
-- Use `npm run extract -- <dir>` for extraction (canonical).
-- Use `npm run view -- [options]` to start the viewer.
+- Use `npm run extract -- --config <file.toml>` for extraction (canonical).
+- Use `npm run view -- --config <file.toml>` to start the viewer.
 - Avoid `npx codeviz` due to an npm package name collision; it may pull an unrelated package.
 - During development, `npm run dev` auto-rebuilds the viewer and restarts the server. Append flags after `--`.
 
 #### Prerequisites
 
-- Extracted codebase graph at `out/<target>/codebase_graph.json`
+- Extracted codebase graph at `<output.dir>/codebase_graph.json`
+- Optional annotations at `out/<target>/llm_annotation.json`
 - Viewer is built (handled by `npm run build`)
 
-If graph data is missing:
-```bash
-No codebase graph found at out/<target>/codebase_graph.json
-Run 'npm run extract -- <target_dir>' first
-```
+If graph data is missing, ensure you ran extract with the same `--config` and that the file exists at `<output.dir>/codebase_graph.json`.
 
 ## Configuration
 
-- Per-target `.codeviz.toml` file in repo root (e.g., `demo_codebase.codeviz.toml`)
-- CLI `--out` overrides the config's `output.path`
+- Per-target `.codeviz.toml` file (e.g., `configs/demo_codebase.codeviz.toml`)
+- All paths in the config are absolute or resolved relative to the config file
 
 ## Error Scenarios & Troubleshooting
 

@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import type { FastifyInstance } from "fastify";
 import fastifyStatic from "@fastify/static";
 import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -48,7 +49,7 @@ async function loadAssistantPrompt() {
   }
 }
 
-export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string; dataFilePath?: string; workspaceRoot?: string }) {
+export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string; dataFilePath?: string; workspaceRoot?: string }): Promise<FastifyInstance> {
   const app = Fastify();
   // Resolve viewer dist robustly across run contexts (tsx, node, different CWDs)
   const candidates = [
@@ -72,49 +73,8 @@ export async function startServer(opts: { host: string; port: number; openBrowse
   // Resolve data file path with support for per-target output: out/<target>/codebase_graph.json
   async function resolveDataFile(): Promise<string> {
     if (opts.dataFilePath) return opts.dataFilePath;
-    const cwdOut = join(process.cwd(), "out");
-    const repoOutDir = join(repoRoot, "out");
-    const defaultFlatCwd = join(cwdOut, "codebase_graph.json");
-    const defaultFlatRepo = join(repoOutDir, "codebase_graph.json");
-
-    // If a workspace root was provided, attempt target-specific location first
-    const rootBase = opts.workspaceRoot ? opts.workspaceRoot.split(/[\\/]/).pop() || "" : "";
-    if (rootBase) {
-      const byTargetCwd = join(cwdOut, rootBase, "codebase_graph.json");
-      const byTargetRepo = join(repoOutDir, rootBase, "codebase_graph.json");
-      if (existsSync(byTargetCwd)) return byTargetCwd;
-      if (existsSync(byTargetRepo)) return byTargetRepo;
-    }
-    // Prefer most recent per-target file under out/*/codebase_graph.json
-    const candidates = [cwdOut, repoOutDir];
-    for (const base of candidates) {
-      try {
-        const entries = await readdir(base, { withFileTypes: true });
-        const datedFiles: { path: string; mtime: number }[] = [];
-        for (const ent of entries) {
-          if (ent.isDirectory()) {
-            const p = join(base, ent.name, "codebase_graph.json");
-            if (existsSync(p)) {
-              try {
-                const stat = await (await import("node:fs/promises")).stat(p);
-                datedFiles.push({ path: p, mtime: stat.mtimeMs });
-              } catch {
-                datedFiles.push({ path: p, mtime: 0 });
-              }
-            }
-          }
-        }
-        if (datedFiles.length > 0) {
-          datedFiles.sort((a, b) => b.mtime - a.mtime);
-          return datedFiles[0].path;
-        }
-      } catch {}
-    }
-    // Legacy flat locations as last resort
-    if (existsSync(defaultFlatCwd)) return defaultFlatCwd;
-    if (existsSync(defaultFlatRepo)) return defaultFlatRepo;
-    // Final fallback to repo default path
-    return defaultFlatRepo;
+    // No magic resolution when not provided
+    throw new Error("dataFilePath must be provided by the CLI. Please pass --config to the CLI so it can supply an explicit output path.");
   }
   const resolvedDataFile = await resolveDataFile();
 
@@ -307,4 +267,5 @@ export async function startServer(opts: { host: string; port: number; openBrowse
     }
     await import("open").then(m => (m as any).default(url)).catch(() => {});
   }
+  return app;
 }

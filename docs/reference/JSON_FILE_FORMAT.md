@@ -45,6 +45,8 @@ The JSON file follows JSON Schema Draft 2020-12 with the following top-level str
 - **edges**: Array of relationships (function calls, references)
 - **groups**: Array of module/package groupings
 - **moduleImports**: Array of module-to-module import relationships
+  
+Additional file written alongside the graph (optional): `llm_annotation.json` which contains per-node tag annotations produced by an LLM. This is stored separately for cost/performance reasons and is not required for the viewer to function.
 
 ## Nodes Array
 
@@ -58,6 +60,8 @@ Represents code entities like functions, classes, and variables.
   "label": "string (required)", 
   "file": "string (required)",
   "line": "integer|null",
+  "endLine": "integer|null",
+  "loc": "integer|null",
   "module": "string (required)",
   "kind": "string (default: 'function')",
   "tags": "object",

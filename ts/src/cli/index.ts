@@ -1,9 +1,7 @@
 import { Cli, Command, Option } from "clipanion";
-import { resolve, dirname, join, basename } from "node:path";
-import { homedir } from "node:os";
+import { resolve, join } from "node:path";
 import { runExtract } from "../analyzer/extract-python.js";
-import { loadConfigForTarget, loadConfigFromFile } from "../config/loadConfig.js";
-import { loadGlobalConfig } from "../config/loadGlobalConfig.js";
+import { loadAndResolveConfigFromFile, ResolvedConfig } from "../config/loadConfig.js";
 import { startServer } from "../server/server.js";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
@@ -12,26 +10,22 @@ import chalk from "chalk";
 
 class ExtractPython extends Command {
   static paths = [["extract", "python"]];
-  dir = Option.String({ required: true });
-  out = Option.String("--out");
   verbose = Option.Boolean("-v,--verbose", false);
-  configFile = Option.String("--config", "");
+  configFile = Option.String("--config");
   async execute() {
-    const target = resolve(this.dir);
-    const cfg = this.configFile
-      ? await loadConfigFromFile(resolve(this.configFile))
-      : await loadConfigForTarget(target);
-    const defaultOutByTarget = join("out", basename(target), "codebase_graph.json");
-    const configuredOut = cfg.output?.path ?? this.out ?? defaultOutByTarget;
-    const outPath = resolve(configuredOut);
+    if (!this.configFile) {
+      throw new Error("--config is required and must point to a .toml file");
+    }
+    const cfg: ResolvedConfig = await loadAndResolveConfigFromFile(resolve(this.configFile));
+    const outPath = join(cfg.outputDir, "codebase_graph.json");
     await runExtract({
-      targetDir: target,
+      targetDir: cfg.targetDir,
       outPath,
       verbose: this.verbose,
       analyzer: {
-        exclude: cfg.analyzer?.exclude ?? [],
-        includeOnly: cfg.analyzer?.includeOnly ?? [],
-        excludeModules: cfg.analyzer?.excludeModules ?? []
+        exclude: cfg.analyzer.exclude,
+        includeOnly: cfg.analyzer.includeOnly,
+        excludeModules: cfg.analyzer.excludeModules
       }
     });
   }
@@ -43,12 +37,15 @@ class ViewOpen extends Command {
   port = Option.String("--port", "");
   mode = Option.String("--mode", "");
   hybridMode = Option.String("--hybrid-mode", "sequential");
-  target = Option.String("--target", "");
   noBrowser = Option.Boolean("--no-browser", false);
   killExisting = Option.Boolean("--kill-existing", true);
-  configFile = Option.String("--config", "");
+  configFile = Option.String("--config");
   async execute() {
-    // Generate timestamp in yyMMdd_HHmm format
+    if (!this.configFile) {
+      throw new Error("--config is required and must point to a .toml file");
+    }
+    const cfg: ResolvedConfig = await loadAndResolveConfigFromFile(resolve(this.configFile));
+
     const now = new Date();
     const yy = String(now.getFullYear()).slice(-2);
     const MM = String(now.getMonth() + 1).padStart(2, '0');
@@ -56,55 +53,24 @@ class ViewOpen extends Command {
     const HH = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     const timestamp = `${yy}${MM}${dd}_${HH}${mm}`;
-    
-    let viewerLayout = "elk-then-fcose";
-    let resolvedHost = this.host || "127.0.0.1";
-    let resolvedPort: number | undefined = this.port ? Number(this.port) : undefined;
-    let mode = this.mode || "default";
 
-    // Config resolution (explicit --config preferred, else per-target if provided)
-    if (this.configFile || this.target) {
-      try {
-        const cfg = this.configFile
-          ? await loadConfigFromFile(resolve(this.configFile))
-          : await loadConfigForTarget(resolve(this.target));
-        viewerLayout = cfg.viewer?.layout ?? viewerLayout;
-        if (!this.host && cfg.viewer?.host) resolvedHost = cfg.viewer.host;
-        if (!this.port && typeof cfg.viewer?.port === "number") resolvedPort = cfg.viewer.port;
-        mode = this.mode || cfg.viewer?.mode || mode;
-      } catch {}
-    }
+    const viewerLayout = cfg.viewer?.layout ?? "elk-then-fcose";
+    const resolvedHost = this.host || cfg.viewer?.host || "127.0.0.1";
+    const resolvedPort = Number(this.port || (cfg.viewer?.port ?? 8000));
+    const mode = this.mode || cfg.viewer?.mode || "default";
 
-    // Global config fallback (only when CLI flag not provided and nothing set yet)
-    try {
-      const globalCfg = await loadGlobalConfig();
-      if (!this.host && globalCfg.viewer?.host) {
-        resolvedHost = globalCfg.viewer.host;
-      }
-      if (!this.port && typeof resolvedPort !== "number" && typeof globalCfg.viewer?.port === "number") {
-        resolvedPort = globalCfg.viewer.port;
-      }
-    } catch {}
-
-    // Built-in defaults
-    if (typeof resolvedPort !== "number" || Number.isNaN(resolvedPort)) {
-      resolvedPort = 8000;
-    }
-    
     if (this.killExisting) {
       await this.killProcessOnPort(resolvedPort);
     }
-    
+
     console.log(chalk.green(`[${timestamp}] Starting CodeViz viewer server`));
     console.log(chalk.blue(`Log file: out/viewer.log`));
     console.log(chalk.cyan(`Browser URL: http://${resolvedHost}:${resolvedPort}`));
-    
-    // Prefer the provided target as the workspace root if available. Expand '~'.
-    const expandHome = (p: string) => p.startsWith('~') ? join(homedir(), p.slice(1)) : p;
-    const workspaceRoot = this.target ? resolve(expandHome(this.target)) : undefined;
-    await startServer({ host: resolvedHost, port: resolvedPort, openBrowser: !this.noBrowser, viewerLayout, viewerMode: mode, hybridMode: this.hybridMode, workspaceRoot });
+
+    const dataFilePath = join(cfg.outputDir, "codebase_graph.json");
+    await startServer({ host: resolvedHost, port: resolvedPort, openBrowser: !this.noBrowser, viewerLayout, viewerMode: mode, hybridMode: this.hybridMode, workspaceRoot: cfg.targetDir, dataFilePath });
   }
-  
+
   private async killProcessOnPort(port: number) {
     const execAsync = promisify(exec);
     try {
