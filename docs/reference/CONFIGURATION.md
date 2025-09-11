@@ -8,6 +8,31 @@ CodeViz uses per-target TOML configuration files to customize analysis and visua
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture overview
 - [LAYOUT.md](LAYOUT.md) - Viewer layout and display options
 
+## Global configuration (TOML)
+
+CodeViz supports a simple user-level global configuration for settings that are not tied to a specific target project (for example, LLM provider/model for assistant features).
+
+Lookup order (first existing file is used):
+
+- macOS: `~/Library/Application Support/codeviz/config.toml`
+- Linux: `$XDG_CONFIG_HOME/codeviz/config.toml` or `~/.config/codeviz/config.toml`
+- Windows: `%APPDATA%/codeviz/config.toml`
+- Override via env var: `CODEVIZ_GLOBAL_CONFIG` (or `CODEVIZ_CONFIG`)
+
+Example:
+```toml
+[llm]
+provider = "openai"       # e.g., "openai", "anthropic", "openrouter"
+model = "gpt-4o-mini"
+apiKey = ""               # optional; prefer environment variables
+temperature = 0.2
+maxTokens = 2000
+```
+
+Notes:
+- Global config is separate from per-target config and is not layered/merged with it.
+- Keep project-specific analysis/viewer settings in the per-target TOML described below.
+
 ## File format
 
 Example:
