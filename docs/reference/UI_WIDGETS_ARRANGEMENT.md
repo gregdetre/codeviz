@@ -8,14 +8,15 @@ The viewer uses a three-pane grid: a left widget pane for controls, a central gr
 
 ### Current state
 
-- Left widget pane (`.toolbar`): layout selection, mode switching, edge/entity toggles, filter mode, refine button, and search. Hybrid submode controls were removed; hybrid runs sequentially by default.
-- Center (`#cy`): Cytoscape.js graph.
-- Right details pane (`#details` within `.sidebar`): contextual information for the selected node or module.
+- Left widget pane (`.toolbar`): layout selection, mode switching, edge/entity toggles, filter mode, refine button, and search. Test links removed in favor of integrated VS Code support.
+- Center (`#cy`): Cytoscape.js graph with Cmd+Click/Ctrl+Click to open files in VS Code.
+- Right details pane (`#details` within `.sidebar`): contextual information for the selected node or module, with VS Code integration via clickable file paths showing VS Code icons.
 
 ### Key files
 
 - `ts/viewer/index.html`: Defines the three-column grid and widget markup. The toolbar remains identified by the same element IDs (e.g., `#layoutSelect`, `#modeSelect`, `#searchBox`).
 - `ts/viewer/src/app.ts`: Wires control events by querying elements by ID. No behavioral changes are required due to the move.
+- `ts/viewer/src/details-panel.ts`: Renders the right details pane with VS Code integration via clickable file paths with VS Code icons.
 - `ts/viewer/src/style.ts`: Cytoscape stylesheet for graph elements (unchanged by layout).
 
 ### Layout details
@@ -28,7 +29,9 @@ The viewer uses a three-pane grid: a left widget pane for controls, a central gr
 
 - `../reference/LAYOUT.md`: General layout and visual design guidelines for the viewer (includes hybrid details). See also `../reference/USER_GUIDE.md` for end‑user behavior.
 - `../reference/GUI_CONTROLS.md` (when available): Control semantics and expected behavior.
+- `../reference/ICONS_SYMBOLS.md`: Visual symbols and icons used throughout the interface.
 - `../../ts/viewer/src/app.ts`: Event wiring for toolbar controls.
+- `../../ts/viewer/src/details-panel.ts`: Right pane rendering and editor integration.
 - `../reference/libraries/FLOATING_UI_TOOLTIP_INTEGRATION.md`: Tooltip system used in the canvas.
 - `../reference/libraries/WORD_WRAP_LIBRARY_INTEGRATION.md`: Text wrapping for labels.
 

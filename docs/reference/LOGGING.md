@@ -2,15 +2,15 @@
 
 ### Overview
 
-Logging is local-only. The viewer writes developer-facing notes to the browser console. There is no HTTP log forwarding. For troubleshooting sessions, use your terminal to tail the local log file written by the server lifecycle.
+Logging is local-only. The viewer writes developer-facing notes to the browser console. A development-only HTTP endpoint is available to read the current log file content. For troubleshooting sessions, you can either tail the local file directly or fetch it over HTTP and pipe to `tail`.
 
 ### What gets captured
 - The server resets (truncates) the log file on each start: `out/viewer.log`.
 - The viewer may print warnings to the browser console (e.g., schema validation warnings); these are not forwarded.
 
 ### Server endpoints
-- No logging endpoints are exposed.
-- The server still serves the viewer UI and JSON data.
+- `GET /out/viewer.log`: returns the current log file content as plain text (development use only).
+- The server also serves the viewer UI and JSON data.
 
 ### Log file location
 - Default: `out/viewer.log` under the repository (or current working directory if `out/` exists there).
@@ -24,13 +24,19 @@ node ts/dist/cli/index.js view open --no-browser
 ```bash
 open http://127.0.0.1:8080
 ```
-3) Tail logs locally:
+3) Tail the last lines of logs locally:
 ```bash
-tail -f out/viewer.log
+tail -n 50 out/viewer.log
+```
+
+Or via HTTP (default port 8080 unless overridden):
+```bash
+curl -s http://127.0.0.1:8080/out/viewer.log | tail -n 50
 ```
 
 ### Notes
 - Logging is development-focused and local-only.
+- The `/out/viewer.log` endpoint simply serves the local file content; it does not forward browser console output.
 - The viewer filters invalid edges to prevent Cytoscape crashes and may warn in the browser console.
 
 ### Future improvements

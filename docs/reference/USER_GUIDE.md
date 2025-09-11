@@ -92,6 +92,11 @@ Use the control panel to show/hide different elements:
 - **Fade**: Non-focused elements become translucent (default)
 - **Hide**: Non-focused elements disappear completely
 
+### External Editor Integration
+- **VS Code Integration**: Click file paths in the details panel to open files directly in VS Code
+- **Cmd+Click (Mac) / Ctrl+Click (Win/Linux)**: Click any node to open its source file in VS Code
+- **Automatic fallback**: If VS Code protocol fails, commands are copied to clipboard
+
 ## Best Practices
 
 ### Exploring Large Codebases

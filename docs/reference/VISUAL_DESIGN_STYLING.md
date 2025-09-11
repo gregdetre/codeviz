@@ -38,7 +38,7 @@ As CodeViz visual design evolves, this document will signpost to:
 
 - `COLOR_PALETTE_THEMING.md` - Color systems, brand guidelines, and theme customization  
 - `FONTS_TYPOGRAPHY_SYSTEM.md` - Font hierarchy, text styling, and readability optimization
-- `ICONS_SYMBOLS.md` - Visual symbols, iconography, and graphical representations
+- `ICONS_SYMBOLS.md` - Visual symbols, iconography, external editor integration icons, and graphical representations
 - `ANIMATION_INTERACTION.md` - Motion design, transitions, and interactive feedback patterns
 - `ACCESSIBILITY.md` - Inclusive design, WCAG compliance, and assistive technology support
 
