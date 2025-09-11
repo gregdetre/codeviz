@@ -2,7 +2,7 @@ import { Cli, Command, Option } from "clipanion";
 import { resolve, dirname, join, basename } from "node:path";
 import { homedir } from "node:os";
 import { runExtract } from "../analyzer/extract-python.js";
-import { loadConfigForTarget } from "../config/loadConfig.js";
+import { loadConfigForTarget, loadConfigFromFile } from "../config/loadConfig.js";
 import { loadGlobalConfig } from "../config/loadGlobalConfig.js";
 import { startServer } from "../server/server.js";
 import { exec } from "node:child_process";
@@ -15,9 +15,12 @@ class ExtractPython extends Command {
   dir = Option.String({ required: true });
   out = Option.String("--out");
   verbose = Option.Boolean("-v,--verbose", false);
+  configFile = Option.String("--config", "");
   async execute() {
     const target = resolve(this.dir);
-    const cfg = await loadConfigForTarget(target);
+    const cfg = this.configFile
+      ? await loadConfigFromFile(resolve(this.configFile))
+      : await loadConfigForTarget(target);
     const defaultOutByTarget = join("out", basename(target), "codebase_graph.json");
     const configuredOut = cfg.output?.path ?? this.out ?? defaultOutByTarget;
     const outPath = resolve(configuredOut);
@@ -43,6 +46,7 @@ class ViewOpen extends Command {
   target = Option.String("--target", "");
   noBrowser = Option.Boolean("--no-browser", false);
   killExisting = Option.Boolean("--kill-existing", true);
+  configFile = Option.String("--config", "");
   async execute() {
     // Generate timestamp in yyMMdd_HHmm format
     const now = new Date();
@@ -58,10 +62,12 @@ class ViewOpen extends Command {
     let resolvedPort: number | undefined = this.port ? Number(this.port) : undefined;
     let mode = this.mode || "default";
 
-    // Per-target config (if provided)
-    if (this.target) {
+    // Config resolution (explicit --config preferred, else per-target if provided)
+    if (this.configFile || this.target) {
       try {
-        const cfg = await loadConfigForTarget(resolve(this.target));
+        const cfg = this.configFile
+          ? await loadConfigFromFile(resolve(this.configFile))
+          : await loadConfigForTarget(resolve(this.target));
         viewerLayout = cfg.viewer?.layout ?? viewerLayout;
         if (!this.host && cfg.viewer?.host) resolvedHost = cfg.viewer.host;
         if (!this.port && typeof cfg.viewer?.port === "number") resolvedPort = cfg.viewer.port;

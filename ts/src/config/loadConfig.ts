@@ -35,3 +35,9 @@ export async function loadConfigForTarget(targetDir: string): Promise<CodevizCon
   }
   return {};
 }
+
+export async function loadConfigFromFile(configPath: string): Promise<CodevizConfig> {
+  const file = resolve(configPath);
+  const toml = await readFile(file, "utf8");
+  return parse(toml) as CodevizConfig;
+}
