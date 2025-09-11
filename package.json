@@ -1,0 +1,49 @@
+{
+    "name": "codeviz-ts",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "bin": {
+        "codeviz": "ts/dist/cli/index.js"
+    },
+    "scripts": {
+        "build": "tsc -p ts/tsconfig.json && vite build --config ts/viewer/vite.config.ts",
+        "up": "npm run build && node ts/dist/cli/index.js view open",
+        "dev": "sh -c 'vite build --config ts/viewer/vite.config.ts --watch & tsx watch ts/src/cli/index.ts view open --kill-existing --no-browser \"$@\"' --",
+        "codeviz": "node ts/dist/cli/index.js",
+        "view": "node ts/dist/cli/index.js view open",
+        "extract": "node ts/dist/cli/index.js extract python",
+        "dev:view": "vite --config ts/viewer/vite.config.ts",
+        "dev:cli": "tsx ts/src/cli/index.ts",
+        "start": "node ts/dist/cli/index.js",
+        "test": "playwright test --config ts/playwright.config.ts",
+        "test:ui": "playwright test --ui --config ts/playwright.config.ts"
+    },
+    "dependencies": {
+        "@fastify/static": "^7.0.4",
+        "@floating-ui/dom": "^1.6.11",
+        "@ai-sdk/anthropic": "^2.0.15",
+        "ai": "^5.0.40",
+        "chalk": "^5.6.2",
+        "clipanion": "4.0.0-rc.3",
+        "cytoscape": "^3.31.0",
+        "cytoscape-elk": "^2.1.0",
+        "cytoscape-fcose": "^2.2.0",
+        "dotenv": "^16.4.5",
+        "elkjs": "^0.9.3",
+        "fastify": "^4.27.2",
+        "minimatch": "^9.0.5",
+        "open": "^10.1.0",
+        "toml": "^3.0.0",
+        "tree-sitter": "^0.20.4",
+        "tree-sitter-python": "^0.20.3",
+        "zod": "^3.23.8"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.55.0",
+        "@types/node": "^24.3.1",
+        "tsx": "^4.19.0",
+        "typescript": "^5.6.2",
+        "vite": "^5.4.7"
+    }
+}

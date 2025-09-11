@@ -11,15 +11,15 @@ see `docs/reference/PRODUCT_VISION_FEATURES.md`
 ```bash
 git clone <repository-url>
 cd codeviz
-# Install TS workspace deps
-npm install --prefix ts
+# Install deps (root)
+npm install
 ```
 
 ### Basic Usage
 
 1. **Build the CLI:**
    ```bash
-   npm run --prefix ts build
+   npm run build
    ```
 
 2. **Extract codebase structure (Python):**

@@ -28,8 +28,8 @@ Generic codebase visualization tool for exploring code structure and dependencie
 ## Build Commands
 
 ```bash
-# Install TypeScript dependencies
-cd ts && npm install
+# Install dependencies
+npm install
 
 # Build TypeScript CLI and viewer
 npm run build
@@ -63,9 +63,9 @@ tsc --noEmit             # Type checking
 
 ```bash
 lsof -ti:3080 | xargs -r kill
-npm install --prefix ts && npm run --prefix ts build
+npm install && npm run build
 npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/codebase_graph.json
-node ts/dist/cli/index.js view open --port 3080 --no-browser
+npm run view -- --port 3080 --no-browser
 open http://127.0.0.1:3080
 ```
 

@@ -18,7 +18,7 @@ Development environment setup and dependencies for the CodeViz visualization too
 
 ```bash
 # From repo root
-npm install --prefix ts
+npm install
 ```
 
 ## Quick demo: visualize `demo_codebase/`
@@ -28,20 +28,20 @@ npm install --prefix ts
 lsof -ti:3080 | xargs -r kill
 
 # 2) Install deps and build the viewer/CLI
-npm install --prefix ts
-npm run --prefix ts build
+npm install
+npm run build
 
 # 3) Extract the demo codebase into JSON
 npx codeviz extract python demo_codebase --out out/codebase_graph.json
 
 # 4) Start the single-port viewer (no auto-browser)
-node ts/dist/cli/index.js view open --port 3080 --no-browser
+npm run view -- --port 3080 --no-browser
 
 # 5) Open the viewer
 open http://127.0.0.1:3080
 
 # Optional: run smoke tests (Playwright)
-npm test --prefix ts
+npm test
 
 # When finished: stop the server
 lsof -ti:3080 | xargs -r kill
@@ -75,7 +75,7 @@ npx codeviz extract python demo_codebase --out out/codebase_graph.json
 Serve the built viewer and JSON on one port:
 ```bash
 # Build viewer once
-npm run build --prefix ts
+npm run build
 
 # Start server
 npx codeviz view open

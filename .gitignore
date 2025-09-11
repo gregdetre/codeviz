@@ -166,6 +166,7 @@ out/
 .DS_Store
 _secrets.py
 node_modules/
+ts/node_modules/
 .vscode/
 
 .env
@@ -177,3 +178,4 @@ codeviz/out/
 output/
 
 .codeviz_cache/
+.playwright-mcp/

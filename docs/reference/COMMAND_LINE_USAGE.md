@@ -86,10 +86,20 @@ npx codeviz view open --no-kill-existing
 npx codeviz view open --mode modules --hybrid-mode constrained
 ```
 
+#### One-command workflows
+
+```bash
+# Build + serve (auto-open, kills existing by default)
+npm run up -- --port 3080 --mode modules
+
+# Dev auto-reload (rebuilds on change, restarts server, no auto-open)
+npm run dev -- --port 3080 --mode modules
+```
+
 #### Prerequisites
 
 - Extracted codebase graph at `out/codebase_graph.json`
-- Viewer is built (handled by `npm run build --prefix ts`)
+- Viewer is built (handled by `npm run build`)
 
 If graph data is missing:
 ```bash
