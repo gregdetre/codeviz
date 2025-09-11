@@ -44,7 +44,7 @@ npx codeviz view open
 # One-command shortcuts
 # Build + serve (auto-open; kills existing)
 npm run up -- --port 3080
-# Dev auto-reload (rebuilds viewer, restarts server; no auto-open)
+# Dev auto-reload (rebuilds viewer, restarts server; auto-open)
 npm run dev -- --port 3080
 
 # Help for any command

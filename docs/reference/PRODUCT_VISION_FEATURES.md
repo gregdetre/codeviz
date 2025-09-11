@@ -42,4 +42,21 @@ We're interested in Cytoscape.js features such as:
 - Emphasise speed of experimentation rather than bullet-proofing things
 - Avoid fallbacks & defaults - better to fail if input assumptions aren't being met
 
+# Key Questions to think about
 
+1. What information do you want users to extract fastest? Is it:
+  - Entry points and main execution paths?
+  - Module boundaries and organization?
+  - Function types (utilities vs core logic vs data processing)?
+  - Call frequency or importance?
+2. Do you have access to additional metadata that could drive color decisions, like:
+  - Function complexity (lines of code, cyclomatic complexity)?
+  - Call frequency or centrality?
+  - Function categories (I/O, computation, coordination)?
+  - Module types (business logic vs utilities vs data)?
+
+Answers from the user:
+
+1) Yes to all of the above. We probably can't show everything at once. So we'll want to give the user a way to switch mode/intent, which would change what's emphasised.
+
+2) Yes, let's calculate that stuff.

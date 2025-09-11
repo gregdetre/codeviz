@@ -26,7 +26,3 @@ This document explains how layout works in CodeViz, with a focus on execution/ca
 - Default view: emphasizes function calls; imports available via `moduleImports`.
 - Modules view (future): emphasize module/package relationships.
 - Data structures view (future): highlight entities and functions operating on them.
-
-## Troubleshooting
-- If nodes overlap: increase spacing or switch to grid temporarily.
-- Large graphs: disable animation, batch operations, and consider progressive reveal.

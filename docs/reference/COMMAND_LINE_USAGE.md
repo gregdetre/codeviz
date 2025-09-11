@@ -92,7 +92,7 @@ npx codeviz view open --mode modules --hybrid-mode constrained
 # Build + serve (auto-open, kills existing by default)
 npm run up -- --port 3080 --mode modules
 
-# Dev auto-reload (rebuilds on change, restarts server, no auto-open)
+# Dev auto-reload (rebuilds on change, restarts server, auto-open)
 npm run dev -- --port 3080 --mode modules
 ```
 
