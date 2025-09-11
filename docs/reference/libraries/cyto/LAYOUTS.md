@@ -10,7 +10,7 @@ Cytoscape.js supports hybrid layout approaches that combine the organic arrangem
 
 - **Use ELK**: when you want clear, hierarchical/DAG call flows, orthogonal edge routing, and minimal crossings (e.g., execution flow, module hierarchies). ELK is deterministic and great for “presentation-ready” structure.
 - **Use fCoSE**: when you want fast, interactive exploration on compound graphs with animation and constraint support (fixed nodes, alignments). fCoSE is excellent for iterative discovery and refinement.
-- **Use ELK→fCoSE (elk-then-fcose, default)**: when you want ELK’s clarity followed by an organic refinement to improve spacing. Start with ELK (animate: false), then apply fCoSE with `randomize:false`.
+- **Use ELK→fCoSE (elk-then-fcose)**: when you want ELK’s clarity followed by an organic refinement to improve spacing. Start with ELK (animate: false), then apply fCoSE with `randomize:false`.
 
 ### ELK (layered / hierarchical)
 
@@ -38,6 +38,8 @@ cy.layout(elkLayout).run();
 ```
 
 See also: [Cytoscape-ELK adapter](https://github.com/cytoscape/cytoscape.js-elk) and [ELK project](https://projects.eclipse.org/projects/modeling.elk)
+
+> Note: This document is generic Cytoscape guidance. For how CodeViz applies these layouts, see `../../LAYOUT.md`.
 
 ## See Also
 

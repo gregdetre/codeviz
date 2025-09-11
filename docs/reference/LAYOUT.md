@@ -22,6 +22,19 @@ This document explains how layout works in CodeViz, with a focus on execution/ca
 ## Current state
 - Default layout is ELK→fCoSE (sequential hybrid). ELK provides layered structure and orthogonal routing; fCoSE refines spacing with `randomize:false`. Module groups as compounds, filtering toggles, neighbor highlight. A toolbar control allows switching layouts; hybrid runs in sequential mode by default (no constrained submode).
 
+### CodeViz specifics: initial vs Re-layout
+
+- Initial render (Explore/Modules):
+  - Computes elements for the chosen mode, then applies ELK with:
+    - `elk.algorithm = layered`
+    - `elk.direction = DOWN`
+    - `elk.edgeRouting = ORTHOGONAL` (ELK-only mode)
+  - In hybrid (`elk-then-fcose`), ELK runs first (no animation) to seed positions, then fCoSE runs with `randomize:false` and `numIter: 1000` to refine.
+- Re-layout button:
+  - Triggers a pure fCoSE run on current positions (no ELK reseed). This allows a more compact arrangement that may deviate from strict layer ranks.
+
+Implication: The initial layout emphasizes directional clarity and stable ranks; Re-layout favors compactness and aesthetics via force-directed refinement.
+
 ## Layout modes (high-level)
 - Default view: emphasizes function calls; imports available via `moduleImports`.
 - Modules view (future): emphasize module/package relationships.
