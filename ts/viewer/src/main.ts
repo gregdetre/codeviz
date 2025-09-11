@@ -1,6 +1,8 @@
 import cytoscape from "cytoscape";
 import fcose from "cytoscape-fcose";
 (cytoscape as any).use(fcose);
+import elk from "cytoscape-elk";
+(cytoscape as any).use(elk as any);
 
 async function main() {
   // Forward console logs and errors to server for tailing
@@ -18,8 +20,13 @@ async function main() {
   console.warn = (...args: any[]) => { origWarn.apply(console, args); forward('warn', args.map(String).join(' '), args).catch(() => {}); };
   console.error = (...args: any[]) => { origError.apply(console, args); forward('error', args.map(String).join(' '), args).catch(() => {}); };
 
-  const res = await fetch("/out/codebase_graph.json");
-  const graph = await res.json();
+  const [graphRes, cfgRes] = await Promise.all([
+    fetch("/out/codebase_graph.json"),
+    fetch("/viewer-config.json")
+  ]);
+  const graph = await graphRes.json();
+  const vcfg = await cfgRes.json();
+  const layoutName = (vcfg?.layout ?? 'elk').toLowerCase();
 
   const elements: any[] = [];
   for (const g of graph.groups) {
@@ -45,6 +52,19 @@ async function main() {
     console.warn(`Skipped ${skipped} invalid edges (missing nodes)`);
   }
 
+  const layout = layoutName === 'fcose'
+    ? { name: 'fcose', animate: true }
+    : {
+        name: 'elk',
+        animate: false,
+        nodeDimensionsIncludeLabels: true,
+        elk: {
+          'elk.algorithm': 'layered',
+          'elk.direction': 'DOWN',
+          'elk.edgeRouting': 'ORTHOGONAL'
+        }
+      } as any;
+
   const cy = cytoscape({
     container: document.getElementById("cy") as HTMLElement,
     elements,
@@ -54,7 +74,7 @@ async function main() {
       { selector: 'edge', style: { 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'width': 2 } },
       { selector: 'edge[type = "calls"]', style: { 'line-color': '#666', 'target-arrow-color': '#666' } }
     ],
-    layout: { name: 'fcose', animate: true }
+    layout
   });
 
   const callsToggle = document.getElementById('toggleCalls') as HTMLInputElement;
