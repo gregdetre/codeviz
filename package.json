@@ -8,16 +8,21 @@
     },
     "scripts": {
         "build": "tsc -p ts/tsconfig.json && vite build --config ts/viewer/vite.config.ts",
+        "build:cli": "tsc -p ts/tsconfig.json",
         "up": "npm run build && node ts/dist/cli/index.js view open",
-        "dev": "sh -c 'vite build --config ts/viewer/vite.config.ts --watch & tsx watch ts/src/cli/index.ts view open --kill-existing "$@"' --",
+        "dev": "sh -c 'vite build --config ts/viewer/vite.config.ts --watch & tsx watch ts/src/cli/index.ts view open --kill-existing --no-browser \"$@\"' --",
         "codeviz": "node ts/dist/cli/index.js",
         "view": "node ts/dist/cli/index.js view open",
+        "preextract": "npm run build:cli",
         "extract": "node ts/dist/cli/index.js extract python",
+        "extract:demo": "npm run extract -- demo_codebase --out out/codebase_graph.json",
         "dev:view": "vite --config ts/viewer/vite.config.ts",
         "dev:cli": "tsx ts/src/cli/index.ts",
         "start": "node ts/dist/cli/index.js",
-        "test": "playwright test --config ts/playwright.config.ts",
-        "test:ui": "playwright test --ui --config ts/playwright.config.ts"
+        "pretest": "npm run extract:demo",
+        "test": "tsx ts/tests/commands.node.test.ts",
+        "test:ui": "playwright test --ui --config ts/playwright.config.ts",
+        "test:playwright": "playwright test --config ts/playwright.config.ts"
     },
     "dependencies": {
         "@fastify/static": "^7.0.4",
