@@ -69,6 +69,16 @@ node ts/dist/cli/index.js view open --port 3080 --no-browser
 open http://127.0.0.1:3080
 ```
 
+### Logging (dev)
+
+- Browser console logs are forwarded to the server and saved to `out/viewer.log`.
+- Quick tail:
+```bash
+tail -f out/viewer.log
+# or via HTTP
+curl -s http://127.0.0.1:3080/out/viewer.log | tail -n 50
+```
+
 ## Project Structure
 
 - **TypeScript Core**: `ts/src/cli/index.ts` (Clipanion CLI), `ts/src/analyzer/extract-python.ts` (tree-sitter extraction)
