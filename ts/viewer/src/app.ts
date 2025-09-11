@@ -3,6 +3,8 @@ import fcose from "cytoscape-fcose";
 (cytoscape as any).use(fcose);
 import elk from "cytoscape-elk";
 (cytoscape as any).use(elk as any);
+import expandCollapse from "cytoscape-expand-collapse";
+(cytoscape as any).use(expandCollapse as any);
 import type { Core } from "cytoscape";
 import { graphToElements } from "./elements.js";
 import { generateStyles, applyModuleColorTint } from "./style.js";
@@ -10,7 +12,7 @@ import { InteractionManager } from "./interaction-manager.js";
 import { search } from "./search.js";
 import type { Graph, ViewerConfig, ViewerMode } from "./graph-types.js";
 import { applyLayout, normalizeLayoutName } from "./layout-manager.js";
-import { loadGraph as loadGraphRaw } from "./load-graph.js";
+import { loadGraph as loadGraphRaw, loadAnnotations } from "./load-graph.js";
 import { initFileOpener } from "./file-opener.js";
 
 async function loadGraph(): Promise<Graph> { return await loadGraphRaw(process.env.NODE_ENV !== 'production'); }
@@ -21,18 +23,34 @@ async function loadViewerConfig(): Promise<ViewerConfig> {
 }
 
 export async function initApp() {
-  const [graph, vcfg] = await Promise.all([loadGraph(), loadViewerConfig()]);
+  const [graph, vcfg, annotations] = await Promise.all([loadGraph(), loadViewerConfig(), loadAnnotations()]);
 
   // Initialize file opener with workspace root
   initFileOpener(vcfg);
 
   let mode: ViewerMode = (vcfg.mode ?? 'explore') as ViewerMode;
+  let groupFolders = false; // default: no folder grouping
   let layoutName = normalizeLayoutName(vcfg.layout);
-  const elements = graphToElements(graph, { mode });
-  const cy = cytoscape({ container: document.getElementById('cy') as HTMLElement, elements, style: generateStyles(undefined as any, { highlight: vcfg.highlight }) });
+  const elements = graphToElements(graph, { mode, groupFolders });
+  const cy = cytoscape({
+    container: document.getElementById('cy') as HTMLElement,
+    elements,
+    style: generateStyles(undefined as any, { highlight: vcfg.highlight }),
+    wheelSensitivity: typeof vcfg.wheelSensitivity === 'number' ? vcfg.wheelSensitivity : undefined
+  });
   (window as any).__cy = cy; // expose for e2e tests
 
   applyModuleColorTint(cy);
+
+  // Initialize expand/collapse if available (disable animation to reduce jank)
+  try {
+    const ec = (cy as any).expandCollapse ? (cy as any).expandCollapse({ layoutBy: { name: 'fcose', animate: false }, animate: false }) : null;
+    // Auto-collapse folders deeper than level 2
+    if (ec) {
+      const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 2);
+      if (foldersDeep.length > 0) ec.collapse(foldersDeep);
+    }
+  } catch {}
 
   // Set initial document title with project name
   try {
@@ -46,9 +64,11 @@ export async function initApp() {
   const modeInfo = document.getElementById('modeInfo');
   if (modeInfo) modeInfo.textContent = `Mode: ${mode}`;
   await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
+  try { requestAnimationFrame(() => cy.fit()); } catch {}
 
   const im = InteractionManager(cy, graph, vcfg);
   im.installBasics();
+  // TODO: use annotations to render tag-based filter widget (v1.1)
 
   // Update title based on selection focus
   try {
@@ -123,13 +143,37 @@ export async function initApp() {
     modeSelect.addEventListener('change', async () => {
       mode = modeSelect.value as ViewerMode;
       if (modeInfo) modeInfo.textContent = `Mode: ${mode}`;
-      const newElements = graphToElements(graph, { mode });
+      const newElements = graphToElements(graph, { mode, groupFolders });
       cy.elements().remove();
       cy.add(newElements);
       applyModuleColorTint(cy);
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
+      try { requestAnimationFrame(() => cy.fit()); } catch {}
     });
   }
+
+  // Group-by UI wiring
+  try {
+    const groupFoldersToggle = document.getElementById('toggleGroupFolders') as HTMLInputElement | null;
+    if (groupFoldersToggle) {
+      groupFoldersToggle.checked = groupFolders;
+      groupFoldersToggle.addEventListener('change', async () => {
+        groupFolders = groupFoldersToggle.checked;
+        const newElements = graphToElements(graph, { mode, groupFolders });
+        cy.elements().remove();
+        cy.add(newElements);
+        applyModuleColorTint(cy);
+        await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
+        try { requestAnimationFrame(() => cy.fit()); } catch {}
+        // Auto-collapse folder depth > 2
+        try {
+          const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 2);
+          const ec = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
+          if (ec && foldersDeep.length > 0) ec.collapse(foldersDeep);
+        } catch {}
+      });
+    }
+  } catch {}
 
   // Layout selector wiring
   const layoutSelect = document.getElementById('layoutSelect') as HTMLSelectElement;
@@ -149,6 +193,7 @@ export async function initApp() {
       layoutName = normalizeLayoutName(layoutSelect.value);
       if (layoutInfo) layoutInfo.textContent = `Layout: ${layoutName}`;
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
+      try { requestAnimationFrame(() => cy.fit()); } catch {}
       updateHybridVisibility();
     });
   }
@@ -159,6 +204,7 @@ export async function initApp() {
   if (refineBtn) {
     refineBtn.addEventListener('click', async () => {
       await applyLayout(cy, 'fcose', { hybridMode: vcfg.hybridMode as any });
+      try { requestAnimationFrame(() => cy.fit()); } catch {}
     });
   }
 

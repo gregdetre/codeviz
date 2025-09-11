@@ -1,10 +1,33 @@
 import type { ElementDefinition } from "cytoscape";
 import type { Graph, ViewerMode } from "./graph-types.js";
 
-export function graphToElements(graph: Graph, opts: { mode: ViewerMode }): ElementDefinition[] {
+export function graphToElements(graph: Graph, opts: { mode: ViewerMode; groupFolders?: boolean }): ElementDefinition[] {
   const elements: ElementDefinition[] = [];
 
   const nodeIds = new Set(graph.nodes.map(n => n.id));
+  const groupFolders = Boolean(opts.groupFolders);
+
+  // Build module -> file map from nodes (module ids are file basenames)
+  const moduleToFile = new Map<string, string>();
+  for (const n of graph.nodes) {
+    if (n.module && n.file && !moduleToFile.has(n.module)) moduleToFile.set(n.module, n.file);
+  }
+
+  // If grouping by folders, pre-create folder compound nodes and their hierarchy
+  const folderSeen = new Set<string>();
+  function ensureFolderChain(folderPath: string) {
+    const parts = folderPath.split('/').filter(Boolean);
+    let chain = '';
+    for (let i = 0; i < parts.length; i++) {
+      chain = i === 0 ? parts[i] : `${chain}/${parts[i]}`;
+      if (folderSeen.has(chain)) continue;
+      folderSeen.add(chain);
+      const folderId = `folder:${chain}`;
+      const label = parts[i];
+      const parent = i > 0 ? `folder:${parts.slice(0, i).join('/')}` : undefined;
+      elements.push({ data: { id: folderId, label, displayLabel: insertBreakpoints(label), type: 'folder', path: chain, depth: i + 1, parent } as any });
+    }
+  }
 
   if (opts.mode === "modules") {
     // Only module parents and moduleImports as dashed edges
@@ -24,12 +47,31 @@ export function graphToElements(graph: Graph, opts: { mode: ViewerMode }): Eleme
   }
 
   // explore: module compounds, entity nodes, and edges
-  for (const g of graph.groups) {
-    if (g.kind === "module") {
-      const fullPath = g.id;
-      const name = fullPath.split(/[\\/]/).pop() || fullPath;
-      elements.push({ data: { id: `module:${g.id}`, label: name, displayLabel: insertBreakpoints(name), type: "module", path: fullPath } });
+  // Optional folder grouping
+  if (groupFolders) {
+    // Create folder compounds based on each module's file path
+    for (const [mod, file] of moduleToFile.entries()) {
+      const idx = file.lastIndexOf('/');
+      const folderPath = idx >= 0 ? file.slice(0, idx) : '';
+      if (folderPath) ensureFolderChain(folderPath);
     }
+  }
+
+  // Create module compounds; optionally parent under deepest folder
+  for (const g of graph.groups) {
+    if (g.kind !== "module") continue;
+    const mod = g.id;
+    const name = mod.split(/[\\/]/).pop() || mod;
+    let parent: string | undefined = undefined;
+    if (groupFolders) {
+      const file = moduleToFile.get(mod);
+      if (file) {
+        const idx = file.lastIndexOf('/');
+        const folderPath = idx >= 0 ? file.slice(0, idx) : '';
+        if (folderPath) parent = `folder:${folderPath}`;
+      }
+    }
+    elements.push({ data: { id: `module:${mod}`, label: name, displayLabel: insertBreakpoints(name), type: "module", path: mod, parent } as any });
   }
 
   for (const n of graph.nodes) {
