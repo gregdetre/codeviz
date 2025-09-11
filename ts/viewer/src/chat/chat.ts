@@ -35,6 +35,8 @@ function renderMessages(container: HTMLElement): void {
       bubble.style.background = '#ffffff';
     }
     if (m.role === 'assistant') {
+      // Use normal whitespace handling for HTML to avoid exaggerated spacing from preserved newlines
+      bubble.style.whiteSpace = 'normal';
       const rawHtml = String(marked.parse(m.content, { breaks: true } as any) || '');
       const cleanHtml = DOMPurify.sanitize(rawHtml);
       bubble.innerHTML = cleanHtml || m.content;
@@ -46,10 +48,10 @@ function renderMessages(container: HTMLElement): void {
         } catch {}
       });
       bubble.querySelectorAll('p').forEach((p) => {
-        (p as HTMLElement).style.margin = '6px 0 8px';
+        (p as HTMLElement).style.margin = '4px 0 6px';
       });
       bubble.querySelectorAll('ul,ol').forEach((list) => {
-        (list as HTMLElement).style.margin = '6px 0 8px 18px';
+        (list as HTMLElement).style.margin = '4px 0 6px 18px';
       });
       bubble.querySelectorAll('pre').forEach((pre) => {
         (pre as HTMLElement).style.overflow = 'auto';
