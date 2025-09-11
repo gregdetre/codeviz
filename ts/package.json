@@ -16,11 +16,13 @@
     },
     "dependencies": {
         "@fastify/static": "^7.0.4",
+        "chalk": "^5.6.2",
         "clipanion": "4.0.0-rc.3",
         "cytoscape": "^3.31.0",
         "cytoscape-elk": "^2.1.0",
         "cytoscape-fcose": "^2.2.0",
         "elkjs": "^0.9.3",
+        "@floating-ui/dom": "^1.6.11",
         "fastify": "^4.27.2",
         "minimatch": "^9.0.5",
         "open": "^10.1.0",

@@ -5,6 +5,7 @@ import { loadConfigForTarget } from "../config/loadConfig.js";
 import { startServer } from "../server/server.js";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import chalk from "chalk";
 
 
 class ExtractPython extends Command {
@@ -40,7 +41,16 @@ class ViewOpen extends Command {
   noBrowser = Option.Boolean("--no-browser", false);
   killExisting = Option.Boolean("--kill-existing", true);
   async execute() {
-    let viewerLayout = "elk";
+    // Generate timestamp in yyMMdd_HHmm format
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const MM = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const HH = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const timestamp = `${yy}${MM}${dd}_${HH}${mm}`;
+    
+    let viewerLayout = "elk-then-fcose";
     let host = this.host || "127.0.0.1";
     let port = this.port ? Number(this.port) : 8080;
     let mode = this.mode || "default";
@@ -57,6 +67,10 @@ class ViewOpen extends Command {
     if (this.killExisting) {
       await this.killProcessOnPort(port);
     }
+    
+    console.log(chalk.green(`[${timestamp}] Starting CodeViz viewer server`));
+    console.log(chalk.blue(`Log file: out/viewer.log`));
+    console.log(chalk.cyan(`Browser URL: http://${host}:${port}`));
     
     await startServer({ host, port, openBrowser: !this.noBrowser, viewerLayout, viewerMode: mode, hybridMode: this.hybridMode });
   }
