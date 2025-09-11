@@ -1,178 +1,146 @@
-# CodeViz Visual Polish & Interactivity
+# CodeViz Visual Polish & Interactivity (Revised Plan)
 
 ## Goal, context
 
-Build on the excellent ELK layout foundation to add interactive features and visual polish, transforming CodeViz into a professional tool for exploring small Python codebases.
+Build on the ELK layout foundation to add visual polish, richer interactions, and a flexible architecture for experimentation, while keeping the tool focused on small codebases and a single canonical data model.
 
-**Current state**: ELK layout has solved the fundamental layout problems - no overlapping text, good space utilization, clean edge routing, and clear hierarchical flow.
+**Current state**: ELK gives clean hierarchy and routing; TS server and viewer are working end‑to‑end with basic styles, neighbor highlight, edge toggles, and log forwarding.
 
-**Remaining work**:
-- **Visual differentiation**: All nodes look identical regardless of type/importance  
-- **Rich interactivity**: Limited to basic neighbor highlighting and edge toggling
-- **Missing tooltips**: No detailed information on hover despite rich metadata available
-- **Visual polish**: Basic styling that could benefit from better colors, typography, contrast
-
-Goal: Transform this into a polished, professional visualization tool while maintaining the excellent layout foundation.
+**Desired outcome**: A professional, legible visualization with module-aware colors, type-based styling, better edge contrast, focus/highlight flows, search + filters, and a clean two‑pane UI — all structured in small, testable modules.
 
 ## References
 
-- `docs/reference/PRODUCT_VISION_FEATURES.md`: Overall vision including Cytoscape.js features we want (grouping, filtering, interactivity, tooltips)
-- `ts/viewer/src/main.ts`: Current TypeScript viewer implementation using Cytoscape.js + ELK layout
-- `ts/viewer/index.html`: Basic HTML structure with minimal styling
-- Current working demo at http://127.0.0.1:3080 showing much-improved ELK layout
-- `out/codebase_graph.json`: Data structure with nodes, edges, groups, and metadata
-
-**Key references from old TypeScript implementation** (`src/codeviz/viewer/cyto/`):
-- `src/codeviz/viewer/cyto/src/main.ts`: Rich implementation with details panel, search, mode switching, module colors
-- `src/codeviz/viewer/cyto/index.html`: Professional two-pane layout (graph + details sidebar) 
-- `src/codeviz/viewer/cyto/src/types.d.ts`: Comprehensive type definitions for graph data
-- `src/codeviz/viewer/cyto/src/schema.ts`: JSON schema validation for graph data
+- `docs/reference/PRODUCT_VISION_FEATURES.md` — Vision, Cytoscape features to target
+- `docs/reference/ARCHITECTURE.md` — Two‑phase architecture and data flow
+- `docs/reference/LAYOUT.md` — ELK/fCoSE positioning guidance
+- `ts/viewer/src/main.ts` — Current viewer entry (ELK + minimal styles)
+- `ts/viewer/index.html` — Current single‑pane shell
+- `ts/src/server/server.ts` — Single‑port Fastify, serves JSON + `/viewer-config.json`
+- `out/codebase_graph.json` — Canonical graph data
+- Legacy `src/codeviz/viewer/cyto/*` — Rich styles, color hashing, tooltips, expand/collapse, validation ideas
 
 ## Principles, key decisions
 
-- **Visual quality first**: Focus on making the current functionality look professional before adding new features
-- **Small codebase focus**: Don't worry about performance optimizations - target dozens of files max
-- **Incremental improvement**: Get each visual fix working before moving to the next
-- **Preserve existing functionality**: Don't break current edge toggling, neighbor highlighting, etc.
-- **Use existing tech stack**: Stick with Cytoscape.js + TypeScript, work within current architecture
-- **Reuse proven patterns**: Leverage excellent features from old implementation (`src/codeviz/viewer/cyto/`)
+- **Single canonical data model**: Keep one stable JSON graph (nodes, edges, groups, moduleImports). Build mode‑specific views via in‑memory transforms (no new persistent formats by default). This follows the “100 functions on one data structure” principle.
+- **Mode transforms, not format forks**: Default/Exec, Explore, and Modules modes are different projections/filtering of the same graph into Cytoscape elements. Optionally cache ephemeral transforms in memory/localStorage for speed.
+- **Layout policy**: Use ELK for presentation (Default/Exec). Use fCoSE for interactive exploration (drag, expand/collapse). Avoid coupling expand/collapse to ELK.
+- **Style system (tokens + generator)**: Centralize colors, sizes, fonts, spacing, and state opacities as tokens. Generate Cytoscape styles from tokens so we can theme, tweak contrast, and evolve visuals without copy‑pasting selectors.
+- **Small modules**: Split viewer into types, elements, style, layout manager, interaction manager, details panel, and optional extensions. Favor pure functions and tiny state containers.
+- **Feature flags + lazy loading**: Gate heavy extensions (context menus, popper/tippy, expand/collapse) behind toggles and load them on demand.
+- **Dev validation + logging**: Validate JSON (Ajv, dev‑only), filter bad edges, and log warnings to `/out/viewer.log`.
+- **Small codebase focus**: Optimize for readability and UX over scale; performance flags are optional extras.
+
+## Architectural outline (TS viewer)
+
+- `ts/viewer/src/graph-types.ts` — TS types mirroring `DATA_STRUCTURES.md`
+- `ts/viewer/src/load-graph.ts` — Fetch JSON, optional Ajv validation
+- `ts/viewer/src/elements.ts` — `graphToElements(graph, options)`; builds module→file→entity compounds
+- `ts/viewer/src/style-tokens.ts` — Design tokens (palette, sizes, radii, opacities)
+- `ts/viewer/src/style.ts` — `generateStyles(tokens, opts)`; node kind shapes, edge palettes, module color overrides with contrast‑safe labels
+- `ts/viewer/src/layout-manager.ts` — `applyLayout(cy, 'elk'|'fcose'|...)` and mode→layout mapping
+- `ts/viewer/src/interaction-manager.ts` — Focus/highlight, hide vs fade vs disable, background reset, ESC behavior
+- `ts/viewer/src/search.ts` — Debounced search across id/label/module/file
+- `ts/viewer/src/details-panel.ts` — Render details (signature, doc, file:line, connected nodes)
+- `ts/viewer/src/extensions.ts` — Lazy load expand/collapse, context menus, popper/tippy
+- `ts/viewer/src/app.ts` — Wire‑up shell, small `ViewerState` (mode, filters, selection, sidebar width)
+
+## Data modes: transforms vs extra files
+
+- Keep one canonical `codebase_graph.json` as the source of truth.
+- Build ephemeral element sets per mode in the viewer:
+  - **Default/Exec** (ELK): all entities grouped by module/file, calls emphasized.
+  - **Explore** (fCoSE): same elements but optimized for interactive exploration and optional expand/collapse.
+  - **Modules**: hide entity nodes; show only module parents; render `moduleImports` as dashed edges.
+- Optional: add a CLI flag to emit experimental, derived JSON views for offline debugging. Default remains in‑memory transforms to avoid format sprawl.
+
+## Style system (tokens + generator)
+
+- **Tokens**: central constants for colors (base, edge kinds, states), font sizes, node sizes by kind, shape radii, paddings, and opacities. Include helpers: `hashHslForModule(name)`, `contrastOn(bg)`, `lighten/darken(hsl)`.
+- **Generator**: a function that maps tokens to Cytoscape selectors (node kinds, edge kinds, state classes). One place to change visuals across the app, enabling themes and consistent contrast.
 
 ## Stages & actions
 
-### Stage: Port module-based color generation (Quick win!)
-- [ ] Add module-based automatic coloring from old code
-  - [ ] Port `hslToHex` function from `src/codeviz/viewer/cyto/src/main.ts:36-55`
-  - [ ] Port `hashColorForModule` function from `src/codeviz/viewer/cyto/src/main.ts:57-66`
-  - [ ] Update node styling to use generated module colors (see line 86 in old code)
-  - [ ] Test that each module gets distinct, readable colors
+### Stage: Foundations (types, elements, styles, layout)
+- [ ] Add `graph-types.ts` (align with `docs/reference/DATA_STRUCTURES.md`)
+- [ ] Add `elements.ts` to build module→file→entity compounds; filter invalid edges safely
+- [ ] Add `style-tokens.ts` with palette, sizes, state opacities; implement `hashHslForModule`, `contrastOn`
+- [ ] Add `style.ts` that generates Cytoscape styles (node kind shapes, module background with contrast‑safe text, edge palettes by kind)
+- [ ] Add `layout-manager.ts` with ELK default and fCoSE alternative
+- [ ] Server: expose `/schema/codebase_graph.schema.json`; viewer: optional Ajv validation (dev‑only) and log warnings to `/client-log`
+- Acceptance: viewer boots with generated styles; ELK layout runs; no regressions on demo
+- Health: `npm run build --prefix ts`, `tsc --noEmit`, smoke open
 
-### Stage: Enhanced visual differentiation  
-- [ ] Add node styling based on type and importance
-  - [ ] Different shapes/colors for functions vs classes vs variables (using node.kind)
-  - [ ] Size nodes based on some measure of importance (number of connections, centrality)
-  - [ ] Add visual indicators for exported vs internal functions
-- [ ] Improve edge styling and contrast
-  - [ ] Better edge colors and arrows (see old code lines 87-90 for examples)
-  - [ ] Improve visibility of different edge types (calls vs imports)
-  - [ ] Test edge visibility at different zoom levels
+### Stage: Quick visual wins (module colors, edge palette, contrast)
+- [ ] Apply module color hashing to entity nodes; ensure label contrast is AA‑ish
+- [ ] Improve edge palette (calls=blue, imports=purple dashed, runtime=orange dotted, build_step=dark)
+- [ ] Add clearer arrowheads and widths; verify at multiple zoom levels
+- Acceptance: distinct module tints, legible labels, edges readable in light and dark backgrounds
 
-### Stage: Port professional two-pane layout (Major UX upgrade!)
-- [ ] Update HTML structure to match old professional layout
-  - [ ] Port layout from `src/codeviz/viewer/cyto/index.html` (lines 32-35)
-  - [ ] Add toolbar with mode selector, search input, clear button
-  - [ ] Create right sidebar for details panel (width: 360px)
-  - [ ] Update CSS for flex layout: graph on left, details on right
-- [ ] Add rich details panel functionality
-  - [ ] Port `renderDetails` function from old code (lines 128-178)
-  - [ ] Show function signatures, docstrings, file/line info
-  - [ ] Display connected nodes with clickable navigation links
-  - [ ] Include arguments parsing and tags display
+### Stage: Interaction baseline (focus/highlight, toggles)
+- [ ] Focus on click: spotlight node + neighbors, fade others (0.15–0.25); background click resets; ESC clears
+- [ ] Edge and node kind toggles (calls/imports; functions/classes/variables)
+- [ ] Filter mode toggle: hide vs fade (disable as future optional)
+- Acceptance: predictable focus/reset behavior; toggles work without relayout
+- Tests: Playwright — click focus and reset; toggle edges; check visible counts
 
-### Stage: Advanced search and filtering (Major usability win!)
-- [ ] Port comprehensive search functionality from old code
-  - [ ] Port search logic from old `main.ts:220-267`
-  - [ ] Search by node ID, label, and module name
-  - [ ] Add "hide vs fade" toggle for non-matching nodes
-  - [ ] Implement ESC key to reset all filters
-- [ ] Improve node focus and highlighting
-  - [ ] Port `focusNode` function (old code lines 180-190)
-  - [ ] Click node → highlight neighbors, fade others
-  - [ ] Click background → reset all highlighting
-  - [ ] Make highlighting more prominent than current 0.1 opacity
+### Stage: Two‑pane UI (major UX upgrade)
+- [ ] Replace `ts/viewer/index.html` with a clean two‑pane shell (graph left; resizable 340–380px details sidebar right; toolbar on top)
+- [ ] Implement `details-panel.ts` to show label, kind, signature, doc, file:line, in/out degree, connected nodes (click to navigate)
+- [ ] Persist sidebar width and last chosen mode to `localStorage`
+- Acceptance: details update on node click; navigation via connected nodes works; resize persists
+- Tests: Playwright — node click populates details; sidebar resizes and persists
 
-### Stage: Remaining layout validation
-- [ ] Test with different demo codebases to ensure ELK layout robustness
+### Stage: Modes (Default/Exec, Explore, Modules)
+- [ ] Default/Exec (ELK): presentation‑ready view with calls emphasized
+- [ ] Explore (fCoSE): interactive exploration; drag friendly; no expand/collapse yet
+- [ ] Modules: show only module parents and `moduleImports` edges; dim/hidden function nodes
+- [ ] Mode selector and status indicator; store in `localStorage`
+- Acceptance: modes switch without errors; layouts apply; indicator updates
+- Tests: Playwright — switch modes; verify edge visibility and module imports view
 
-### Stage: Polish and testing
-- [ ] Comprehensive visual testing across browsers
-  - [ ] Test in Chrome, Firefox, Safari for consistent rendering
-  - [ ] Test at different screen sizes and zoom levels  
-  - [ ] Verify all interactions work smoothly
-- [ ] Performance validation for target use cases
-  - [ ] Test with larger demo codebase (if available) to find breaking points
-  - [ ] Ensure smooth animations and interactions
-  - [ ] Measure and optimize initial load time
-- [ ] Documentation and examples
-  - [ ] Update viewer documentation with new features
-  - [ ] Create visual examples showing before/after improvements
-  - [ ] Document best practices for creating readable visualizations
+### Stage: Optional enhancements (gated + lazy loaded)
+- [ ] Tooltips (popper/tippy) for entity nodes with signature/doc; enabled in Explore mode only
+- [ ] Context menus: focus, hide, select; enabled in Explore mode
+- [ ] Expand/Collapse (cytoscape-expand-collapse) for module/file parents; enabled in Explore (fCoSE) mode
+- Acceptance: extensions load on demand; ELK mode remains lean; no layout glitches when disabled
+
+### Stage: Validation, logging, and troubleshooting
+- [ ] Ajv dev validation; first 10 schema errors logged to console and `/out/viewer.log`
+- [ ] Add lightweight status line in UI; link to tail logs via server endpoint
+- [ ] Document common errors (missing nodes/edges filtered, absent JSON)
+- Acceptance: invalid inputs don’t crash; warnings visible in log and console
+
+### Stage: Tests, docs, and hardening
+- [ ] Playwright smoke flows: load; search; focus; mode switch; details panel nav; ESC reset
+- [ ] Type checks (`tsc --noEmit`) and minimal lints if configured
+- [ ] Update docs: `docs/reference/LAYOUT.md`, `docs/reference/LOGGING.md`, and a short viewer README
+- Acceptance: green checks; quick-start instructions verified
 
 ### Stage: Final validation and cleanup
-- [ ] End-to-end testing with real Python projects
-  - [ ] Test extraction and visualization pipeline with different Python project structures
-  - [ ] Validate that improvements work across different coding patterns
-  - [ ] Gather feedback on usability improvements
-- [ ] Code cleanup and optimization
-  - [ ] Refactor viewer code for maintainability
-  - [ ] Remove any experimental code or console.log statements
-  - [ ] Ensure TypeScript types are properly defined
-- [ ] Health checks and commit
-  - [ ] Run `npm run build` to ensure compilation succeeds
-  - [ ] Run `tsc --noEmit` for type checking
-  - [ ] Test that viewer starts and loads demo correctly
-  - [ ] Git commit with comprehensive change summary
+- [ ] Test end‑to‑end on multiple small Python projects; solicit feedback
+- [ ] Trim dead code and noisy logs; keep style tokens concise
+- [ ] Commit with summary and screenshots/GIFs
+- Health: `npm run build --prefix ts`, `tsc --noEmit`, smoke open
 
 ## Appendix
 
-### Current Technical Stack
-- **Frontend**: Vite + TypeScript + Cytoscape.js with ELK layout algorithm
-- **Backend**: Fastify server serving static files and graph JSON data  
-- **Data format**: JSON schema with nodes (functions/classes), edges (calls/imports), groups (modules)
-- **Styling**: Basic CSS with minimal Cytoscape.js style definitions
+### Current Tech Stack
+- **Frontend**: Vite + TypeScript + Cytoscape.js (ELK + fCoSE)
+- **Backend**: Fastify single‑port server (serves viewer, JSON, config, logs)
+- **Data**: Canonical JSON schema (`schema/codebase_graph.schema.json`)
 
-### Demo Data Analysis
-Current demo (`demo_codebase/`) contains:
-- ~10 Python functions across 3-4 modules (main, recipe, shopping, ingredients)
-- Function call relationships and import dependencies
-- Rich metadata including signatures, docstrings, file locations, line numbers
+### Rationale: Single data model with mode transforms
+- Keeps the cognitive load low and APIs simple
+- Enables fast experimentation by reusing one parser/output pipeline
+- Avoids schema drift and duplicated validation logic
+- Allows optional, ephemeral caches without committing to new file formats
 
-### Old Implementation Feature Analysis
+### Acceptance heuristics (visual legibility)
+- Module tint + label contrast readable against background
+- Edge types distinguishable without a legend
+- Focus/highlight states obvious at 100% and 75% zoom
+- Details panel readable on 13–27" displays; resizable and persistent
 
-**Sophisticated features available to port from `src/codeviz/viewer/cyto/`:**
-
-#### Rich Details Panel (`main.ts:128-178`)
-- Function signatures with parsed arguments
-- Docstrings and metadata display  
-- File paths with line numbers
-- **Clickable connected node navigation** - major UX win
-- Tags and custom metadata rendering
-
-#### Module-Based Color Generation (`main.ts:36-66`)
-- Hash-based color generation per module
-- HSL → Hex conversion for consistent colors
-- Automatic contrast and readability
-
-#### Advanced Search & Filtering (`main.ts:220-267`)
-- Multi-field search (ID, label, module)
-- Hide vs fade toggle for non-matching results
-- ESC key reset functionality
-- Real-time filtering with visual feedback
-
-#### Professional UI Structure (`index.html`)
-- Clean toolbar with controls
-- Two-pane layout: graph + details sidebar
-- Mode selector for different visualization types
-- Comprehensive status indicators
-
-#### Smart Node Focus (`main.ts:180-196`)
-- Sophisticated neighbor highlighting
-- Opacity-based focus with connected nodes
-- Click-to-focus, background-click-to-reset
-- Much better than current basic highlighting
-
-#### Schema Validation (`schema.ts`)
-- JSON schema validation for data integrity
-- Error reporting and debugging support
-- Flexible schema loading (local + remote)
-
-### Quick Implementation Priority
-1. **Module colors** - Immediate visual improvement, small effort
-2. **Details panel** - Major functionality upgrade, medium effort  
-3. **Two-pane layout** - Professional appearance, medium effort
-4. **Advanced search** - Major usability win, medium effort
-5. **Focus/highlighting** - Better interactions, small effort
-
-### Remaining Issues to Address
-1. **Poor contrast**: Gray edges (#666) - old code has better examples
-2. **No information hierarchy**: Everything looks the same - module colors will fix this
-3. **Missing interactivity**: Old code has rich tooltips, navigation, search
+### Notes for future
+- Data‑structure‑centric mode (later): use tags on nodes to group by data structure; still a transform over the same graph
+- Potential schema extensions flagged via tags, not breaking core shape
