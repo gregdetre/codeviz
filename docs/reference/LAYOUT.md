@@ -1,4 +1,4 @@
-<!-- Migration note: The viewer uses Cytoscape.js with fCoSE for compound graphs. This doc reflects the Cytoscape-first approach. -->
+<!-- Migration note: The viewer uses Cytoscape.js with ELK (default) and fCoSE for compound graphs. This doc reflects the Cytoscape-first approach. -->
 # CodeViz Layout Reference
 
 ## Introduction
@@ -15,12 +15,12 @@ This document explains how layout works in CodeViz, with a focus on execution/ca
 - External: Cytoscape.js: https://js.cytoscape.org/
 
 ## Principles and key decisions
-- Cytoscape-first for interactive rendering; use `fcose` for compound layouts.
+- Cytoscape-first for interactive rendering; default `elk` (layered) for hierarchical/call-flow clarity; `fcose` remains available for exploratory force-directed layouts.
 - Group semantics via compound nodes; default grouping by module, with room for nesting later.
 - Interactivity: basic toggles and neighbor highlight for MVP; expand/collapse via extension in future.
 
 ## Current state
-- fCoSE layout, module groups as compounds, filtering toggles, neighbor highlight.
+- ELK (layered) default layout with orthogonal edge routing; fCoSE also available. Module groups as compounds, filtering toggles, neighbor highlight.
 
 ## Layout modes (high-level)
 - Default view: emphasizes function calls; imports available via `moduleImports`.

@@ -22,9 +22,17 @@ class ViewOpen extends Command {
   host = Option.String("--host", "127.0.0.1");
   port = Option.String("--port", "8080");
   mode = Option.String("--mode", "default");
+  target = Option.String("--target", "");
   noBrowser = Option.Boolean("--no-browser", false);
   async execute() {
-    await startServer({ host: this.host, port: Number(this.port), openBrowser: !this.noBrowser });
+    let viewerLayout = "elk";
+    if (this.target) {
+      try {
+        const cfg = await loadConfigForTarget(resolve(this.target));
+        viewerLayout = cfg.viewer?.layout ?? viewerLayout;
+      } catch {}
+    }
+    await startServer({ host: this.host, port: Number(this.port), openBrowser: !this.noBrowser, viewerLayout });
   }
 }
 

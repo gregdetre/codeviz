@@ -6,6 +6,38 @@ Guide to combining force-directed algorithms with fixed positioning constraints 
 
 Cytoscape.js supports hybrid layout approaches that combine the organic arrangement of force-directed algorithms with the precision of fixed positioning. This enables layouts where some nodes follow physics-based positioning while others remain anchored or constrained.
 
+## ELK vs fCoSE (quick guide)
+
+- **Use ELK**: when you want clear, hierarchical/DAG call flows, orthogonal edge routing, and minimal crossings (e.g., execution flow, module hierarchies). ELK is deterministic and great for “presentation-ready” structure.
+- **Use fCoSE**: when you want fast, interactive exploration on compound graphs with animation and constraint support (fixed nodes, alignments). fCoSE is excellent for iterative discovery and refinement.
+
+### ELK (layered / hierarchical)
+
+ELK (Eclipse Layout Kernel) via the Cytoscape adapter provides layered (hierarchical) layouts and advanced edge routing. It works with compound nodes (module grouping) and tends to produce clean top-down diagrams.
+
+- **Strengths**: hierarchical clarity, orthogonal/polyline edge routing, fewer crossings
+- **Best for**: call graphs, dependency layers, module hierarchies
+- **Tips**: turn animation off for large graphs; consider a web worker for responsiveness
+
+Example options:
+
+```javascript
+const elkLayout = {
+  name: 'elk',
+  animate: false,
+  nodeDimensionsIncludeLabels: true,
+  elk: {
+    'elk.algorithm': 'layered',
+    'elk.direction': 'DOWN',
+    'elk.edgeRouting': 'ORTHOGONAL'
+  }
+};
+
+cy.layout(elkLayout).run();
+```
+
+See also: [Cytoscape-ELK adapter](https://github.com/cytoscape/cytoscape.js-elk) and [ELK project](https://projects.eclipse.org/projects/modeling.elk)
+
 ## See Also
 
 - [Node Grouping](NODE_GROUPING.md) - Compound node layouts and hierarchical positioning

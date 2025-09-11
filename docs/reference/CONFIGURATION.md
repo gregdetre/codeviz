@@ -1,6 +1,6 @@
 # Configuration (TOML)
 
-CodeViz uses per-target TOML configuration files to customize analysis and visualization. Place a file named `<target>.codeviz.toml` in the repository root (e.g., `demo_codebase.codeviz.toml`).
+CodeViz uses per-target TOML configuration files to customize analysis and visualization. Place a file named `<target>.codeviz.toml` in either the repository root or in `configs/` (preferred), e.g., `configs/demo_codebase.codeviz.toml`.
 
 ## See also
 
@@ -19,7 +19,7 @@ exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 path = "out/codebase_graph.json"
 
 [viewer]
-layout = "fcose"
+layout = "elk"
 ```
 
 ## Sections
@@ -31,11 +31,11 @@ layout = "fcose"
 - **path**: output path for the graph JSON (default: `out/codebase_graph.json`)
 
 ### `[viewer]`
-- **layout**: default layout to use in the viewer (e.g., `fcose`)
+- **layout**: default layout to use in the viewer (`elk` by default; `fcose` also supported)
 
 ## Loading order and overrides
 
-- The CLI looks up `<target>.codeviz.toml` by the folder name passed to `extract`.
+- The CLI looks up `<target>.codeviz.toml` by the folder name passed to `extract`. Files are resolved from repo root, then `configs/`.
 - CLI flags (e.g., `--out`) override values from the config file.
 
 ## Common patterns

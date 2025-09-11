@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export async function startServer(opts: { host: string; port: number; openBrowser: boolean }) {
+export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string }) {
   const app = Fastify();
   // Resolve viewer dist robustly across run contexts (tsx, node, different CWDs)
   const candidates = [
@@ -39,6 +39,11 @@ export async function startServer(opts: { host: string; port: number; openBrowse
     } catch (err: any) {
       reply.code(500).send({ error: "ENOENT", message: String(err?.message || err) });
     }
+  });
+
+  app.get("/viewer-config.json", async (_req, reply) => {
+    const cfg = { layout: opts.viewerLayout ?? "elk" };
+    reply.type("application/json").send(JSON.stringify(cfg));
   });
 
   // Minimal favicon to reduce noise in console
