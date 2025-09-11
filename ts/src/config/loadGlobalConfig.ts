@@ -1,7 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { homedir } from "node:os";
 import { parse } from "toml";
 
 export type GlobalConfig = {
@@ -16,25 +15,11 @@ export type GlobalConfig = {
 
 function getGlobalConfigCandidatePaths(): string[] {
   const candidates: string[] = [];
-  // Highest priority: explicit env var override
+  // Allow explicit override if provided
   const override = process.env.CODEVIZ_GLOBAL_CONFIG || process.env.CODEVIZ_CONFIG;
   if (override) candidates.push(resolve(override));
-
-  // macOS: ~/Library/Application Support/codeviz/config.toml
-  const macPath = join(homedir(), "Library", "Application Support", "codeviz", "config.toml");
-  candidates.push(macPath);
-
-  // Linux (XDG): $XDG_CONFIG_HOME/codeviz/config.toml or ~/.config/codeviz/config.toml
-  const xdgBase = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
-  candidates.push(join(xdgBase, "codeviz", "config.toml"));
-
-  // Windows: %APPDATA%\codeviz\config.toml
-  if (process.platform === "win32") {
-    const appdata = process.env.APPDATA || join(homedir(), "AppData", "Roaming");
-    candidates.push(join(appdata, "codeviz", "config.toml"));
-  }
-
-  // De-duplicate while preserving order
+  // Project root config file
+  candidates.push(resolve(process.cwd(), "codeviz.config.toml"));
   return [...new Set(candidates)];
 }
 

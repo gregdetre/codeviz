@@ -10,14 +10,12 @@ CodeViz uses per-target TOML configuration files to customize analysis and visua
 
 ## Global configuration (TOML)
 
-CodeViz supports a simple user-level global configuration for settings that are not tied to a specific target project (for example, LLM provider/model for assistant features).
+CodeViz supports a simple global configuration kept in the project root for settings that are not tied to a specific target (for example, LLM provider/model for assistant features).
 
-Lookup order (first existing file is used):
+Location:
 
-- macOS: `~/Library/Application Support/codeviz/config.toml`
-- Linux: `$XDG_CONFIG_HOME/codeviz/config.toml` or `~/.config/codeviz/config.toml`
-- Windows: `%APPDATA%/codeviz/config.toml`
-- Override via env var: `CODEVIZ_GLOBAL_CONFIG` (or `CODEVIZ_CONFIG`)
+- Project root: `codeviz.config.toml`
+- Optional override via env var: `CODEVIZ_GLOBAL_CONFIG` (or `CODEVIZ_CONFIG`)
 
 Example:
 ```toml
