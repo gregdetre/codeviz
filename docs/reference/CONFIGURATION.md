@@ -20,12 +20,21 @@ Location:
 Example:
 ```toml
 [llm]
-provider = "openai"       # e.g., "openai", "anthropic", "openrouter"
-model = "gpt-4o-mini"
-apiKey = ""               # optional; prefer environment variables
+# Model string format: provider:model:version[:thinking]
+model = "anthropic:claude-sonnet-4:20250514"
+# model = "anthropic:claude-opus-4:latest:thinking"  # Latest Opus 4.1 in thinking mode
+# model = "openai:gpt-5-high:latest:thinking"        # GPT-5-high with thinking mode (when available)
 temperature = 0.2
 maxTokens = 2000
 ```
+
+**Model String Format**: `provider:model:version[:thinking]`
+- `provider`: AI provider (anthropic, openai, etc.)
+- `model`: Model identifier without version suffix
+- `version`: Version identifier (date-based, latest, preview, etc.)  
+- `thinking`: Optional suffix for reasoning/thinking mode
+
+See [LLM_CHAT_INTERFACE.md](LLM_CHAT_INTERFACE.md) for detailed LLM integration documentation.
 
 Notes:
 - Global config is separate from per-target config and is not layered/merged with it.

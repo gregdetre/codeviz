@@ -1,6 +1,8 @@
 [llm]
+# Model string format: provider:model:version[:thinking]
+# See docs/reference/CONFIGURATION.md for format details and LLM_CHAT_INTERFACE.md for LLM integration
 model = "anthropic:claude-sonnet-4:20250514"
 # model = "anthropic:claude-opus-4:latest:thinking"  # Latest Opus 4.1 in thinking mode
 # model = "openai:gpt-5-high:latest:thinking"        # GPT-5-high with thinking mode (when available)
-temperature = 0.2
+temperature = 0.0
 maxTokens = 2000

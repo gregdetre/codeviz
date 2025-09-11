@@ -4,6 +4,7 @@ Short conversations with LLMs integrated into the CodeViz browser application fo
 
 ## See also
 
+- [CONFIGURATION.md](CONFIGURATION.md) - Global configuration file format including LLM model string specification
 - `docs/conversations/250911b_llm_cytoscape_command_interface_design.md` - Architecture decisions for LLM-Cytoscape command system
 - `docs/reference/libraries/VERCEL_AI_SDK.md` - Technical implementation details for chosen SDK
 - `docs/reference/PRODUCT_VISION_FEATURES.md` - Overall CodeViz vision including LLM integration goals
