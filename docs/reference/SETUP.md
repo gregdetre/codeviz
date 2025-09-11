@@ -1,191 +1,123 @@
-# gdviz Setup Guide
+# CodeViz Setup Guide (TypeScript)
 
-Development environment setup and dependencies for the gdviz codebase visualization tool.
+Development environment setup and dependencies for the CodeViz visualization tool.
 
 ## See also
 
 - `../../README.md` - Project overview and quick start commands
 - `ARCHITECTURE.md` - System architecture overview
-- `../../../docs/reference/DEVELOPMENT_SETUP.md` - Main gdwebgen development setup
 
 ## Prerequisites
 
-### Python Environment
-- Python 3.8 or higher
-- Virtual environment support
-- AST parsing capabilities (built into Python)
-
-### Web Tooling
-- Node.js 18+ and npm (for Vite dev server and builds)
+- Node.js 20+ and npm
 - Modern browser (Cytoscape.js-based visualization)
-
-### System Dependencies
-- Python 3.8+ (extraction)
-- Node.js 18+ (viewer dev/build)
 
 ## Installation
 
-### 1. Environment Setup
+```bash
+# From repo root
+npm install --prefix ts
+```
 
-gdviz is currently integrated with gdwebgen and shares its environment:
+## Quick demo: visualize `demo_codebase/`
 
 ```bash
-# From gdwebgen root
-cd $BLOG_BIN_PATH
-venv_create_activate  # or source venv/bin/activate
+# 1) Ensure the demo port is free
+lsof -ti:3080 | xargs -r kill
 
-# Install dependencies
-pip install -r requirements.txt
+# 2) Install deps and build the viewer/CLI
+npm install --prefix ts
+npm run --prefix ts build
+
+# 3) Extract the demo codebase into JSON
+npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/codebase_graph.json
+
+# 4) Start the single-port viewer (no auto-browser)
+node ts/dist/cli/index.js view open --port 3080 --no-browser
+
+# 5) Open the viewer
+open http://127.0.0.1:3080
+
+# Optional: run smoke tests (Playwright)
+npm test --prefix ts
+
+# When finished: stop the server
+lsof -ti:3080 | xargs -r kill
 ```
 
-### 2. Configuration
+## Configuration
 
-Create or modify `gdviz/gdviz_conf.py`:
-```python
-"""
-Configuration for codebase visualization (gdviz)
-"""
+Per-target config files use a compound extension: `<target>.codeviz.toml`.
 
-# Exclude modules by name
-EXCLUDE_MODULES = set()
+Example (`demo_codebase.codeviz.toml`):
+```toml
+[analyzer]
+exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 
-# Exclude file patterns (supports glob syntax)
-EXCLUDE_FILE_GLOBS = [
-    "venv/**",
-    "tests/**", 
-    "theme/**",
-]
+[output]
+path = "out/codebase_graph.json"
 
-# Override default included files (None = use extract script defaults)
-INCLUDE_FILES = None
-
-# Default viewer mode: "default", "exec", "modules", "datastruct"  
-DEFAULT_MODE = "exec"
+[viewer]
+layout = "fcose"
 ```
 
-### 3. Data Generation
+## Data Generation
 
-Generate visualization data:
+Generate the visualization data (JSON):
 ```bash
-# From gdwebgen root
-./venv/bin/python extract_codebase_graph.py
-
-# Output will be written to:
-# gdviz/out/codebase_graph.json
+npx tsx ts/src/cli/index.ts extract python demo_codebase --out out/codebase_graph.json
 ```
 
-### 4. Viewer Access (dev)
+## Viewer (single-port)
 
-Start development servers:
+Serve the built viewer and JSON on one port:
 ```bash
-# Terminal A: Serve from repo root (required for JSON + logs)
-python gdwebgen.py dev serve --out-dir .
+# Build viewer once
+npm run build --prefix ts
 
-# Terminal B: Start Vite dev server for the Cytoscape viewer (proxy /gdviz/*)
-cd gdviz/viewer/cyto
-npm install
-npm run dev
-# Open the printed Vite URL (default http://127.0.0.1:5173)
+# Start server
+npx tsx ts/src/cli/index.ts view open
+# If 8080 is in use
+npx tsx ts/src/cli/index.ts view open --port 3000
 ```
 
-## File Structure
+Open the printed URL (default http://127.0.0.1:8080).
 
-After setup, your gdviz directory should contain:
+## File Structure (TS components)
+
 ```
-gdviz/
-├── README.md                    # Project overview
-├── gdviz_conf.py               # Configuration
-├── docs/reference/             # Documentation
-│   ├── SETUP.md               # This file
-│   ├── ARCHITECTURE.md        # System design  
-│   └── README.md  # User guide
-├── extractor/                  # Python extraction code
-├── viewer/                     # Visualization
-│   └── cyto/                  # Cytoscape + Vite + TS viewer
-├── schema/                     # JSON schema
-│   └── codebase_graph.schema.json
-└── out/                       # Generated data (git-ignored)
-    └── codebase_graph.json    # Visualization data
-```
-
-### 5. Viewer Build (prod)
-
-```bash
-cd gdviz/viewer/cyto
-npm run build
-# Built assets in gdviz/viewer/cyto/dist
+ts/
+├── package.json           # TS workspace
+├── tsconfig.json
+├── src/
+│   ├── cli/               # Clipanion CLI
+│   ├── analyzer/          # Tree-sitter Python analyzer
+│   ├── config/            # Config loader
+│   └── server/            # Fastify server
+└── viewer/                # Vite + Cytoscape viewer
+    ├── index.html
+    ├── src/main.ts
+    └── vite.config.ts
+out/
+└── codebase_graph.json    # Generated data
 ```
 
 ## Verification
 
-Test your setup:
+1. **Extraction works**
+```bash
+npx tsx ts/src/cli/index.ts extract python demo_codebase
+ls -la out/codebase_graph.json
+```
 
-1. **Data extraction works**:
-   ```bash
-   ./venv/bin/python extract_codebase_graph.py
-   ls -la gdviz/out/codebase_graph.json  # Should exist and have recent timestamp
-   ```
-
-2. **Viewer loads (dev)**:
-   ```bash
-   python gdwebgen.py dev serve --out-dir .
-   # Visit the Vite URL printed in Terminal B (default http://127.0.0.1:5173)
-   # Should see interactive graph with nodes and edges
-   ```
-
-3. **Viewer loads (prod build)**:
-   ```bash
-   # Ensure Python server can serve /gdviz/viewer/cyto/dist if needed
-   open gdviz/viewer/cyto/dist/index.html
-   ```
-
-4. **Configuration applies**:
-   - Edit `gdviz_conf.py` to exclude a test pattern
-   - Re-run extraction
-   - Verify excluded files don't appear in viewer
+2. **Viewer loads**
+```bash
+npx tsx ts/src/cli/index.ts view open --no-browser
+open http://127.0.0.1:8080
+```
 
 ## Troubleshooting
 
-### Common Issues
-
-**"Cannot load JSON file"**
-- Ensure server is running from repository root (`--out-dir .`)
-- Check that `gdviz/out/codebase_graph.json` exists and is valid JSON
-- Verify no CORS restrictions in browser console
-
-**"Empty or minimal graph"**  
-- Check `INCLUDE_FILES` configuration in `gdviz_conf.py`
-- Verify excluded patterns aren't too broad
-- Run extraction with verbose output to see file discovery
-
-**"Extraction fails"**
-- Ensure virtual environment is activated
-- Check Python version compatibility (3.8+)
-- Verify no syntax errors in analyzed Python files
-
-### Debug Mode
-
-Enable verbose extraction output:
-```bash
-# Add print statements to extract_codebase_graph.py for debugging
-# Check console output for file discovery and parsing issues
-```
-
-Inspect generated data:
-```bash
-# View raw JSON structure
-cat gdviz/out/codebase_graph.json | jq '.nodes[0]'  # First node
-cat gdviz/out/codebase_graph.json | jq '.edges[0]'  # First edge
-```
-
-## Future Standalone Setup
-
-When gdviz becomes standalone, setup will be simplified to:
-```bash
-# Future standalone version
-pip install gdviz
-gdviz extract /path/to/codebase
-gdviz serve
-```
-
-Current integration with gdwebgen provides the foundation for this future architecture.
+- Port conflicts: pass `--port` (e.g., `--port 3000`) or kill existing process.
+- Tree-sitter native build issues: we can switch to web-tree-sitter (WASM) in a follow-up.
+- Ensure `out/codebase_graph.json` exists before starting the viewer.
