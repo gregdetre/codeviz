@@ -1,0 +1,8 @@
+[analyzer]
+exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
+
+[output]
+path = "out/codebase_graph.json"
+
+[viewer]
+layout = "fcose"
