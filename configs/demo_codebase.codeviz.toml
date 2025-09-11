@@ -9,7 +9,7 @@ excludeModules = []
 path = "out/codebase_graph.json"
 
 [viewer]
-layout = "elk"
+layout = "elk-then-fcose"
 # mode = "default"
 # host = "127.0.0.1"
 # port = 8080

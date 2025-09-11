@@ -9,7 +9,7 @@
     "scripts": {
         "build": "tsc -p ts/tsconfig.json && vite build --config ts/viewer/vite.config.ts",
         "up": "npm run build && node ts/dist/cli/index.js view open",
-        "dev": "sh -c 'vite build --config ts/viewer/vite.config.ts --watch & tsx watch ts/src/cli/index.ts view open --kill-existing --no-browser \"$@\"' --",
+        "dev": "sh -c 'vite build --config ts/viewer/vite.config.ts --watch & tsx watch ts/src/cli/index.ts view open --kill-existing "$@"' --",
         "codeviz": "node ts/dist/cli/index.js",
         "view": "node ts/dist/cli/index.js view open",
         "extract": "node ts/dist/cli/index.js extract python",
