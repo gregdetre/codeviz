@@ -48,17 +48,20 @@ function renderMessages(container: HTMLElement): void {
         } catch {}
       });
       bubble.querySelectorAll('p').forEach((p) => {
-        (p as HTMLElement).style.margin = '4px 0 6px';
+        (p as HTMLElement).style.margin = '8px 0 10px';
       });
       bubble.querySelectorAll('ul,ol').forEach((list) => {
-        (list as HTMLElement).style.margin = '4px 0 6px 18px';
+        (list as HTMLElement).style.margin = '8px 0 10px 20px';
       });
       bubble.querySelectorAll('pre').forEach((pre) => {
         (pre as HTMLElement).style.overflow = 'auto';
         (pre as HTMLElement).style.background = '#f6f8fa';
         (pre as HTMLElement).style.padding = '10px';
         (pre as HTMLElement).style.borderRadius = '4px';
-        (pre as HTMLElement).style.margin = '6px 0';
+        (pre as HTMLElement).style.margin = '8px 0';
+      });
+      bubble.querySelectorAll('li').forEach((li) => {
+        (li as HTMLElement).style.margin = '3px 0';
       });
       bubble.querySelectorAll('code').forEach((code) => {
         (code as HTMLElement).style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
