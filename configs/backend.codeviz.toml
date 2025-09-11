@@ -1,0 +1,15 @@
+[analyzer]
+exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
+# Only analyze these files/dirs (optional). If commented out, analyze all .py files.
+# includeOnly = ["**/*.py"]
+# Suppress edges/imports to these modules (e.g., external libs)
+excludeModules = []
+
+[output]
+path = "out/hellozenno_backend/codebase_graph.json"
+
+[viewer]
+layout = "elk-then-fcose"
+port = 8001
+
+
