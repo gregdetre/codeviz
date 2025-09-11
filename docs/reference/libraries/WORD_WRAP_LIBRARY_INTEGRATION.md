@@ -9,7 +9,7 @@ TypeScript text wrapping utility with configurable delimiters, indentation, and 
 - `ts/package.json` - project dependencies where word-wrap should be added
 - `ts/src/cli/index.ts` - CLI implementation where text formatting may be needed
 - `FLOATING_UI_TOOLTIP_INTEGRATION.md` - Tooltip library that may need text wrapping for content
-- `COMMAND_LINE_USAGE.md` - CLI documentation that covers text output scenarios
+- `../COMMAND_LINE_USAGE.md` - CLI documentation that covers text output scenarios
 - CVE-2023-26115 advisory: https://github.com/advisories/GHSA-j8xg-fqg3-53r7 - security vulnerability details for versions < 1.2.4
 
 ## Library Overview

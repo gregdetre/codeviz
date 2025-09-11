@@ -22,7 +22,7 @@ Complete guide to using Cytoscape.js for interactive network visualization, focu
 
 - [Product Vision & Features](../PRODUCT_VISION_FEATURES.md) - Requirements and priorities  
 - [Layout Implementation](../LAYOUT.md) - CodeViz-specific layout strategies and ELK integration
-- [Architecture](../ARCHITECTURE.md) - CodeViz system architecture and data flow
+- [Architecture](../../ARCHITECTURE.md) - CodeViz system architecture and data flow
 - [Cytoscape.js Official Docs](https://js.cytoscape.org/) - Complete API reference
 - [Extension Library](https://js.cytoscape.org/#extensions) - Community extensions
 - [Floating UI Integration](../FLOATING_UI_TOOLTIP_INTEGRATION.md) - Interactive tooltip positioning for graph nodes

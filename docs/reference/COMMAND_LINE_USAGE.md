@@ -110,4 +110,4 @@ Run 'npx codeviz extract python <target_dir>' first
 
 ## See Also
 
-- `WORD_WRAP_LIBRARY_INTEGRATION.md` - Text formatting and CLI output utilities
+- `libraries/WORD_WRAP_LIBRARY_INTEGRATION.md` - Text formatting and CLI output utilities

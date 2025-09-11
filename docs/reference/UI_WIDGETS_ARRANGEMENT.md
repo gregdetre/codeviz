@@ -29,8 +29,8 @@ The viewer uses a three-pane grid: a left widget pane for controls, a central gr
 - `../reference/LAYOUT.md`: General layout and visual design guidelines for the viewer.
 - `../reference/GUI_CONTROLS.md` (when available): Control semantics and expected behavior.
 - `../../ts/viewer/src/app.ts`: Event wiring for toolbar controls.
-- `../reference/FLOATING_UI_TOOLTIP_INTEGRATION.md`: Tooltip system used in the canvas.
-- `../reference/WORD_WRAP_LIBRARY_INTEGRATION.md`: Text wrapping for labels.
+- `../reference/libraries/FLOATING_UI_TOOLTIP_INTEGRATION.md`: Tooltip system used in the canvas.
+- `../reference/libraries/WORD_WRAP_LIBRARY_INTEGRATION.md`: Text wrapping for labels.
 
 ### Principles, key decisions
 

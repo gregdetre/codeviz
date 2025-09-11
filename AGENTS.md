@@ -116,8 +116,8 @@ curl -s http://127.0.0.1:3080/out/viewer.log | tail -n 50
 - **docs/reference/SETUP.md**: Development environment setup
 - **docs/reference/ARCHITECTURE.md**: System architecture overview
 - **docs/reference/TROUBLESHOOTING.md**: Common issues and solutions
-- **docs/reference/WORD_WRAP_LIBRARY_INTEGRATION.md**: Text wrapping utility for CLI output formatting
-- **docs/reference/FLOATING_UI_TOOLTIP_INTEGRATION.md**: Interactive tooltip positioning for viewer
+- **docs/reference/libraries/WORD_WRAP_LIBRARY_INTEGRATION.md**: Text wrapping utility for CLI output formatting
+- **docs/reference/libraries/FLOATING_UI_TOOLTIP_INTEGRATION.md**: Interactive tooltip positioning for viewer
 - **docs/planning/**: Recent work documentation (in progress projects)
 - **docs/planning/finished/**: Completed project documentation
 - Planning docs use `yyMMdd` datetime prefix (see `gjdutils/src/ts/cli/sequential-datetime-prefix.ts`)
@@ -196,6 +196,13 @@ JSON graph structure:
 - Prefer Task tool for open-ended searches
 - Follow TypeScript best practices and existing project patterns
 - Work primarily in `ts/` directory for active development
+
+## Git Commits
+
+Follow guidelines in `@gjdutils/docs/instructions/GIT_COMMIT_CHANGES.md`. Key points:
+- **Batch commits**: Group related changes, commit one batch at a time
+- **Atomic operations**: Chain unstage/add/commit to prevent interference: `git reset HEAD && git add files && git commit -m "msg"`
+- **Use subagents**: For complex multi-commit scenarios with proper context
 
 ## Coding Principles
 

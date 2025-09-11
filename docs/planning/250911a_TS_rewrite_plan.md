@@ -5,7 +5,7 @@ Rewrite CodeViz to be pure TypeScript end-to-end. Focus on a simple, working MVP
 # References
 
 - `docs/reference/PRODUCT_VISION_FEATURES.md` — Feature priorities (grouping, filtering, mixed layouts, interactivity, GUI)
-- `docs/reference/cyto/*` — Cytoscape.js guides (grouping, filtering, layouts, interactivity, extensions, best practices)
+- `docs/reference/libraries/cyto/*` — Cytoscape.js guides (grouping, filtering, layouts, interactivity, extensions, best practices)
 - `docs/reference/LOGGING.md` — Runtime logging (browser console → server file)
 - `schema/codebase_graph.schema.json` — Graph JSON schema to preserve
 - `README.md` — Needs rewrite to TS-first

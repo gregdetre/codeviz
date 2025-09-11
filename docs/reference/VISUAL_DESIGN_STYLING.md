@@ -5,11 +5,11 @@ CodeViz visual design components, styling libraries, and UI/UX implementation pa
 ## See also
 
 - `LAYOUT.md` - Graph layout algorithms, positioning, and spatial organization of visualization elements
-- `FLOATING_UI_TOOLTIP_INTEGRATION.md` - Tooltip positioning, interaction design, and floating element styling
-- `WORD_WRAP_LIBRARY_INTEGRATION.md` - Text formatting, line wrapping, and typography utilities
-- `CHALK_USAGE_GUIDE.md` - Terminal color formatting with chalk library for CLI output
-- `cyto/README.md` - Cytoscape.js styling, visual themes, and graph appearance customization
-- `cyto/NODE_GROUPING.md` - Visual grouping, compound node styling, and hierarchical display patterns
+- `libraries/FLOATING_UI_TOOLTIP_INTEGRATION.md` - Tooltip positioning, interaction design, and floating element styling
+- `libraries/WORD_WRAP_LIBRARY_INTEGRATION.md` - Text formatting, line wrapping, and typography utilities
+- `libraries/CHALK_USAGE_GUIDE.md` - Terminal color formatting with chalk library for CLI output
+- `libraries/cyto/README.md` - Cytoscape.js styling, visual themes, and graph appearance customization
+- `libraries/cyto/NODE_GROUPING.md` - Visual grouping, compound node styling, and hierarchical display patterns
 - `ts/viewer/` - Frontend implementation where visual styling is applied (Vite + TypeScript + Cytoscape.js)
 
 ## Current Visual Components

@@ -84,7 +84,7 @@ npx codeviz view open --no-browser
 - **Configuration**: per-target `.codeviz.toml` files
 - **Project Structure**: `docs/reference/LAYOUT.md`
 - **Viewer Technology**: Cytoscape.js + Vite + TypeScript
-- **Library Integrations**: `docs/reference/WORD_WRAP_LIBRARY_INTEGRATION.md`, `docs/reference/FLOATING_UI_TOOLTIP_INTEGRATION.md`
+- **Library Integrations**: `docs/reference/libraries/WORD_WRAP_LIBRARY_INTEGRATION.md`, `docs/reference/libraries/FLOATING_UI_TOOLTIP_INTEGRATION.md`
 
 ## Troubleshooting
 

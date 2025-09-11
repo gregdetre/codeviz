@@ -160,7 +160,7 @@ Implementation pointers
 - `layout-manager`: map `mode` → `elk` or `fcose`; animate=false for ELK
 
 ### Stage: ELK→fCoSE layout (sequential refinement)
-- [x] Add third layout option `elk-then-fcose` (sequential) informed by `docs/reference/cyto/HYBRID_LAYOUTS.md` (aliases: `hybrid`, case-insensitive)
+- [x] Add third layout option `elk-then-fcose` (sequential) informed by `docs/reference/libraries/cyto/HYBRID_LAYOUTS.md` (aliases: `hybrid`, case-insensitive)
 - [x] Implement `applyLayout(cy, 'elk-then-fcose', { hybridMode?: 'sequential'|'constrained' })`
 - [x] Sequential: run ELK (no animation), on `layoutstop` run fCoSE with `randomize:false`, `numIter: 800–1200`
 - [x] Constrained (optional): derive layer groups from ELK and pass as fCoSE `alignmentConstraint.horizontal`

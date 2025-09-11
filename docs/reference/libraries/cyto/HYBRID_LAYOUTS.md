@@ -20,7 +20,7 @@ ELK and fCoSE layouts cannot be directly combined in a single Cytoscape.js layou
 - **Best for**: Iterative discovery, organic clustering, refinement of existing layouts
 - **Performance**: Fast, supports real-time interaction and incremental updates
 
-*Source: docs/reference/cyto/LAYOUTS.md:9-21*
+*Source: LAYOUTS.md:9-21*
 
 ## Technical Limitations
 
@@ -232,8 +232,8 @@ class LayoutManager {
 ## Research Sources
 
 ### Primary Documentation
-- `docs/reference/cyto/LAYOUTS.md` - Mixed layout strategies and constraint-based positioning
-- `docs/reference/LAYOUT.md` - CodeViz layout principles and current implementation
+- `LAYOUTS.md` - Mixed layout strategies and constraint-based positioning
+- `../../LAYOUT.md` - CodeViz layout principles and current implementation
 - `ts/viewer/src/main.ts` - Current layout switching implementation
 
 ### External References
