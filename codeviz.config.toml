@@ -10,3 +10,27 @@ maxTokens = 2000
 [viewer]
 host = "127.0.0.1"
 port = 8000
+
+[viewer.highlight]
+# Number of hops to highlight (1 = neighbors only, 2 = include neighbors-of-neighbors)
+steps = 2
+# Hide edges that are not part of the highlighted sets
+hideNonHighlightedEdges = true
+
+[viewer.highlight.colors]
+focus = "#0ea5e9"
+incoming = "#ef4444"
+outgoing = "#10b981"
+moduleOutline = "#0ea5e9"
+
+[viewer.highlight.opacity]
+fadedNodes = 0.15
+fadedText = 0.4
+secondDegreeNodes = 0.5
+secondDegreeEdges = 0.6
+
+[viewer.highlight.widths]
+edge = 2
+edgeHighlighted = 3
+nodeBorder = 1
+nodeBorderHighlighted = 3

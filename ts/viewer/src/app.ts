@@ -29,10 +29,17 @@ export async function initApp() {
   let mode: ViewerMode = (vcfg.mode ?? 'explore') as ViewerMode;
   let layoutName = normalizeLayoutName(vcfg.layout);
   const elements = graphToElements(graph, { mode });
-  const cy = cytoscape({ container: document.getElementById('cy') as HTMLElement, elements, style: generateStyles() });
+  const cy = cytoscape({ container: document.getElementById('cy') as HTMLElement, elements, style: generateStyles(undefined as any, { highlight: vcfg.highlight }) });
   (window as any).__cy = cy; // expose for e2e tests
 
   applyModuleColorTint(cy);
+
+  // Set initial document title with project name
+  try {
+    const baseTitle = 'CodeViz (TS)';
+    const project = (vcfg.projectName || graph.rootDir?.split(/[\\\/]/).pop() || '').trim();
+    document.title = project ? `${project} – ${baseTitle}` : baseTitle;
+  } catch {}
 
   const layoutInfo = document.getElementById('layoutInfo');
   if (layoutInfo) layoutInfo.textContent = `Layout: ${layoutName}`;
@@ -40,8 +47,34 @@ export async function initApp() {
   if (modeInfo) modeInfo.textContent = `Mode: ${mode}`;
   await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
 
-  const im = InteractionManager(cy, graph);
+  const im = InteractionManager(cy, graph, vcfg);
   im.installBasics();
+
+  // Update title based on selection focus
+  try {
+    const baseTitle = document.title;
+    cy.on('tap', 'node', (evt) => {
+      try {
+        const n = evt.target as any;
+        const label = String(n.data('label') || n.id());
+        const nodeType = String(n.data('type') || '');
+        const moduleName = String(n.data('module') || '');
+        const prefix = nodeType === 'function' && moduleName ? `${moduleName}.${label}` : label;
+        const project = (vcfg.projectName || graph.rootDir?.split(/[\\\/]/).pop() || '').trim();
+        document.title = project
+          ? `${prefix ? prefix + ' – ' : ''}${project} – CodeViz (TS)`
+          : `${prefix ? prefix + ' – ' : ''}CodeViz (TS)`;
+      } catch {}
+    });
+    cy.on('tap', (evt) => {
+      if ((evt as any).target === cy) {
+        try {
+          const project = (vcfg.projectName || graph.rootDir?.split(/[\\\/]/).pop() || '').trim();
+          document.title = project ? `${project} – CodeViz (TS)` : 'CodeViz (TS)';
+        } catch {}
+      }
+    });
+  } catch {}
 
   // Test hook: allow E2E tests (and dev console) to execute compact commands
   (window as any).__execCommands = async (commands: any[]) => {

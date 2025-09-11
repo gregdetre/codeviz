@@ -5,6 +5,7 @@ export type Graph = {
   schemaVersion: string;
   id_prefix?: string;
   defaultMode?: string;
+  rootDir?: string;
   nodes: GraphNode[];
   edges: GraphEdge[];
   groups: GraphGroup[];
@@ -51,6 +52,31 @@ export type ViewerConfig = {
   hybridMode?: "sequential";
   dark?: boolean;
   workspaceRoot?: string;
+  projectName?: string;
+  highlight?: HighlightConfig;
+};
+
+export type HighlightConfig = {
+  steps?: number; // 1 = first-degree only, 2 = include second-degree
+  hideNonHighlightedEdges?: boolean;
+  colors?: {
+    focus?: string;
+    incoming?: string;
+    outgoing?: string;
+    moduleOutline?: string;
+  };
+  opacity?: {
+    fadedNodes?: number; // applied to non-highlighted nodes/modules
+    fadedText?: number;  // text opacity on faded nodes/modules
+    secondDegreeNodes?: number; // opacity for 2nd-degree nodes
+    secondDegreeEdges?: number; // opacity for 2nd-degree edges
+  };
+  widths?: {
+    edge?: number;
+    edgeHighlighted?: number;
+    nodeBorder?: number;
+    nodeBorderHighlighted?: number;
+  };
 };
 
 

@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, basename, dirname } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
@@ -85,22 +85,34 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       if (existsSync(byTargetCwd)) return byTargetCwd;
       if (existsSync(byTargetRepo)) return byTargetRepo;
     }
-    // Legacy flat locations
-    if (existsSync(defaultFlatCwd)) return defaultFlatCwd;
-    if (existsSync(defaultFlatRepo)) return defaultFlatRepo;
-    // Fallback: find first match under out/*/codebase_graph.json
+    // Prefer most recent per-target file under out/*/codebase_graph.json
     const candidates = [cwdOut, repoOutDir];
     for (const base of candidates) {
       try {
         const entries = await readdir(base, { withFileTypes: true });
+        const datedFiles: { path: string; mtime: number }[] = [];
         for (const ent of entries) {
           if (ent.isDirectory()) {
             const p = join(base, ent.name, "codebase_graph.json");
-            if (existsSync(p)) return p;
+            if (existsSync(p)) {
+              try {
+                const stat = await (await import("node:fs/promises")).stat(p);
+                datedFiles.push({ path: p, mtime: stat.mtimeMs });
+              } catch {
+                datedFiles.push({ path: p, mtime: 0 });
+              }
+            }
           }
+        }
+        if (datedFiles.length > 0) {
+          datedFiles.sort((a, b) => b.mtime - a.mtime);
+          return datedFiles[0].path;
         }
       } catch {}
     }
+    // Legacy flat locations as last resort
+    if (existsSync(defaultFlatCwd)) return defaultFlatCwd;
+    if (existsSync(defaultFlatRepo)) return defaultFlatRepo;
     // Final fallback to repo default path
     return defaultFlatRepo;
   }
@@ -152,11 +164,30 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       } catch {}
     }
     const rawRoot = expandHome(chosenRoot || repoRoot).replace(/\\/g, "/");
+
+    // Derive project name (prefer stem of target/config directory)
+    let projectName: string | undefined;
+    try {
+      const fromRoot = chosenRoot ? basename(chosenRoot) : undefined;
+      const fromDataPath = basename(dirname(resolvedDataFile));
+      projectName = (fromRoot && fromRoot.length > 0 ? fromRoot : fromDataPath) || undefined;
+    } catch {}
+
+    // Load global config for viewer highlight settings if present
+    let highlight: any = undefined;
+    try {
+      const gcfg: any = await loadGlobalConfig();
+      const hv = (gcfg && gcfg.viewer && gcfg.viewer.highlight) ? gcfg.viewer.highlight : undefined;
+      highlight = hv ? hv : undefined;
+    } catch {}
+
     const cfg = { 
       layout: inferredLayout, 
       mode: (opts.viewerMode ?? "default"), 
       hybridMode: (opts.hybridMode ?? "sequential"),
-      workspaceRoot: rawRoot
+      workspaceRoot: rawRoot,
+      projectName,
+      highlight
     };
     reply.type("application/json").send(cfg);
   });
