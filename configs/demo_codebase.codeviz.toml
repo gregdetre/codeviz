@@ -6,5 +6,8 @@ path = "out/codebase_graph.json"
 
 [viewer]
 layout = "elk"
+# layout = "fcose"
+
+
 
 

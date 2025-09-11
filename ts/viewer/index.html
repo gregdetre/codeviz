@@ -1,23 +1,44 @@
 <!doctype html>
 <html>
-  <head>
+
+<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CodeViz (TS)</title>
     <style>
-      html, body, #app { height: 100%; margin: 0; }
-      #cy { width: 100%; height: 100%; }
-      .panel { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 6px; font-family: sans-serif; }
+        html,
+        body,
+        #app {
+            height: 100%;
+            margin: 0;
+        }
+
+        #cy {
+            width: 100%;
+            height: 100%;
+        }
+
+        .panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 6px;
+            font-family: sans-serif;
+        }
     </style>
-  </head>
-  <body>
+</head>
+
+<body>
     <div id="app">
-      <div id="cy"></div>
-      <div class="panel">
-        <div id="layoutInfo">Layout: …</div>
-        <label><input type="checkbox" id="toggleCalls" checked /> calls</label>
-      </div>
+        <div id="cy"></div>
+        <div class="panel">
+            <div id="layoutInfo">Layout: …</div>
+            <label><input type="checkbox" id="toggleCalls" checked /> calls</label>
+        </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
-  </body>
+</body>
+
 </html>
