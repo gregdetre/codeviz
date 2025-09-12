@@ -11,9 +11,9 @@ see `docs/reference/PRODUCT_VISION_FEATURES.md`
 ```bash
 git clone <repository-url>
 cd codeviz
-# Ensure Node 20.19.5 is active (asdf/Volta/nvm supported)
+# Ensure Node 22.9.0 is active (asdf/Volta/nvm supported)
 # asdf (recommended): asdf install
-# Volta: volta install node@20.19.5
+# Volta: volta install node@22.9.0
 # nvm: nvm install && nvm use
 
 # Install deps (root)
