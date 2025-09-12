@@ -24,7 +24,7 @@
         "dev:cli": "tsx ts/src/cli/index.ts",
         "start": "node ts/dist/cli/index.js",
         "pretest": "npm run build:cli",
-        "test": "tsx ts/tests/commands.node.test.ts && tsx ts/tests/tags.node.test.ts && tsx ts/tests/annotate.server.test.ts && tsx ts/tests/lens.node.test.ts",
+        "test": "tsx ts/tests/commands.node.test.ts && tsx ts/tests/tags.node.test.ts && tsx ts/tests/annotate.server.test.ts && tsx ts/tests/lens.node.test.ts && tsx ts/tests/js_extract.node.test.ts",
         "test:ui": "playwright test --ui --config ts/playwright.config.ts",
         "test:playwright": "playwright test --config ts/playwright.config.ts"
     },

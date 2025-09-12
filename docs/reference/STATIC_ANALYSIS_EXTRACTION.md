@@ -59,11 +59,17 @@ Per target directory:
   - Nodes: `function_definition` (names, signatures, docstrings)
   - Edges: `call` resolution via aliases and local names
   - Imports: `import_statement`, `import_from_statement`
-- TypeScript (via JS grammar for now)
+- TypeScript (via JS grammar for now) and JavaScript
   - Nodes: `function_declaration` (names, signatures)
   - Edges: `call_expression` resolved via ES import aliases and local names
   - Imports: `import_statement`
   - Ignored for now: classes, methods, arrow functions (planned)
+
+### Near‑term language priorities
+
+- JavaScript, TSX/JSX, Go, Bash, Rust, Ruby, Kotlin, C‑Sharp, Elixir, Java
+
+These are targeted based on ecosystem prevalence and grammar maturity in Tree‑sitter.
 
 ## Configuration
 
@@ -117,6 +123,48 @@ Outputs are written to `[output].dir/codebase_graph.json`; the viewer serves bot
 - Markdown ingestion for documentation linkage
 - Incremental runs and cache for large codebases
 - User-defined S-expression queries for custom extraction rules
+
+## Appendix: Adding a new language
+
+This appendix summarises the practical steps, effort, and caveats when introducing a new language extractor using Tree‑sitter.
+
+### Steps to add a language
+
+1. Install or load the grammar
+   - Prefer npm packages if available (e.g., `tree-sitter-go`, `tree-sitter-rust`).
+   - If no npm dist exists, load the grammar via `web-tree-sitter` and a `.wasm` artifact or vendor the grammar.
+2. Wire a parser
+   - Create or extend a parser factory to map file extensions → grammar.
+   - Reuse a single parser instance per language for all files.
+3. Implement an extractor `extract-<lang>.ts`
+   - First pass per file: collect imports, alias maps, and locally declared function names.
+   - Second pass per file: emit function nodes (with file/line ranges), resolve call sites to targets when possible, and accumulate module→module import weights.
+   - Conform to the unified graph schema (`nodes`, `edges`, `groups`, `moduleImports`).
+4. Register in the CLI
+   - Add the language to the `extract` command suite or the "extract all" loop.
+   - Add minimal tests and demo fixtures.
+
+### Expected effort
+
+- Definitions and imports only: hours to one day.
+- Reasonable call‑edge resolution: 1–2 days+, depending on language semantics (module resolution, dynamic features, method dispatch).
+
+### Well‑supported languages (good early candidates)
+
+- JavaScript/TypeScript/TSX/JSX, Go, Rust, Java, Kotlin, C/C++, C‑Sharp, Ruby, PHP, Lua, Elixir, Bash, JSON/YAML/TOML/Markdown.
+
+Languages without npm distributions can still be supported via WASM loading but require extra setup.
+
+### Common gotchas and limitations
+
+- Version/ABI mismatches between Tree‑sitter core and grammars; align versions and rebuild if necessary.
+- Import semantics vary widely:
+  - Dynamic languages (Ruby/Python) and reflection make call edges approximate.
+  - C/C++ includes and macros are not module imports; dependency edges are heuristic.
+  - Strongly typed ecosystems (Java/Kotlin/Go) require package path resolution for fidelity.
+- Call graph fidelity is best‑effort without type/alias resolution (especially for methods and re‑exports).
+- Performance on large repos: rely on excludes and parallel parsing; consider incremental runs later.
+- Mixed/SFC files (e.g., Vue/Svelte) embed multiple languages and may need special handling.
 
 ## Troubleshooting
 

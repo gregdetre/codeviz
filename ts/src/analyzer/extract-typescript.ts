@@ -1,4 +1,4 @@
-import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
+import { readFile, writeFile, readdir, mkdir, stat } from "node:fs/promises";
 import { basename, join, relative, dirname } from "node:path";
 import { minimatch } from "minimatch";
 import Parser from "tree-sitter";
@@ -80,7 +80,94 @@ export async function runExtract(opts: { targetDir: string; outPath: string; ver
   // Filter edges to only those whose endpoints exist as nodes
   const nodeIds = new Set(nodes.map(n => n.id));
   const edges = edgesRaw.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
-  const graph = { version: 1, schemaVersion: "1.0.0", id_prefix: "", defaultMode: "exec", rootDir: toUnix(opts.targetDir), nodes, edges, groups, moduleImports: moduleImportsArr };
+  let graph = { version: 1, schemaVersion: "1.0.0", id_prefix: "", defaultMode: "exec", rootDir: toUnix(opts.targetDir), nodes, edges, groups, moduleImports: moduleImportsArr } as any;
+
+  // Merge with existing graph if present to support multi-language runs (e.g., Python then TS)
+  try {
+    const s = await stat(opts.outPath).catch(() => null as any);
+    if (s && s.isFile()) {
+      const raw = await readFile(opts.outPath, "utf8");
+      const existing = JSON.parse(raw || "{}");
+      if (existing && typeof existing === 'object') {
+        const existingNodeIds = new Set<string>(Array.isArray(existing.nodes) ? existing.nodes.map((n: any) => n.id) : []);
+        const existingEdgeKeys = new Set<string>(Array.isArray(existing.edges) ? existing.edges.map((e: any) => `${e.source}->${e.kind}->${e.target}`) : []);
+        const groupChildrenById = new Map<string, Set<string>>();
+        if (Array.isArray(existing.groups)) {
+          for (const g of existing.groups) {
+            const set = new Set<string>(Array.isArray(g.children) ? g.children : []);
+            groupChildrenById.set(g.id, set);
+          }
+        }
+        const moduleImportWeights = new Map<string, number>();
+        if (Array.isArray(existing.moduleImports)) {
+          for (const im of existing.moduleImports) {
+            const k = `${im.source}->${im.target}`;
+            moduleImportWeights.set(k, (moduleImportWeights.get(k) || 0) + (Number(im.weight) || 0));
+          }
+        }
+
+        // Merge nodes
+        const mergedNodes = Array.isArray(existing.nodes) ? existing.nodes.slice() : [];
+        for (const n of nodes) {
+          if (!existingNodeIds.has(n.id)) {
+            mergedNodes.push(n);
+            existingNodeIds.add(n.id);
+          }
+        }
+
+        // Merge edges
+        const mergedEdges = Array.isArray(existing.edges) ? existing.edges.slice() : [];
+        for (const e of edges) {
+          const k = `${e.source}->${e.kind}->${e.target}`;
+          if (!existingEdgeKeys.has(k)) {
+            mergedEdges.push(e);
+            existingEdgeKeys.add(k);
+          }
+        }
+
+        // Merge groups (union children per id)
+        const mergedGroupsMap = new Map<string, { id: string; kind: string; children: string[] }>();
+        if (Array.isArray(existing.groups)) {
+          for (const g of existing.groups) {
+            mergedGroupsMap.set(g.id, { id: g.id, kind: g.kind, children: Array.isArray(g.children) ? g.children.slice() : [] });
+          }
+        }
+        for (const g of groups) {
+          if (!mergedGroupsMap.has(g.id)) {
+            mergedGroupsMap.set(g.id, { id: g.id, kind: g.kind, children: g.children.slice() });
+          } else {
+            const cur = mergedGroupsMap.get(g.id)!;
+            const set = new Set<string>(cur.children);
+            for (const ch of g.children) set.add(ch);
+            cur.children = Array.from(set);
+          }
+        }
+
+        // Merge moduleImports (sum weights)
+        for (const im of moduleImportsArr) {
+          const k = `${im.source}->${im.target}`;
+          moduleImportWeights.set(k, (moduleImportWeights.get(k) || 0) + (Number(im.weight) || 0) || 1);
+        }
+        const mergedModuleImports = Array.from(moduleImportWeights.entries()).map(([k, w]) => {
+          const [source, target] = k.split("->");
+          return { source, target, weight: w };
+        });
+
+        graph = {
+          version: 1,
+          schemaVersion: "1.0.0",
+          id_prefix: existing.id_prefix || "",
+          defaultMode: existing.defaultMode || "exec",
+          rootDir: existing.rootDir || toUnix(opts.targetDir),
+          nodes: mergedNodes,
+          edges: mergedEdges,
+          groups: Array.from(mergedGroupsMap.values()),
+          moduleImports: mergedModuleImports
+        };
+      }
+    }
+  } catch {}
+
   await mkdir(dirname(opts.outPath), { recursive: true });
   await writeFile(opts.outPath, JSON.stringify(graph, null, 2), "utf8");
 }
@@ -103,7 +190,15 @@ async function collectTsFiles(dir: string, acc: string[] = []): Promise<string[]
     if (entry.name.startsWith(".")) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) await collectTsFiles(full, acc);
-    else if (entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx")) && !entry.name.endsWith(".d.ts")) acc.push(full);
+    else if (
+      entry.isFile() &&
+      ((entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts")) ||
+       entry.name.endsWith(".tsx") ||
+       entry.name.endsWith(".js") ||
+       entry.name.endsWith(".jsx"))
+    ) {
+      acc.push(full);
+    }
   }
   return acc;
 }
