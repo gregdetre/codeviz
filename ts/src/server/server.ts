@@ -111,7 +111,9 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       const json = await readFile(annPath, "utf8");
       reply.type("application/json").send(json);
     } catch (err: any) {
-      reply.code(404).send({ error: "ENOENT", message: "llm_annotation.json not found" });
+      // Optional: if annotations are missing, respond with 204 No Content
+      // so the client can treat it as "no annotations" without logging an error.
+      reply.code(204).send();
     }
   });
 

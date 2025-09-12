@@ -98,6 +98,21 @@ export async function initApp() {
 
   const im = InteractionManager(cy, graph, vcfg);
   im.installBasics();
+  // Annotations status (optional)
+  try {
+    const annStatus = document.getElementById('annStatus');
+    if (annStatus) {
+      if (annotations && Array.isArray(annotations.nodes)) {
+        const count = annotations.nodes.length;
+        annStatus.textContent = `Annotations: loaded (${count} nodes)`;
+        annStatus.style.color = '#059669';
+      } else {
+        annStatus.textContent = 'Annotations: none (optional)';
+        annStatus.style.color = '#9CA3AF';
+        console.warn('[cv] No llm_annotation.json found – proceeding without annotations');
+      }
+    }
+  } catch {}
   // TODO: use annotations to render tag-based filter widget (v1.1)
 
   // Update title based on selection focus

@@ -26,6 +26,8 @@ export async function loadGraph(validate = false): Promise<Graph> {
 export async function loadAnnotations(): Promise<any | null> {
   try {
     const res = await fetch('/out/llm_annotation.json');
+    // Treat 204 No Content and non-OK as "no annotations".
+    if (res.status === 204) return null;
     if (!res.ok) return null;
     return await res.json();
   } catch {
