@@ -181,7 +181,12 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     // Keyboard handlers
     document.addEventListener('keydown', (e) => {
       try {
-        if (e.key === 'Escape') clearFocus();
+        if (e.key === 'Escape') {
+          // Ignore ESC when typing in inputs/textareas/contenteditables
+          if (isEditableTarget(e.target)) return;
+          try { (cy as any).$(':selected').unselect(); } catch {}
+          clearFocus();
+        }
         // Space-hold temporary pan mode (ignored when typing in inputs)
         const isSpace = e.code === 'Space' || e.key === ' ';
         if (isSpace) {

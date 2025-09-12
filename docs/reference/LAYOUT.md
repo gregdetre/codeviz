@@ -20,27 +20,27 @@ This document explains how layout works in CodeViz, with a focus on execution/ca
 - Interactivity: basic toggles and neighbor highlight for MVP; expand/collapse via extension in future.
 
 ## Current state
-- Default layout is ELK→fCoSE (sequential hybrid). ELK provides layered structure and orthogonal routing; fCoSE refines spacing with `randomize:false`. Module groups as compounds, filtering toggles, neighbor highlight. A toolbar control allows switching layouts; hybrid runs in sequential mode by default (no constrained submode).
+- Default layout is ELK→fCoSE (sequential hybrid). ELK provides layered structure and orthogonal routing; fCoSE refines spacing with `randomize:false`. Module groups as compounds; filtering toggles and neighbor highlight are available. The toolbar allows switching between ELK, fCoSE, and Hybrid; hybrid runs in sequential mode by default (no constrained submode).
 
-### CodeViz specifics: initial vs Re-layout
+### CodeViz specifics: initial vs recompute
 
-- Initial render (Explore/Modules):
-  - Computes elements for the chosen mode, then applies ELK with:
+- Initial render:
+  - Computes elements and applies ELK with:
     - `elk.algorithm = layered`
     - `elk.direction = DOWN`
     - `elk.edgeRouting = ORTHOGONAL` (ELK-only mode)
   - In hybrid (`elk-then-fcose`), ELK runs first (no animation) to seed positions, then fCoSE runs with `randomize:false` and `numIter: 1000` to refine.
-- Re-layout button:
-  - Triggers a pure fCoSE run on current positions (no ELK reseed). This allows a more compact arrangement that may deviate from strict layer ranks.
+- Recompute layout:
+  - Re-runs the currently selected algorithm (ELK, fCoSE, or Hybrid) on the current graph positions.
+  - Does not change viewport (zoom/pan), selection, visibility filters, or styling.
 
-Implication: The initial layout emphasizes directional clarity and stable ranks; Re-layout favors compactness and aesthetics via force-directed refinement.
+Implication: The initial layout emphasizes directional clarity and stable ranks; recomputing fCoSE may favor compactness and aesthetics via force-directed refinement.
 
 ### Group label placement
 
 - Module and folder group labels are positioned at the bottom-right, inside the group border.
 - Implemented via Cytoscape styles: `text-valign: bottom`, `text-halign: right` plus negative `text-margin-x`/`text-margin-y` to pull the label inside the border.
 
-## Layout modes (high-level)
-- Default view: emphasizes function calls; imports available via `moduleImports`.
-- Modules view (future): emphasize module/package relationships.
-- Data structures view (future): highlight entities and functions operating on them.
+## Notes
+- Recenter is a camera-only action that fits the viewport to visible elements.
+- Expand/Collapse changes topology and may warrant a recompute for best results.

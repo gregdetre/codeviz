@@ -63,6 +63,61 @@
             width: 100%;
         }
 
+        /* Search dropdown */
+        .searchbox-container {
+            position: relative;
+        }
+
+        .search-results {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+            max-height: 300px;
+            overflow: auto;
+            z-index: 20;
+        }
+
+        .search-result-item {
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            cursor: pointer;
+        }
+
+        .search-result-item:hover {
+            background: #f3f4f6;
+        }
+
+        .search-result-item.selected {
+            background: #e5e7eb;
+        }
+
+        .search-result-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+
+        .search-result-badge {
+            font-size: 11px;
+            color: #374151;
+            background: #e5e7eb;
+            border-radius: 4px;
+            padding: 1px 6px;
+        }
+
+        .search-result-meta {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
         .graph {
             grid-area: graph;
             position: relative;
@@ -170,7 +225,6 @@
                 </select>
             </label>
             <!-- Hybrid submode removed: constrained mode no longer supported; sequential is default -->
-            <div id="modeInfo">Mode: …</div>
             <label><input type="checkbox" id="toggleCalls" checked /> calls</label>
             <label><input type="checkbox" id="toggleImports" checked /> imports</label>
             <label><input type="checkbox" id="toggleFunctions" checked /> functions</label>
@@ -183,12 +237,19 @@
                     <option value="hide">hide</option>
                 </select>
             </label>
-            <select id="modeSelect">
-                <option value="explore">Explore</option>
-                <option value="modules">Modules</option>
-            </select>
-            <button id="refineBtn" title="Re-run layout optimization">Re-layout</button>
-            <input type="search" id="searchBox" placeholder="Search…" />
+            <button id="recomputeLayoutBtn" title="Recompute current layout algorithm">Recompute layout</button>
+            <button id="recenterBtn" title="Fit view to visible elements">Recenter</button>
+            <button id="clearSelectionBtn" title="De-select all selected elements">Clear selection</button>
+            <button id="clearFiltersBtn" title="Reset search and element toggles to defaults">Clear filters</button>
+            <button id="clearStylingBtn" title="Remove focus/highlight styling without changing visibility">Clear
+                styling</button>
+            <div style="border-top: 1px solid #e5e7eb; margin-top: 6px; padding-top: 6px;"></div>
+            <button id="expandAllBtn" title="Expand all groups">Expand all</button>
+            <button id="collapseAllBtn" title="Collapse all groups">Collapse all</button>
+            <div class="searchbox-container">
+                <input type="search" id="searchBox" placeholder="Search…" />
+                <div id="searchResults" class="search-results" hidden></div>
+            </div>
             <div id="chat"
                 style="border-top: 1px solid #e5e7eb; padding-top: 8px; display:flex; flex-direction:column; flex:1; min-height:0;">
                 <div
