@@ -21,8 +21,13 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
   const container = cy.container() as HTMLElement;
   let lastPointerX = 0;
   let lastPointerY = 0;
+  let activePointerId: number | null = null;
 
-  const dbg = (...args: any[]) => { try { if ((window as any).__cvPanDebug) console.debug('[cv-pan]', ...args); } catch {} };
+  const dbg = (...args: any[]) => { try { if ((window as any).__cvPanDebug) console.log('[cv-pan]', ...args); } catch {} };
+  const insideContainer = (t: EventTarget | null): boolean => {
+    const el = t as Node | null;
+    return Boolean(container && el && (el === container || (container.contains ? container.contains(el) : false)));
+  };
 
   function isEditableTarget(t: EventTarget | null): boolean {
     const el = t as HTMLElement | null;
@@ -201,13 +206,23 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     window.addEventListener('blur', () => { try { disableSpacePan(); } catch {} });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') { try { disableSpacePan(); } catch {} } });
     // Manual pan when Space is held, even when starting over nodes/groups
+    // Prefer document-level capture to guarantee we see events even if inner layers stop them
+    const add = (type: string, handler: any, opts?: AddEventListenerOptions) => {
+      try { document.addEventListener(type, handler, Object.assign({ capture: true, passive: false }, opts || {})); } catch {}
+    };
+    const remove = (type: string, handler: any) => {
+      try { document.removeEventListener(type, handler, { capture: true } as any); } catch {}
+    };
+
     if (container) {
       const onPointerDown = (ev: PointerEvent) => {
+        if (!insideContainer(ev.target)) return;
         // Space-hold panning with left button
         if (isSpacePanActive && ev.button === 0) {
           if (isEditableTarget(ev.target)) return;
           try { container.setPointerCapture(ev.pointerId); } catch {}
           isMouseDown = true;
+          activePointerId = ev.pointerId;
           lastPointerX = ev.clientX;
           lastPointerY = ev.clientY;
           updateCursor();
@@ -222,6 +237,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
           isMiddlePanActive = true;
           try { container.setPointerCapture(ev.pointerId); } catch {}
           isMouseDown = true;
+          activePointerId = ev.pointerId;
           lastPointerX = ev.clientX;
           lastPointerY = ev.clientY;
           updateCursor();
@@ -232,7 +248,9 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
         }
       };
       const onPointerMove = (ev: PointerEvent) => {
+        if (!insideContainer(ev.target)) return;
         if (!(isSpacePanActive || isMiddlePanActive) || !isMouseDown) return;
+        if (activePointerId !== null && ev.pointerId !== activePointerId) return;
         const dx = ev.clientX - lastPointerX;
         const dy = ev.clientY - lastPointerY;
         lastPointerX = ev.clientX;
@@ -243,21 +261,106 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
         dbg('pointermove panBy', { dx, dy });
       };
       const onPointerUp = (ev: PointerEvent) => {
+        if (!insideContainer(ev.target)) return;
         if (!isMouseDown) return;
+        if (activePointerId !== null && ev.pointerId !== activePointerId) return;
         isMouseDown = false;
         isMiddlePanActive = false;
         try { container.releasePointerCapture(ev.pointerId); } catch {}
+        activePointerId = null;
         updateCursor();
         ev.preventDefault();
         ev.stopPropagation();
         dbg('pointerup');
       };
-      container.addEventListener('pointerdown', onPointerDown, { capture: true } as any);
-      container.addEventListener('pointermove', onPointerMove, { capture: true } as any);
-      container.addEventListener('pointerup', onPointerUp, { capture: true } as any);
-      container.addEventListener('pointercancel', onPointerUp, { capture: true } as any);
-      container.addEventListener('dragstart', (e) => { e.preventDefault(); }, { capture: true } as any);
-      container.addEventListener('mouseleave', () => { isMouseDown = false; updateCursor(); }, { capture: true } as any);
+
+      // Pointer events (modern browsers)
+      add('pointerdown', onPointerDown);
+      add('pointermove', onPointerMove);
+      add('pointerup', onPointerUp);
+      add('pointercancel', onPointerUp);
+
+      // Mouse fallback (older/safari configurations)
+      const onMouseDown = (ev: MouseEvent) => {
+        if (!insideContainer(ev.target)) return;
+        if (isEditableTarget(ev.target)) return;
+        if ((isSpacePanActive && ev.button === 0) || ev.button === 1) {
+          isMouseDown = true;
+          isMiddlePanActive = ev.button === 1;
+          lastPointerX = ev.clientX;
+          lastPointerY = ev.clientY;
+          updateCursor();
+          ev.preventDefault();
+          ev.stopPropagation();
+          dbg('mousedown fallback', { button: ev.button });
+        }
+      };
+      const onMouseMove = (ev: MouseEvent) => {
+        if (!insideContainer(ev.target)) return;
+        if (!(isSpacePanActive || isMiddlePanActive) || !isMouseDown) return;
+        const dx = ev.clientX - lastPointerX;
+        const dy = ev.clientY - lastPointerY;
+        lastPointerX = ev.clientX;
+        lastPointerY = ev.clientY;
+        try { cy.panBy({ x: dx, y: dy }); } catch {}
+        ev.preventDefault();
+        ev.stopPropagation();
+        dbg('mousemove panBy', { dx, dy });
+      };
+      const onMouseUp = (ev: MouseEvent) => {
+        if (!insideContainer(ev.target)) return;
+        if (!isMouseDown) return;
+        isMouseDown = false;
+        isMiddlePanActive = false;
+        updateCursor();
+        ev.preventDefault();
+        ev.stopPropagation();
+        dbg('mouseup');
+      };
+      add('mousedown', onMouseDown);
+      add('mousemove', onMouseMove);
+      add('mouseup', onMouseUp);
+
+      // Touch fallback (basic)
+      const onTouchStart = (ev: TouchEvent) => {
+        if (!insideContainer(ev.target)) return;
+        if (!isSpacePanActive) return;
+        const t = ev.touches[0];
+        if (!t) return;
+        isMouseDown = true;
+        lastPointerX = t.clientX;
+        lastPointerY = t.clientY;
+        updateCursor();
+        ev.preventDefault();
+        ev.stopPropagation();
+        dbg('touchstart space-pan');
+      };
+      const onTouchMove = (ev: TouchEvent) => {
+        if (!insideContainer(ev.target)) return;
+        if (!isSpacePanActive || !isMouseDown) return;
+        const t = ev.touches[0];
+        if (!t) return;
+        const dx = t.clientX - lastPointerX;
+        const dy = t.clientY - lastPointerY;
+        lastPointerX = t.clientX;
+        lastPointerY = t.clientY;
+        try { cy.panBy({ x: dx, y: dy }); } catch {}
+        ev.preventDefault();
+        ev.stopPropagation();
+        dbg('touchmove panBy', { dx, dy });
+      };
+      const onTouchEnd = (ev: TouchEvent) => {
+        if (!isMouseDown) return;
+        isMouseDown = false;
+        updateCursor();
+        ev.preventDefault();
+        ev.stopPropagation();
+        dbg('touchend');
+      };
+      add('touchstart', onTouchStart);
+      add('touchmove', onTouchMove);
+      add('touchend', onTouchEnd);
+      add('touchcancel', onTouchEnd);
     }
   }
 
