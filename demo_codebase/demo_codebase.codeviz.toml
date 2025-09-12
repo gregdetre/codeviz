@@ -1,0 +1,18 @@
+[target]
+dir = "./"
+
+[analyzer]
+exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
+# includeOnly = ["**/*.py"]
+excludeModules = []
+
+[output]
+dir = "../out/demo_codebase"
+
+[viewer]
+layout = "elk-then-fcose"
+# mode = "default"
+# host = "127.0.0.1"
+# port = 8000
+
+
