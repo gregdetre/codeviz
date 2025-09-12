@@ -206,8 +206,30 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
           if (!container || container.getAttribute('data-loaded') === '1') return;
           const qs = new URLSearchParams({ file, start: String(lineNum || 1), end: String(Number(endLine) || 0) });
           const res = await fetch(`/api/source?${qs.toString()}`);
+          if (!res.ok) {
+            let msg = '';
+            try {
+              const ct = res.headers.get('content-type') || '';
+              if (ct.includes('application/json')) {
+                const j = await res.json();
+                msg = String(j?.message || j?.error || '');
+              } else {
+                msg = await res.text();
+              }
+            } catch {}
+            const message = `Error loading source (HTTP ${res.status})${msg ? ': ' + msg : ''}`;
+            try { await fetch('/api/log', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message }) }); } catch {}
+            container.innerHTML = `<div class="cv-error">${escapeHtml(message)}</div>`;
+            return;
+          }
           const data = await res.json();
           const code = String(data?.content ?? '');
+          if (!('content' in (data || {}))) {
+            const message = 'Error: /api/source returned no content field';
+            try { await fetch('/api/log', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message }) }); } catch {}
+            container.innerHTML = `<div class="cv-error">${escapeHtml(message)}</div>`;
+            return;
+          }
           // Build clickable map from neighbours (caller/callees) by simple function name
           const clickable: Record<string, string> = {};
           try {
@@ -285,7 +307,7 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
           const container = document.getElementById('code-container');
           if (container) container.textContent = `Error loading source: ${String((err as any)?.message || err)}`;
         }
-      }, { once: true } as any);
+      });
     }
   } catch {}
 
