@@ -37,7 +37,6 @@ export async function initApp() {
     elements,
     style: generateStyles(undefined as any, { highlight: vcfg.highlight }),
     wheelSensitivity: typeof vcfg.wheelSensitivity === 'number' ? vcfg.wheelSensitivity : undefined,
-    pixelRatio: 1,
     textureOnViewport: true,
     motionBlur: true,
     motionBlurOpacity: 0.1,
