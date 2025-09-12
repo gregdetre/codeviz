@@ -13,6 +13,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
   // Space-hold pan mode state
   let isSpacePanActive = false;
   let isMouseDown = false;
+  let isMiddlePanActive = false;
   let previousAutoungrabify = false;
   let previousBoxSelection = false;
   const container = cy.container() as HTMLElement;
@@ -33,6 +34,8 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     if (!container) return;
     if (isSpacePanActive) {
       container.style.cursor = isMouseDown ? 'grabbing' : 'grab';
+    } else if (isMiddlePanActive && isMouseDown) {
+      container.style.cursor = 'grabbing';
     } else {
       container.style.cursor = '';
     }
@@ -186,19 +189,34 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     // Manual pan when Space is held, even when starting over nodes/groups
     if (container) {
       const onPointerDown = (ev: PointerEvent) => {
-        if (!isSpacePanActive) return;
-        if (ev.button !== 0) return; // left button only
-        if (isEditableTarget(ev.target)) return;
-        try { container.setPointerCapture(ev.pointerId); } catch {}
-        isMouseDown = true;
-        lastPointerX = ev.clientX;
-        lastPointerY = ev.clientY;
-        updateCursor();
-        ev.preventDefault();
-        ev.stopPropagation();
+        // Space-hold panning with left button
+        if (isSpacePanActive && ev.button === 0) {
+          if (isEditableTarget(ev.target)) return;
+          try { container.setPointerCapture(ev.pointerId); } catch {}
+          isMouseDown = true;
+          lastPointerX = ev.clientX;
+          lastPointerY = ev.clientY;
+          updateCursor();
+          ev.preventDefault();
+          ev.stopPropagation();
+          return;
+        }
+        // Middle-mouse panning regardless of Space
+        if (ev.button === 1) {
+          if (isEditableTarget(ev.target)) return;
+          isMiddlePanActive = true;
+          try { container.setPointerCapture(ev.pointerId); } catch {}
+          isMouseDown = true;
+          lastPointerX = ev.clientX;
+          lastPointerY = ev.clientY;
+          updateCursor();
+          ev.preventDefault();
+          ev.stopPropagation();
+          return;
+        }
       };
       const onPointerMove = (ev: PointerEvent) => {
-        if (!isSpacePanActive || !isMouseDown) return;
+        if (!(isSpacePanActive || isMiddlePanActive) || !isMouseDown) return;
         const dx = ev.clientX - lastPointerX;
         const dy = ev.clientY - lastPointerY;
         lastPointerX = ev.clientX;
@@ -210,6 +228,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
       const onPointerUp = (ev: PointerEvent) => {
         if (!isMouseDown) return;
         isMouseDown = false;
+        isMiddlePanActive = false;
         try { container.releasePointerCapture(ev.pointerId); } catch {}
         updateCursor();
         ev.preventDefault();
