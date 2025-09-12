@@ -1,5 +1,5 @@
 [target]
-dir = "/absolute/path/to/hellozenno/backend"
+dir = "/Users/greg/Dropbox/dev/experim/hellozenno/backend"
 
 [analyzer]
 exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
