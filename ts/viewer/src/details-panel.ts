@@ -114,6 +114,31 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
   const lineSuffix = Number.isFinite(lineNum) && lineNum > 0 ? `:${lineNum}` : '';
   const vscodeUrl = `vscode://file${encodeURI(absolutePath)}${lineSuffix}`;
 
+  // Build Docstring block (optional)
+  const docHtml = doc ? `
+      <div class="doc-block" style="margin-top:6px;">
+        <div style="font-weight:600; margin-bottom:4px;">Docstring</div>
+        <pre style="margin:0; font-size:12px; background: #f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:6px;">&quot;&quot;&quot;${escapeHtml(doc)}&quot;&quot;&quot;</pre>
+      </div>
+  ` : '';
+
+  // Tags renderer: prefer LLM annotations when present
+  function renderTagsHtml(nodeId: string): string {
+    try {
+      const anns = (window as any).__cv_annotations;
+      if (!anns || !Array.isArray(anns.nodes)) {
+        return `<div><strong>Tags</strong><div>None</div></div>`;
+      }
+      const entry = anns.nodes.find((n: any) => n && n.id === nodeId);
+      if (!entry) return `<div><strong>Tags</strong><div>None</div></div>`;
+      const arr = Array.isArray(entry.tags) ? entry.tags : [];
+      if (arr.length === 0) return `<div><strong>Tags</strong><div>[]</div></div>`;
+      return `<div><strong>Tags</strong><div>[${arr.map((t: any) => escapeHtml(String(t))).join(', ')}]</div></div>`;
+    } catch {
+      return `<div><strong>Tags</strong><div>None</div></div>`;
+    }
+  }
+
   const html = `
     <div data-testid="details">
       <div><strong>${escapeHtml(label)}</strong></div>
@@ -125,12 +150,12 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
         <span class="file-path">${escapeHtml(absolutePath)}${lineSuffix ? escapeHtml(lineSuffix) : ''}</span>
       </a>
       ${modulePath ? `<div>module: ${escapeHtml(modulePath)}</div>` : ''}
-      ${signature ? `<pre>${escapeHtml(signature)}</pre>` : ''}
-      ${doc ? `<div class="doc">${escapeHtml(doc)}</div>` : ''}
+      ${signature ? `<pre style="margin: 6px 0 0 0;">${escapeHtml(signature)}</pre>` : ''}
+      ${docHtml}
       ${file ? `
       <details id="code-section" style="margin-top:8px;">
         <summary style="cursor:pointer;">Code</summary>
-        <div id="code-container" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:12px; white-space: pre; overflow:auto; border:1px solid #e5e7eb; border-radius:6px; padding:8px; background:#fafafa; margin-top:6px;">
+        <div id="code-container" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:12px; overflow:auto; border:1px solid #e5e7eb; border-radius:6px; padding:8px; background:#fafafa; margin-top:6px;">
           <div id="code-loading" style="font-size:12px; color:#666;">Click to load…</div>
         </div>
       </details>` : ''}
@@ -139,24 +164,18 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
         <span style="font-size:12px; color:#666;">Summarising…</span>
       </div>
       <div id="summaryContainer" style="margin-top:6px; font-size:13px; line-height:1.5;"></div>
-      ${tagKeys.length
-        ? `<div><strong>Tags</strong><ul>${Object.entries(tags).map(([k,v]) => `<li>${escapeHtml(k)}: ${escapeHtml(String(v))}</li>`).join('')}</ul>
-             <div style="font-size:12px;color:#666;">LLM-generated (optional)</div>
-           </div>`
-        : `<div><strong>Tags</strong><div style="font-size:12px;color:#666;">None (LLM annotations optional)</div></div>`}
-      <div style="margin-top:8px; display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <div>
-          <div><strong>Outgoing</strong></div>
-          <ul>
-            ${outgoing.map(n => `<li><a href="#" data-node-id="${escapeHtml(n.id())}">${escapeHtml(n.data('label') || n.id())}</a></li>`).join('')}
-          </ul>
-        </div>
-        <div>
-          <div><strong>Incoming</strong></div>
-          <ul>
-            ${incoming.map(n => `<li><a href="#" data-node-id="${escapeHtml(n.id())}">${escapeHtml(n.data('label') || n.id())}</a></li>`).join('')}
-          </ul>
-        </div>
+      ${renderTagsHtml(String(node.id()))}
+      <div style="margin-top:10px;">
+        <div><strong>Incoming</strong></div>
+        <ul>
+          ${incoming.map(n => `<li><a href="#" data-node-id="${escapeHtml(n.id())}">${escapeHtml(n.data('label') || n.id())}</a></li>`).join('')}
+        </ul>
+      </div>
+      <div style="margin-top:6px;">
+        <div><strong>Outgoing</strong></div>
+        <ul>
+          ${outgoing.map(n => `<li><a href="#" data-node-id="${escapeHtml(n.id())}">${escapeHtml(n.data('label') || n.id())}</a></li>`).join('')}
+        </ul>
       </div>
       ${groupContentsHtml}
     </div>
@@ -218,9 +237,9 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
           } catch {}
           try {
             const { default: DOMPurify } = await import('dompurify');
-            container.innerHTML = DOMPurify.sanitize(`<code class="language-python">${html || ''}</code>`);
+            container.innerHTML = DOMPurify.sanitize(`<pre class="language-python"><code class="language-python">${html || ''}</code></pre>`);
           } catch {
-            container.innerHTML = `<code class="language-python">${html || ''}</code>`;
+            container.innerHTML = `<pre class="language-python"><code class="language-python">${html || ''}</code></pre>`;
           }
 
           // Fallback when empty
@@ -262,7 +281,7 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
     }
   } catch {}
 
-  // Render existing summary from annotations, if available; auto-run summarisation for function nodes with spinner
+  // Render existing summary from annotations if available; also auto-run summarisation with spinner
   try {
     const out = document.getElementById('summaryContainer');
     if (out) {
@@ -279,38 +298,37 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
             const { default: DOMPurify } = await import('dompurify');
             out.innerHTML = DOMPurify.sanitize(String(marked.parse(md, { breaks: true } as any) || ''));
           }
-          // Auto-trigger summarisation for functions (always run on selection)
-          if (kind === 'function') {
-            try {
-              if (spinner) spinner.removeAttribute('hidden');
-              out.textContent = md ? out.textContent : '';
-              const payload = { node: { id: String(node.id()), label, module: modulePath, file, line: lineNum, endLine, signature, doc } };
-              const res = await fetch('/api/summarise-node', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-              const data = await res.json();
-              const md2 = String(data?.summary || '');
-              // Ensure still on same node
-              const outNow = document.getElementById('summaryContainer');
-              if (outNow && (outNow as HTMLElement).getAttribute('data-node-id') === currentNodeId) {
-                if (md2) {
-                  const { marked } = await import('marked');
-                  const { default: DOMPurify } = await import('dompurify');
-                  (outNow as HTMLElement).innerHTML = DOMPurify.sanitize(String(marked.parse(md2, { breaks: true } as any) || ''));
-                  try {
-                    const res2 = await fetch('/out/llm_annotation.json');
-                    if (res2.ok) (window as any).__cv_annotations = await res2.json();
-                  } catch {}
-                } else {
-                  (outNow as HTMLElement).textContent = '(no summary)';
-                }
-              }
-            } catch (e) {
-              try { (out as HTMLElement).textContent = `Error summarising: ${String((e as any)?.message || e)}`; } catch {}
-            } finally {
-              if (spinner) spinner.setAttribute('hidden', '');
-            }
-          }
         }
       } catch {}
+      // Auto-trigger summarisation for functions (always run on selection), regardless of existing annotations
+      if (kind === 'function') {
+        try {
+          if (spinner) spinner.removeAttribute('hidden');
+          const payload = { node: { id: String(node.id()), label, module: modulePath, file, line: lineNum, endLine, signature, doc } };
+          const res = await fetch('/api/summarise-node', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          const data = await res.json();
+          const md2 = String(data?.summary || '');
+          // Ensure still on same node
+          const outNow = document.getElementById('summaryContainer');
+          if (outNow && (outNow as HTMLElement).getAttribute('data-node-id') === currentNodeId) {
+            if (md2) {
+              const { marked } = await import('marked');
+              const { default: DOMPurify } = await import('dompurify');
+              (outNow as HTMLElement).innerHTML = DOMPurify.sanitize(String(marked.parse(md2, { breaks: true } as any) || ''));
+              try {
+                const res2 = await fetch('/out/llm_annotation.json');
+                if (res2.ok) (window as any).__cv_annotations = await res2.json();
+              } catch {}
+            } else {
+              (outNow as HTMLElement).textContent = '(no summary)';
+            }
+          }
+        } catch (e) {
+          try { (out as HTMLElement).textContent = `Error summarising: ${String((e as any)?.message || e)}`; } catch {}
+        } finally {
+          if (spinner) spinner.setAttribute('hidden', '');
+        }
+      }
     }
   } catch {}
 
