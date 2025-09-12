@@ -16,6 +16,8 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
   let previousAutoungrabify = false;
   let previousBoxSelection = false;
   const container = cy.container() as HTMLElement;
+  let lastPointerX = 0;
+  let lastPointerY = 0;
 
   function isEditableTarget(t: EventTarget | null): boolean {
     const el = t as HTMLElement | null;
@@ -181,11 +183,44 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     // Defensive cleanup if window loses focus/visibility while space is held
     window.addEventListener('blur', () => { try { disableSpacePan(); } catch {} });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') { try { disableSpacePan(); } catch {} } });
-    // Track mouse state to switch cursor between grab/grabbing
+    // Manual pan when Space is held, even when starting over nodes/groups
     if (container) {
-      container.addEventListener('mousedown', () => { isMouseDown = true; updateCursor(); });
-      container.addEventListener('mouseup', () => { isMouseDown = false; updateCursor(); });
-      container.addEventListener('mouseleave', () => { isMouseDown = false; updateCursor(); });
+      const onPointerDown = (ev: PointerEvent) => {
+        if (!isSpacePanActive) return;
+        if (ev.button !== 0) return; // left button only
+        if (isEditableTarget(ev.target)) return;
+        try { container.setPointerCapture(ev.pointerId); } catch {}
+        isMouseDown = true;
+        lastPointerX = ev.clientX;
+        lastPointerY = ev.clientY;
+        updateCursor();
+        ev.preventDefault();
+        ev.stopPropagation();
+      };
+      const onPointerMove = (ev: PointerEvent) => {
+        if (!isSpacePanActive || !isMouseDown) return;
+        const dx = ev.clientX - lastPointerX;
+        const dy = ev.clientY - lastPointerY;
+        lastPointerX = ev.clientX;
+        lastPointerY = ev.clientY;
+        try { cy.panBy({ x: dx, y: dy }); } catch {}
+        ev.preventDefault();
+        ev.stopPropagation();
+      };
+      const onPointerUp = (ev: PointerEvent) => {
+        if (!isMouseDown) return;
+        isMouseDown = false;
+        try { container.releasePointerCapture(ev.pointerId); } catch {}
+        updateCursor();
+        ev.preventDefault();
+        ev.stopPropagation();
+      };
+      container.addEventListener('pointerdown', onPointerDown, { capture: true } as any);
+      container.addEventListener('pointermove', onPointerMove, { capture: true } as any);
+      container.addEventListener('pointerup', onPointerUp, { capture: true } as any);
+      container.addEventListener('pointercancel', onPointerUp, { capture: true } as any);
+      container.addEventListener('dragstart', (e) => { e.preventDefault(); }, { capture: true } as any);
+      container.addEventListener('mouseleave', () => { isMouseDown = false; updateCursor(); }, { capture: true } as any);
     }
   }
 
