@@ -11,6 +11,7 @@ Brief reference for built-in keyboard and modifier interactions in the CodeViz v
 ### Current shortcuts
 
 - **Escape**: Clear graph focus/selection; hide search suggestions when the search box is focused.
+- **Cmd+K (macOS) / Ctrl+K (Windows/Linux)**: Focus the "Ask the assistant…" chat input and select its text.
 - **ArrowUp / ArrowDown** (in search box): Move selection in the suggestions dropdown.
 - **Enter** (in search box): Open/focus the currently highlighted suggestion.
 - **Cmd+Click (macOS) / Ctrl+Click (Windows/Linux)** on a node: Open the node’s source file at its line in the editor.

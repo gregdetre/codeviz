@@ -94,11 +94,61 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     });
   }
 
+  // Ensure a node (by id) is materialised by expanding any collapsed
+  // module/folder ancestors that contain it. Safe to call even if already visible.
+  function expandAncestorsForNodeId(targetNodeId: string): void {
+    try {
+      const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
+      if (!api) return;
+
+      // Helper to expand a chain of folders shallow → deep, then the module
+      const expandChain = (start: any) => {
+        try {
+          if (!start || start.empty()) return;
+          const ancestors = start.parents('node:parent');
+          // Expand folders from shallowest to deepest
+          try {
+            const folders = ancestors.filter('node[type = "folder"]').sort((a: any, b: any) => (Number(a.data('depth') || 0) - Number(b.data('depth') || 0)));
+            folders.forEach((fn: any) => { try { if (api.isExpandable?.(fn)) api.expand(fn, { animate: false }); } catch {} });
+          } catch {}
+          // Expand the module itself if it's an ancestor (or the node itself)
+          try {
+            const mods = ancestors.filter('node[type = "module"]').union(start.filter('node[type = "module"]'));
+            mods.forEach((mn: any) => { try { if (api.isExpandable?.(mn)) api.expand(mn, { animate: false }); } catch {} });
+          } catch {}
+        } catch {}
+      };
+
+      // Case 1: node already exists → expand its ancestors
+      let node = cy.getElementById(targetNodeId);
+      if (node && !node.empty()) {
+        expandChain(node);
+      } else {
+        // Case 2: node pruned by collapse → use graph metadata to locate module and expand chain
+        try {
+          const meta = graph.nodes.find(n => n.id === targetNodeId);
+          const moduleId = meta?.module ? `module:${meta.module}` : '';
+          if (moduleId) {
+            const modNode = cy.getElementById(moduleId);
+            if (modNode && !modNode.empty()) expandChain(modNode);
+          }
+        } catch {}
+        // Try to fetch the node again after expansion
+        try { node = cy.getElementById(targetNodeId); } catch {}
+      }
+
+      // Optional: keep collapsed-edge aggregation in sync if helper is available
+      try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
+    } catch {}
+  }
+
   function focus(nodeId?: string) {
     if (!nodeId) {
       clearFocus();
       return;
     }
+    // Ensure node is visible by expanding its collapsed ancestors first
+    try { expandAncestorsForNodeId(nodeId); } catch {}
     const node = cy.getElementById(nodeId);
     if (!node || node.empty()) return;
     cy.batch(() => {
@@ -200,6 +250,23 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
           if (isEditableTarget(e.target)) return;
           try { (cy as any).$(':selected').unselect(); } catch {}
           clearFocus();
+        }
+        // Cmd/Ctrl+K → focus assistant chat input
+        if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          try {
+            const input = document.getElementById('chatInput') as HTMLInputElement | null;
+            if (input) {
+              input.focus();
+              try { input.select(); } catch {}
+              // Gently flash-highlight to draw attention
+              try { input.classList.remove('cv-flash-focus'); } catch {}
+              try { void (input as any).offsetWidth; } catch {}
+              try { input.classList.add('cv-flash-focus'); } catch {}
+              try { setTimeout(() => { try { input.classList.remove('cv-flash-focus'); } catch {} }, 1000); } catch {}
+            }
+          } catch {}
+          return;
         }
         // Shift-hold enables box selection (whitespace drag → selection box)
         if (e.key === 'Shift') {

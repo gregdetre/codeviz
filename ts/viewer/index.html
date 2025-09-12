@@ -209,6 +209,19 @@
                 animation: none;
             }
         }
+
+        /* Gentle flash highlight for focused chat input triggered by Cmd/Ctrl+K */
+        .cv-flash-focus {
+            animation: cv-flash-focus 1s ease-out;
+        }
+        @keyframes cv-flash-focus {
+            0% {
+                background-color: #fff9c4; /* soft yellow */
+            }
+            100% {
+                background-color: transparent;
+            }
+        }
     </style>
 </head>
 
@@ -237,8 +250,11 @@
                     <option value="hide">hide</option>
                 </select>
             </label>
-            <button id="recomputeLayoutBtn" title="Recompute current layout algorithm">Recompute layout</button>
-            <button id="recenterBtn" title="Fit view to visible elements">Recenter</button>
+            <button id="recomputeLayoutBtn" title="Layout selection + neighbors (or all if none)">Recompute
+                layout</button>
+            <button id="recomputeAggressiveBtn"
+                title="Aggressive layout for selection + neighbors (or all if none)">Aggressive recompute</button>
+            <button id="recenterBtn" title="Fit to selection (or visible if none)">Recenter</button>
             <button id="clearSelectionBtn" title="De-select all selected elements">Clear selection</button>
             <button id="clearFiltersBtn" title="Reset search and element toggles to defaults">Clear filters</button>
             <button id="clearStylingBtn" title="Remove focus/highlight styling without changing visibility">Clear
