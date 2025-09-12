@@ -14,7 +14,7 @@ export type ExecutionResult = {
 };
 
 const ALLOWED_COLLECTION_OPS = new Set(["addClass", "removeClass", "show", "hide", "style", "lock", "unlock", "showConnectedEdges", "hideConnectedEdges", "collapse", "expand"]);
-const ALLOWED_CORE_OPS = new Set(["layout", "fit", "center", "zoom", "resetViewport", "resetAll", "pan", "viewport", "batch", "select", "setOp", "clearSet", "clearAllSets", "collapseAll", "expandAll", "selectPath", "selectByDegree", "selectComponents", "selectEdgesBetween"]);
+const ALLOWED_CORE_OPS = new Set(["layout", "fit", "center", "zoom", "resetViewport", "resetAll", "pan", "viewport", "batch", "select", "setOp", "clearSet", "clearAllSets", "collapseAll", "expandAll", "selectPath", "selectByDegree", "selectComponents", "selectEdgesBetween", "filterSet", "selectEdgesIncident"]);
 const ALLOWED_CLASSES = new Set(["highlighted", "faded", "focus", "incoming-node", "outgoing-node", "incoming-edge", "outgoing-edge", "second-degree", "module-highlight"]);
 const ALLOWED_STYLE_KEYS = new Set([
   // existing
@@ -117,13 +117,18 @@ async function execCollectionOp(cy: Core, q: string | undefined, op: string, arg
   const errors: string[] = [];
   const eles: Collection = resolveCollection(cy, q);
   if (op === "addClass") {
-    if (typeof arg !== "string" || !ALLOWED_CLASSES.has(arg)) return errors;
-    eles.addClass(arg);
+    if (typeof arg !== "string") return errors;
+    // Alias legacy project-specific class to standard one
+    const className = (arg === 'group-highlight') ? 'highlighted' : arg;
+    if (!ALLOWED_CLASSES.has(className)) return errors;
+    eles.addClass(className);
     return errors;
   }
   if (op === "removeClass") {
-    if (typeof arg !== "string" || !ALLOWED_CLASSES.has(arg)) return errors;
-    eles.removeClass(arg);
+    if (typeof arg !== "string") return errors;
+    const className = (arg === 'group-highlight') ? 'highlighted' : arg;
+    if (!ALLOWED_CLASSES.has(className)) return errors;
+    eles.removeClass(className);
     return errors;
   }
   if (op === "show") {
@@ -276,6 +281,10 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
         else if (relRaw === 'incomers') next = (current as any).incomers();
         else if (relRaw === 'outgoers') next = (current as any).outgoers();
         else if (relRaw === 'closedneighborhood' || relRaw === 'closed-neighborhood' || relRaw === 'closed_neighborhood') next = (current as any).closedNeighborhood ? (current as any).closedNeighborhood() : current.neighborhood().union(current);
+        else if (relRaw === 'ancestors') next = (current as any).ancestors ? (current as any).ancestors() : (current as any).parents();
+        else if (relRaw === 'descendants') next = (current as any).descendants ? (current as any).descendants() : (current as any).children().descendants().union((current as any).children());
+        else if (relRaw === 'children') next = (current as any).children ? (current as any).children() : (current as any).filter(':child');
+        else if (relRaw === 'parent') next = (current as any).parent ? (current as any).parent() : (current as any).parents();
         else {
           errors.push(`select: unsupported rel: ${arg.rel}`);
           return errors;
@@ -384,11 +393,45 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
       const path = res.pathTo(target as any);
       const ids: string[] = [];
       const len = Math.min(path.length, MAX_PATH_EDGES);
-      for (let i = 0; i < len; i++) ids.push(path[i].id());
+      const nodesOnly = Boolean(arg?.nodesOnly);
+      for (let i = 0; i < len; i++) {
+        const el = path[i];
+        if (nodesOnly && el.isEdge && el.isEdge()) continue;
+        ids.push(el.id());
+      }
       setSetIds(setName, ids);
     } catch (e: any) {
       errors.push(String(e?.message || e));
     }
+    return errors;
+  }
+  if (op === "filterSet") {
+    const setName = sanitizeSetName(arg?.as ?? arg?.name);
+    const fromNm = parseSetRef(arg?.from);
+    const qSel = typeof arg?.q === 'string' ? arg.q : undefined;
+    if (!setName || !fromNm || !qSel) {
+      errors.push("filterSet: requires 'from' ($set), 'q', and 'as'");
+      return errors;
+    }
+    const base = resolveCollection(cy, `$${fromNm}`);
+    const refined = base.filter(qSel);
+    const ids: string[] = [];
+    for (let i = 0; i < refined.length && i < MAX_SET_SIZE; i++) ids.push(refined[i].id());
+    setSetIds(setName, ids);
+    return errors;
+  }
+  if (op === "selectEdgesIncident") {
+    const setName = sanitizeSetName(arg?.as ?? arg?.name);
+    const fromNm = parseSetRef(arg?.from);
+    if (!setName || !fromNm) {
+      errors.push("selectEdgesIncident: requires 'from' ($set) and 'as'");
+      return errors;
+    }
+    const nodes = resolveCollection(cy, `$${fromNm}`).nodes();
+    const edges = nodes.connectedEdges();
+    const ids: string[] = [];
+    for (let i = 0; i < edges.length && i < MAX_SET_SIZE; i++) ids.push(edges[i].id());
+    setSetIds(setName, ids);
     return errors;
   }
   if (op === "selectByDegree") {

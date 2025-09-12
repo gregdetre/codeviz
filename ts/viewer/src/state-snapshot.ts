@@ -29,11 +29,14 @@ export function computeSnapshot(cy: Core, supportedOps: ViewerSnapshot["supporte
     edges: edges.filter((e) => e.style("display") !== "none").length
   };
   const selectorHints = {
-    nodeDataKeys: ["id", "label", "type", "module"],
+    nodeDataKeys: ["id", "label", "type", "module", "path", "depth"],
     edgeDataKeys: ["id", "type", "weight"],
     examples: [
       "node[type = 'function']",
+      "node[type = 'module']",
+      "node[type = 'folder']",
       "node[label *= 'preprocess']",
+      "node[path *= 'src/utils']",
       "edge[type = 'calls']",
       "node:not([module = 'tests'])",
       "*"
