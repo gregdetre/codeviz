@@ -109,10 +109,10 @@ export async function initApp() {
         api.collapseAllEdges({ groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
       } catch {}
     };
-    // Auto-collapse folders deeper than level 1
+    // Auto-collapse all groups (folders and modules) on first load
     if (ec) {
-      const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 1);
-      if (foldersDeep.length > 0) ec.collapse(foldersDeep, { animate: false });
+      const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
+      if (groups && groups.length > 0) ec.collapse(groups, { animate: false });
       // After collapsing, aggregate parallel/meta edges to reduce clutter
       reaggregateEdges();
     }
@@ -281,6 +281,18 @@ export async function initApp() {
         applyModuleColorTint(cy);
         applyGroupBackgroundColors(cy, tokens);
       });
+      // Collapse all groups by default after mode change
+      try {
+        const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
+        if (api) {
+          const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
+          if (groups.length > 0) api.collapse(groups, { animate: false });
+          try {
+            if (typeof api.expandAllEdges === 'function') api.expandAllEdges();
+            if (typeof api.collapseAllEdges === 'function') api.collapseAllEdges({ groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
+          } catch {}
+        }
+      } catch {}
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
       try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
       scheduleOverviewRefresh();
@@ -301,14 +313,20 @@ export async function initApp() {
           applyModuleColorTint(cy);
           applyGroupBackgroundColors(cy, tokens);
         });
+        // Collapse all groups by default when regrouping
+        try {
+          const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
+          if (api) {
+            const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
+            if (groups.length > 0) api.collapse(groups, { animate: false });
+            try {
+              if (typeof api.expandAllEdges === 'function') api.expandAllEdges();
+              if (typeof api.collapseAllEdges === 'function') api.collapseAllEdges({ groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
+            } catch {}
+          }
+        } catch {}
         await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
         try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
-        // Auto-collapse folder depth > 1
-        try {
-          const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 1);
-          const ec = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
-          if (ec && foldersDeep.length > 0) ec.collapse(foldersDeep);
-        } catch {}
         scheduleOverviewRefresh();
       });
     }
