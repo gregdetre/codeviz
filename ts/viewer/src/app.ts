@@ -154,8 +154,13 @@ export async function initApp() {
         try {
           const api = (cy as any).expandCollapse('get');
           if (!api) return;
-          if (api.isExpandable(node)) api.expand(node, { animate: false });
-          else if (api.isCollapsible(node)) api.collapse(node, { animate: false });
+          if (api.isExpandable(node)) {
+            // Expand any collapsed edges first so node expand can repair meta-edges back to originals
+            try { if (typeof api.expandAllEdges === 'function') api.expandAllEdges(); } catch {}
+            api.expand(node, { animate: false });
+          } else if (api.isCollapsible(node)) {
+            api.collapse(node, { animate: false });
+          }
           // Refresh edge aggregation after toggle to keep group-level edges compact
           reaggregateEdges();
         } catch (err) {
@@ -362,6 +367,15 @@ export async function initApp() {
   if (clearSelectionBtn) {
     clearSelectionBtn.addEventListener('click', () => {
       try { (cy as any).$(':selected').unselect(); } catch {}
+      try { im.clearFocus(); } catch {}
+      // Refresh details to overview if nothing selected
+      try {
+        const detailsElNow = document.getElementById('details') as HTMLElement | null;
+        if (detailsElNow) {
+          import('./details-panel.js').then(m => m.renderDetails(detailsElNow, null));
+        }
+      } catch {}
+      try { scheduleOverviewRefresh(); } catch {}
     });
   }
 
@@ -411,6 +425,8 @@ export async function initApp() {
     expandAllBtn.addEventListener('click', () => {
       try {
         const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
+        // Expand collapsed edges first to ensure original per-node edges are restored
+        if (api && typeof api.expandAllEdges === 'function') api.expandAllEdges();
         if (api && typeof api.expandAll === 'function') api.expandAll({ animate: false });
         // Re-aggregate collapsed edges if helper exists
         try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}

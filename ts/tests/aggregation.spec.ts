@@ -14,8 +14,9 @@ test('aggregates only around collapsed groups', async ({ page }) => {
   await evalCy(() => {
     const cy: any = (window as any).__cy;
     const api = cy.expandCollapse('get');
-    api.expandAll({ animate: false });
+    // Expand edges first, then nodes
     if (typeof api.expandAllEdges === 'function') api.expandAllEdges();
+    api.expandAll({ animate: false });
     (window as any).__cv?.reaggregateCollapsedEdges?.();
   });
 
