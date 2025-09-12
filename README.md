@@ -11,8 +11,13 @@ see `docs/reference/PRODUCT_VISION_FEATURES.md`
 ```bash
 git clone <repository-url>
 cd codeviz
+# Ensure Node 20.19.5 is active (asdf/Volta/nvm supported)
+# asdf (recommended): asdf install
+# Volta: volta install node@20.19.5
+# nvm: nvm install && nvm use
+
 # Install deps (root)
-npm install
+npm ci
 ```
 
 ### Basic Usage
@@ -24,14 +29,12 @@ npm install
 
 2. **Extract codebase structure (Python):**
    ```bash
-   npm run extract -- demo_codebase
-   # or with explicit output
-   npm run extract -- demo_codebase --out out/demo_codebase/codebase_graph.json
+   npm run extract -- --config ./configs/demo_codebase.codeviz.toml
    ```
 
 3. **Start the interactive viewer (single port):**
    ```bash
-   npm run view --
+   npm run view -- --config ./configs/demo_codebase.codeviz.toml
    # If port in use
    npm run view -- --port 3000
    ```
@@ -59,24 +62,24 @@ layout = "fcose"
 ### Extract Commands
 
 ```bash
-# Extract specific directory
-npm run extract -- /path/to/project --out out/<your_project_name>/codebase_graph.json
+# Extract with explicit config
+npm run extract -- --config ./configs/demo_codebase.codeviz.toml
 
 # Verbose extraction
-npm run extract -- demo_codebase --verbose
+npm run extract -- --config ./configs/demo_codebase.codeviz.toml --verbose
 ```
 
 ### Viewer Commands
 
 ```bash
 # Start with defaults
-npm run view --
+npm run view -- --config ./configs/demo_codebase.codeviz.toml
 
 # Custom host and port
-npm run view -- --host 0.0.0.0 --port 3000
+npm run view -- --config ./configs/demo_codebase.codeviz.toml --host 0.0.0.0 --port 3000
 
 # Don't auto-open browser
-npm run view -- --no-browser
+npm run view -- --config ./configs/demo_codebase.codeviz.toml --no-browser
 
 # One-command workflows
 # Build + serve (auto-open; kills existing)

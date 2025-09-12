@@ -15,8 +15,8 @@ Development environment setup and dependencies for the CodeViz visualization too
 - Modern browser (Cytoscape.js-based visualization)
 
 Recommended version managers (any one):
-- Volta (recommended): ensures the repo-pinned Node is used automatically
-- asdf: uses `.tool-versions` in this repo
+- asdf (recommended): uses `.tool-versions` in this repo
+- Volta: can auto-use Node if installed and first in PATH
 - nvm: uses `.nvmrc`
 
 ## Installation
@@ -33,10 +33,10 @@ npm install
 lsof -ti:8000 | xargs -r kill
 
 # 2) Ensure Node 20.19.5 is used, install deps, and build the viewer/CLI
-# Option A (Volta, recommended)
-volta install node@20.19.5
-# Option B (asdf)
+# Option A (asdf, recommended)
 asdf install  # reads .tool-versions
+# Option B (Volta)
+volta install node@20.19.5
 # Option C (nvm)
 nvm install && nvm use  # reads .nvmrc
 
@@ -137,7 +137,7 @@ open http://127.0.0.1:8000
 ## Node & Environment Notes
 
 - This repo pins Node 20.19.5 via multiple mechanisms:
-  - `package.json` → `engines.node ": ">=20 <21"` and `volta.node: 20.19.5`
+  - `package.json` → `engines.node ": ">=20 <21"`
   - `.nvmrc` → `20.19.5`
   - `.tool-versions` (asdf) → `nodejs 20.19.5`
   - `.npmrc` → `engine-strict=true`
@@ -146,16 +146,25 @@ open http://127.0.0.1:8000
   - `npm ci` (preferred) or `npm rebuild`
 
 - PATH precedence matters if you have multiple managers (asdf, nvm, Volta):
-  - Put Volta early in PATH to auto-use the pinned Node inside this repo:
-    - In `~/.zshrc`:
-      ```bash
-      export VOLTA_HOME="$HOME/.volta"
-      export PATH="$VOLTA_HOME/bin:$PATH"
-      ```
-  - Or rely on asdf by running `asdf install` in the repo to match `.tool-versions`.
+  - Prefer asdf: run `asdf install` in the repo to match `.tool-versions` and ensure `~/.asdf/shims` is on PATH.
+  - If using Volta instead, ensure its bin dir appears before other Node shims in PATH.
 
 ## Troubleshooting
 
 - Port conflicts: pass `--port` (e.g., `--port 3000`) or kill existing process.
 - Native `tree-sitter` addon error mentioning `NODE_MODULE_VERSION` mismatch: ensure Node 20.19.5 is active and run `npm ci`.
 - Ensure `out/<target>/codebase_graph.json` exists before starting the viewer.
+
+### asdf vs Volta (node version managers)
+
+- This repo standardizes on **asdf** for Node version management. `.tool-versions` is committed with `nodejs 20.19.5`.
+- Avoid mixing managers (asdf, Volta, nvm) in the same shell. If multiple are installed, ensure asdf is initialized and first on PATH for Node shims.
+- Symptom when asdf isn’t active: `No version is set for command node`.
+  - Fix: Initialize asdf in your shell and install the pinned version:
+    ```bash
+    . /opt/homebrew/opt/asdf/libexec/asdf.sh
+    cd /path/to/repo
+    asdf install
+    npm ci
+    ```
+  - If you previously used a different Node version, re-run `npm ci` to rebuild native modules (e.g., tree-sitter).

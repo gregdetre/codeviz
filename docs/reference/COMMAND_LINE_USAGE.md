@@ -58,9 +58,8 @@ Generate LLM-based tags for function nodes and write `llm_annotation.json` along
 #### Options (pass after `--`)
 
 - `--vocab <closed|open|suggest>` - Vocabulary mode for tags (default: `closed`)
-- `--limit <int>` - Max nodes to annotate (default: `0` = no limit)
-- `--rank <mixed|centrality|fanin|fanout|loc>` - Ordering used if limiting (default: `mixed`)
-- `--verbose <int>` - Verbosity level (default: `0`)
+- `--context-budget <int>` - Token budget for project browsing and summarization (default: `100000`)
+- `--model <string>` - Claude model alias or ID (default: `opus-4.1`)
 
 #### Examples
 
@@ -68,8 +67,8 @@ Generate LLM-based tags for function nodes and write `llm_annotation.json` along
 # Annotate functions in the project configured by TOML (closed vocabulary)
 npm run annotate -- --config ./configs/demo_codebase.codeviz.toml
 
-# Suggest new tags (not applied), limited to top 300 by mixed ranking
-npm run annotate -- --config ./configs/demo_codebase.codeviz.toml --vocab suggest --limit 300 --rank mixed
+# Larger context budget, suggest mode
+npm run annotate -- --config ./configs/demo_codebase.codeviz.toml --vocab suggest --context-budget 150000
 ```
 
 ## Viewer Commands
@@ -120,6 +119,7 @@ npm run dev -- --config ./configs/demo_codebase.codeviz.toml --port 8000 --mode 
 ### Usage guidance
 
 - Use `npm run extract -- --config <file.toml>` for extraction (canonical).
+- Use `npm run annotate -- --config <file.toml>` to generate `llm_annotation.json` using the Claude CLI (local project mode).
 - Use `npm run view -- --config <file.toml>` to start the viewer.
 - Avoid `npx codeviz` due to an npm package name collision; it may pull an unrelated package.
 - During development, `npm run dev` auto-rebuilds the viewer and restarts the server. Append flags after `--`.
