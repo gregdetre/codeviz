@@ -17,44 +17,62 @@ export function installContextMenu(
     selector: 'node[type = "function"], node[type = "class"], node[type = "variable"]',
     menuRadius: 110,
     openMenuEvents: 'cxttapstart',
-    commands: (ele: NodeSingular) => [
-      {
-        content: 'Focus',
-        select: () => {
-          try { mgr.clearFocus(); } catch {}
-          try { mgr.focus(ele.id()); } catch {}
-          try { cy.center(ele); } catch {}
-          try {
-            const detailsEl = document.getElementById('details');
-            if (detailsEl) renderDetails(detailsEl as any, ele as any);
-          } catch {}
+    commands: (ele: NodeSingular) => {
+      const selectedNodes = (cy as any).$(':selected').filter('node');
+      const selectedCount = (selectedNodes as any).length ?? 0;
+
+      const cmds: any[] = [
+        {
+          content: 'Focus',
+          select: () => {
+            try { mgr.clearFocus(); } catch {}
+            try { mgr.focus(ele.id()); } catch {}
+            try { cy.center(ele); } catch {}
+            try {
+              const detailsEl = document.getElementById('details');
+              if (detailsEl) renderDetails(detailsEl as any, ele as any);
+            } catch {}
+          }
+        },
+        {
+          content: 'Fade others',
+          select: () => {
+            try { mgr.clearFocus(); } catch {}
+            try { mgr.setFilterMode('fade' as any); } catch {}
+            try { mgr.focus(ele.id()); } catch {}
+          }
+        },
+        {
+          content: 'Hide others',
+          select: () => {
+            try { mgr.clearFocus(); } catch {}
+            try { mgr.setFilterMode('hide' as any); } catch {}
+            try { mgr.focus(ele.id()); } catch {}
+          }
+        },
+        {
+          content: 'Unfocus',
+          select: () => { try { mgr.clearFocus(); } catch {} }
+        },
+        {
+          content: 'Hide',
+          select: () => { try { (ele as any).style('display', 'none'); } catch {} }
         }
-      },
-      {
-        content: 'Fade others',
-        select: () => {
-          try { mgr.clearFocus(); } catch {}
-          try { mgr.setFilterMode('fade' as any); } catch {}
-          try { mgr.focus(ele.id()); } catch {}
-        }
-      },
-      {
-        content: 'Hide others',
-        select: () => {
-          try { mgr.clearFocus(); } catch {}
-          try { mgr.setFilterMode('hide' as any); } catch {}
-          try { mgr.focus(ele.id()); } catch {}
-        }
-      },
-      {
-        content: 'Unfocus',
-        select: () => { try { mgr.clearFocus(); } catch {} }
-      },
-      {
-        content: 'Hide',
-        select: () => { try { (ele as any).style('display', 'none'); } catch {} }
-      },
-      {
+      ];
+
+      if (selectedCount >= 2) {
+        cmds.push({
+          content: `Hide selected (${selectedCount})`,
+          select: () => {
+            try {
+              const toHide = (selectedNodes as any).union((selectedNodes as any).descendants());
+              (toHide as any).style('display', 'none');
+            } catch {}
+          }
+        });
+      }
+
+      cmds.push({
         content: 'Open file',
         select: () => {
           try {
@@ -62,8 +80,10 @@ export function installContextMenu(
             if (data?.file && data?.line) openFileInEditor(String(data.file), Number(data.line));
           } catch {}
         }
-      }
-    ]
+      });
+
+      return cmds;
+    }
   });
 
   // Group menu: modules (files) and folders (explicit for now; generic parent nodes are handled by double-click)
@@ -76,8 +96,10 @@ export function installContextMenu(
       const canExpand = !!api && api.isExpandable && api.isExpandable(ele);
       const canCollapse = !!api && api.isCollapsible && api.isCollapsible(ele);
       const toggleLabel = canExpand ? 'Expand' : (canCollapse ? 'Collapse' : 'Expand/Collapse');
+      const selectedNodes = (cy as any).$(':selected').filter('node');
+      const selectedCount = (selectedNodes as any).length ?? 0;
 
-      return [
+      const cmds: any[] = [
         {
           content: 'Focus',
           select: () => { try { mgr.clearFocus(); mgr.focus(ele.id()); cy.center(ele); } catch {} }
@@ -89,30 +111,46 @@ export function installContextMenu(
         {
           content: 'Hide',
           select: () => { try { (ele as any).union((ele as any).descendants()).style('display', 'none'); } catch {} }
-        },
-        {
-          content: toggleLabel,
-          enabled: !!api,
-          select: () => {
-            try {
-              if (!api) return;
-              if (api.isExpandable(ele)) {
-                // Preflight: restore any meta-edges so expand can rehydrate leaf edges
-                try { if (typeof (api as any).expandAllEdges === 'function') (api as any).expandAllEdges(); } catch {}
-                api.expand(ele, { animate: false });
-              } else if (api.isCollapsible(ele)) {
-                api.collapse(ele, { animate: false });
-              }
-              // Targeted re-aggregation: only around collapsed endpoints
-              try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
-            } catch {}
-          }
-        },
-        {
-          content: 'Unfocus',
-          select: () => { try { mgr.clearFocus(); } catch {} }
         }
       ];
+
+      if (selectedCount >= 2) {
+        cmds.push({
+          content: `Hide selected (${selectedCount})`,
+          select: () => {
+            try {
+              const toHide = (selectedNodes as any).union((selectedNodes as any).descendants());
+              (toHide as any).style('display', 'none');
+            } catch {}
+          }
+        });
+      }
+
+      cmds.push({
+        content: toggleLabel,
+        enabled: !!api,
+        select: () => {
+          try {
+            if (!api) return;
+            if (api.isExpandable(ele)) {
+              // Preflight: restore any meta-edges so expand can rehydrate leaf edges
+              try { if (typeof (api as any).expandAllEdges === 'function') (api as any).expandAllEdges(); } catch {}
+              api.expand(ele, { animate: false });
+            } else if (api.isCollapsible(ele)) {
+              api.collapse(ele, { animate: false });
+            }
+            // Targeted re-aggregation: only around collapsed endpoints
+            try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
+          } catch {}
+        }
+      });
+
+      cmds.push({
+        content: 'Unfocus',
+        select: () => { try { mgr.clearFocus(); } catch {} }
+      });
+
+      return cmds;
     }
   });
 
@@ -124,6 +162,8 @@ export function installContextMenu(
     commands: () => {
       const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
       const reaggregate = () => { try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {} };
+      const selectedNodes = (cy as any).$(':selected').filter('node');
+      const selectedCount = (selectedNodes as any).length ?? 0;
       return [
         {
           content: 'Collapse all groups',
@@ -148,6 +188,16 @@ export function installContextMenu(
               try { if (typeof (api as any).expandAllEdges === 'function') (api as any).expandAllEdges(); } catch {}
               api.expand(groups, { animate: false });
               reaggregate();
+            } catch {}
+          }
+        },
+        {
+          content: `Hide selected (${selectedCount})`,
+          enabled: selectedCount > 0,
+          select: () => {
+            try {
+              const toHide = (selectedNodes as any).union((selectedNodes as any).descendants());
+              (toHide as any).style('display', 'none');
             } catch {}
           }
         },
