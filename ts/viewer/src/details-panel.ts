@@ -227,8 +227,8 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
           // Load Python grammar only when needed
           try { await import('prismjs/components/prism-python'); } catch {}
 
-          // Highlight and sanitize
-          let html: string = '';
+          // Highlight and sanitize with fallback to plain text
+          let html: string | null = null;
           try {
             const lang = (Prism as any).languages['python'];
             if (lang && code) {
@@ -237,12 +237,20 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
           } catch {}
           try {
             const { default: DOMPurify } = await import('dompurify');
-            container.innerHTML = DOMPurify.sanitize(`<pre class="language-python"><code class="language-python">${html || ''}</code></pre>`);
+            if (html && html.trim().length > 0) {
+              container.innerHTML = DOMPurify.sanitize(`<pre class="language-python"><code class="language-python">${html}</code></pre>`);
+            } else {
+              container.innerHTML = DOMPurify.sanitize(`<pre class="language-plain"><code>${escapeHtml(code)}</code></pre>`);
+            }
           } catch {
-            container.innerHTML = `<pre class="language-python"><code class="language-python">${html || ''}</code></pre>`;
+            if (html && html.trim().length > 0) {
+              container.innerHTML = `<pre class="language-python"><code class="language-python">${html}</code></pre>`;
+            } else {
+              container.textContent = code || '(empty)';
+            }
           }
 
-          // Fallback when empty
+          // Fallback when empty source
           if (!code) {
             container.textContent = '(empty)';
           }
@@ -306,6 +314,11 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
           if (spinner) spinner.removeAttribute('hidden');
           const payload = { node: { id: String(node.id()), label, module: modulePath, file, line: lineNum, endLine, signature, doc } };
           const res = await fetch('/api/summarise-node', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            const msg = String((errJson && (errJson.message || errJson.error)) || `HTTP ${res.status}`);
+            throw new Error(msg);
+          }
           const data = await res.json();
           const md2 = String(data?.summary || '');
           // Ensure still on same node

@@ -77,6 +77,12 @@ export async function startServer(opts: { host: string; port: number; openBrowse
     throw new Error("dataFilePath must be provided by the CLI. Please pass --config to the CLI so it can supply an explicit output path.");
   }
   const resolvedDataFile = await resolveDataFile();
+  // Helper: resolve absolute path inside the workspace
+  const resolveInWorkspace = (p: string) => {
+    const root = (opts.workspaceRoot || repoRoot).replace(/\\/g, "/");
+    const abs = p.startsWith("/") ? p : join(root, p);
+    return abs;
+  };
 
   // Resolve log file location under out/
   const outDirCandidates = [
@@ -113,6 +119,18 @@ export async function startServer(opts: { host: string; port: number; openBrowse
     } catch (err: any) {
       // Optional: if annotations are missing, respond with 204 No Content
       // so the client can treat it as "no annotations" without logging an error.
+      reply.code(204).send();
+    }
+  });
+
+  // Serve persisted node summaries (optional)
+  app.get("/out/node_summaries.json", async (_req, reply) => {
+    try {
+      const dir = dirname(resolvedDataFile);
+      const sumPath = join(dir, "node_summaries.json");
+      const json = await readFile(sumPath, "utf8");
+      reply.type("application/json").send(json);
+    } catch {
       reply.code(204).send();
     }
   });
@@ -292,6 +310,103 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       reply.type("application/json").send({ reply: (result as any).text, commands: capturedCommands.length ? capturedCommands : undefined, toolOutput });
     } catch (err: any) {
       reply.code(500).send({ error: "CHAT_ERROR", message: String(err?.message || err) });
+    }
+  });
+
+  // Summarise a node by id via Claude CLI; persist Markdown alongside tags in llm_annotation.json
+  app.post("/api/summarise-node", async (req, reply) => {
+    try {
+      const body: any = (req as any).body || {};
+      const node: any = body?.node;
+      if (!node || typeof node !== 'object') { reply.code(400).send({ error: 'BAD_REQUEST', message: 'Missing node' }); return; }
+
+      const config = await loadGlobalConfig();
+      if (!process.env.ANTHROPIC_API_KEY) {
+        reply.code(400).send({ error: 'NO_API_KEY', message: 'Missing ANTHROPIC_API_KEY in .env.local' });
+        return;
+      }
+
+      // Use Claude CLI via summarise-via-claude (agentic exploration across repo/docs)
+      const { runSummariseViaClaude } = await import("../annotation/summarise-via-claude.js");
+      const file: string = String(node.file || '');
+      const start: number = Number(node.line || 1);
+      const end: number = Number(node.endLine || 0);
+      const outDir = dirname(resolvedDataFile);
+      const targetDir = (opts.workspaceRoot || repoRoot);
+      const graphPath = resolvedDataFile;
+      let markdown: string;
+      try {
+        markdown = await runSummariseViaClaude({ outDir, targetDir, graphPath, node: { id: String(node.id), label: String(node.label), module: String(node.module || ''), file, line: start, endLine: end || undefined, signature: String(node.signature || ''), doc: String(node.doc || '') } });
+      } catch (e: any) {
+        const debug = {
+          outDir,
+          command: join(outDir, 'summarise_command.txt'),
+          userPrompt: join(outDir, 'summarise_user_prompt.txt'),
+          raw: join(outDir, 'summarise.raw'),
+        };
+        reply.code(500).send({ error: 'CLAUDE_RUN_FAILED', message: String(e?.message || e), debug });
+        return;
+      }
+
+      // Persist into llm_annotation.json next to the graph
+      try {
+        const dir = dirname(resolvedDataFile);
+        const annPath = join(dir, 'llm_annotation.json');
+        let ann: any = {
+          version: 1,
+          schemaVersion: '1.0.0',
+          generatedAt: new Date().toISOString(),
+          vocabMode: 'open',
+          globalTags: [],
+          projectTags: [],
+          nodes: []
+        };
+        try {
+          const raw = await readFile(annPath, 'utf8');
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') ann = parsed;
+        } catch {}
+        if (!Array.isArray(ann.nodes)) ann.nodes = [];
+        let entry = ann.nodes.find((n: any) => n && n.id === node.id);
+        if (!entry) {
+          entry = { id: node.id, tags: [], summary: markdown };
+          ann.nodes.push(entry);
+        } else {
+          entry.summary = markdown;
+        }
+        ann.updatedAt = new Date().toISOString();
+        await writeFile(annPath, JSON.stringify(ann, null, 2), 'utf8');
+      } catch (e: any) {
+        const dir = dirname(resolvedDataFile);
+        reply.code(500).send({ error: 'ANNOTATION_WRITE_FAILED', message: String(e?.message || e), debug: { annPath: join(dir, 'llm_annotation.json') } });
+        return;
+      }
+
+      reply.type('application/json').send({ summary: markdown });
+    } catch (err: any) {
+      reply.code(500).send({ error: 'SUMMARISE_ERROR', message: String(err?.message || err) });
+    }
+  });
+
+  // Return source code for a file with optional line range
+  app.get("/api/source", async (req, reply) => {
+    try {
+      const q: any = (req as any).query || {};
+      const file = String(q.file || "");
+      const start = Number(q.start || 1);
+      const end = Number(q.end || 0);
+      if (!file) { reply.code(400).send({ error: "BAD_REQUEST", message: "Missing file" }); return; }
+      const abs = resolveInWorkspace(file);
+      const text = await readFile(abs, "utf8");
+      if (!Number.isFinite(start) || start < 1 || !Number.isFinite(end) || end < 0) {
+        reply.type("application/json").send({ file: abs, content: text });
+        return;
+      }
+      const lines = text.split(/\r?\n/);
+      const slice = lines.slice(start - 1, end > 0 ? end : undefined).join("\n");
+      reply.type("application/json").send({ file: abs, start, end: end || lines.length, content: slice });
+    } catch (err: any) {
+      reply.code(500).send({ error: "SOURCE_ERROR", message: String(err?.message || err) });
     }
   });
 
