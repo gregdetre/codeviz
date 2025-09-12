@@ -244,3 +244,7 @@ Follow guidelines in `@gjdutils/docs/instructions/GIT_COMMIT_CHANGES.md`. Key po
 
 ### Comments
 - Comment sparingly - reserve it for explaining surprising or confusing sections
+
+## Writing style (docs)
+
+- Prefer British spelling where practical (e.g. colour, behaviour, prioritise)

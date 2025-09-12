@@ -5,6 +5,7 @@ CodeViz visual design components, styling libraries, and UI/UX implementation pa
 ## See also
 
 - `LAYOUT.md` - Graph layout algorithms, positioning, and spatial organization of visualization elements
+- `COLOUR_PALETTE_THEMING.md` - Colour palette, theming knobs, and configuration via codeviz.config.toml
 - `libraries/FLOATING_UI_TOOLTIP_INTEGRATION.md` - Tooltip positioning, interaction design, and floating element styling
 - `libraries/WORD_WRAP_LIBRARY_INTEGRATION.md` - Text formatting, line wrapping, and typography utilities
 - `libraries/CHALK_USAGE_GUIDE.md` - Terminal color formatting with chalk library for CLI output
@@ -36,7 +37,6 @@ CodeViz visual design components, styling libraries, and UI/UX implementation pa
 
 As CodeViz visual design evolves, this document will signpost to:
 
-- `COLOR_PALETTE_THEMING.md` - Color systems, brand guidelines, and theme customization  
 - `FONTS_TYPOGRAPHY_SYSTEM.md` - Font hierarchy, text styling, and readability optimization
 - `ICONS_SYMBOLS.md` - Visual symbols, iconography, external editor integration icons, and graphical representations
 - `ANIMATION_INTERACTION.md` - Motion design, transitions, and interactive feedback patterns
