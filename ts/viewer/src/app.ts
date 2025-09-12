@@ -58,7 +58,9 @@ export async function initApp() {
     motionBlur: false,
     motionBlurOpacity: 0.0,
     hideEdgesOnViewport: true,
-    hideLabelsOnViewport: true
+    hideLabelsOnViewport: true,
+    // Allow Shift+drag box selection and Shift+click additive semantics
+    boxSelectionEnabled: false
   });
   (window as any).__cy = cy; // expose for e2e tests
 
@@ -139,14 +141,14 @@ export async function initApp() {
     };
     // Expose for tests/devtools
     (window as any).__cv = Object.assign((window as any).__cv || {}, { reaggregateCollapsedEdges: reaggregateEdges });
-    // Auto-collapse all groups (folders and modules) on first load
+    // Auto-collapse all groups (any compound node) on first load
     if (ec) {
-      const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
+      const groups = cy.nodes('node:parent');
       if (groups && groups.length > 0) ec.collapse(groups, { animate: false });
       // After collapsing, aggregate edges only around collapsed groups
       reaggregateEdges();
     }
-    // Double-click (or quick double-tap) to toggle collapse on folder & module (file) groups
+    // Double-click (or quick double-tap) to toggle collapse on any group
     if ((cy as any).expandCollapse) {
       let lastTapTs = 0;
       let lastTapId: string | null = null;
@@ -167,7 +169,7 @@ export async function initApp() {
           console.warn('expand/collapse toggle failed', err);
         }
       };
-      cy.on('tap', 'node[type = "folder"], node[type = "module"]', (evt) => {
+      cy.on('tap', 'node:parent', (evt) => {
         try {
           // Prefer native double-click count when available
           const oe: any = (evt as any).originalEvent;
@@ -320,7 +322,7 @@ export async function initApp() {
         try {
           const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
           if (api) {
-            const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
+            const groups = cy.nodes('node:parent');
             if (groups.length > 0) api.collapse(groups, { animate: false });
             // Targeted edge aggregation
             reaggregateEdges();
@@ -349,7 +351,37 @@ export async function initApp() {
   const recomputeLayoutBtn = document.getElementById('recomputeLayoutBtn') as HTMLButtonElement | null;
   if (recomputeLayoutBtn) {
     recomputeLayoutBtn.addEventListener('click', async () => {
-      try { await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any }); } catch {}
+      try {
+        let sub: any = undefined;
+        try {
+          const sel = cy.$(':selected');
+          if (sel && sel.length > 0) {
+            sub = (sel as any).closedNeighborhood ? (sel as any).closedNeighborhood() : sel.neighborhood().union(sel);
+          }
+        } catch {}
+        const opts: any = { hybridMode: vcfg.hybridMode as any };
+        if (sub && sub.length > 0) opts.eles = sub;
+        await applyLayout(cy, layoutName, opts);
+      } catch {}
+    });
+  }
+
+  // Aggressive recompute: same layout but with stronger fCoSE settings
+  const recomputeAggressiveBtn = document.getElementById('recomputeAggressiveBtn') as HTMLButtonElement | null;
+  if (recomputeAggressiveBtn) {
+    recomputeAggressiveBtn.addEventListener('click', async () => {
+      try {
+        let sub: any = undefined;
+        try {
+          const sel = cy.$(':selected');
+          if (sel && sel.length > 0) {
+            sub = (sel as any).closedNeighborhood ? (sel as any).closedNeighborhood() : sel.neighborhood().union(sel);
+          }
+        } catch {}
+        const opts: any = { hybridMode: vcfg.hybridMode as any, fcose: { randomize: true, numIter: 1200 } };
+        if (sub && sub.length > 0) opts.eles = sub;
+        await applyLayout(cy, layoutName, opts);
+      } catch {}
     });
   }
 
@@ -358,7 +390,16 @@ export async function initApp() {
   if (recenterBtn) {
     recenterBtn.addEventListener('click', () => {
       try { (cy as any).resize?.(); } catch {}
-      try { cy.fit(cy.elements(':visible'), 20); } catch {}
+      try {
+        const sel = cy.$(':selected:visible');
+        if (sel && sel.length > 0) { cy.fit(sel, 20); return; }
+        // If nothing is selected, fit to current focus/highlight set if present
+        const focusNodes = cy.$('node.focus, node.incoming-node, node.outgoing-node, node.second-degree').filter(':visible');
+        const focusEdges = cy.$('edge.incoming-edge, edge.outgoing-edge, edge.second-degree').filter(':visible');
+        const focusSet = focusNodes.union(focusEdges);
+        if (focusSet && focusSet.length > 0) { cy.fit(focusSet, 20); return; }
+        cy.fit(cy.elements(':visible'), 20);
+      } catch {}
     });
   }
 

@@ -71,6 +71,8 @@ export function generateStyles(tokens: Tokens = defaultTokensLight, opts?: { dar
     { selector: 'node.module-highlight', style: { 'border-color': colors.moduleOutline, 'border-width': 3 } },
     // Fading
     { selector: '.faded', style: { 'opacity': opac.fadedNodes, 'text-opacity': opac.fadedText } },
+    // Native selection (multi-select)
+    { selector: 'node:selected', style: { 'border-color': '#3b82f6', 'border-width': widths.nodeBorderHighlighted, 'border-opacity': 0.95, 'overlay-opacity': 0, 'z-compound-depth': 'top' } },
     // Legacy highlighted class retained for compat
     { selector: '.highlighted', style: { 'border-width': 3, 'border-color': '#ff9800', 'border-opacity': 0.9 } },
     // Module color tints for children labels via data(module)

@@ -14,6 +14,8 @@ Brief reference for built-in keyboard and modifier interactions in the CodeViz v
 - **ArrowUp / ArrowDown** (in search box): Move selection in the suggestions dropdown.
 - **Enter** (in search box): Open/focus the currently highlighted suggestion.
 - **Cmd+Click (macOS) / Ctrl+Click (Windows/Linux)** on a node: Open the node’s source file at its line in the editor.
+- **Shift+Click** on a node/group: Toggle selection membership (multi-select). Does not change focus.
+- **Shift+Drag** on whitespace: Box select (replaces the current selection).
 - **Space (hold)**: Temporarily enter Pan mode. While held, dragging pans the viewport even over nodes; cursor shows grab/grabbing. Ignored when focus is in a text input.
 - **Middle mouse button (press & drag)**: Pan the viewport (works over nodes and whitespace).
 

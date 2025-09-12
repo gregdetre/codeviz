@@ -14,6 +14,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
   let isSpacePanActive = false;
   let isMouseDown = false;
   let isMiddlePanActive = false;
+  let isShiftSelecting = false;
   let previousAutoungrabify = false;
   let previousBoxSelection = false;
   let previousUserPanning = true;
@@ -157,26 +158,39 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
   }
 
   function handleNodeClick(evt: any) {
-    const nodeId = evt.target.id();
-    
-    // Check for Cmd+click (Mac) or Ctrl+click (Windows/Linux) for file opening
-    if (evt.originalEvent && (evt.originalEvent.metaKey || evt.originalEvent.ctrlKey)) {
-      // Find the node data from the graph
+    const node = evt.target as any;
+    const nodeId = node.id();
+    const oe: any = evt.originalEvent || {};
+    const isMeta = Boolean(oe.metaKey || oe.ctrlKey);
+    const isShift = Boolean(isShiftSelecting || oe.shiftKey);
+
+    // Cmd/Ctrl+Click opens file (priority over Shift)
+    if (isMeta) {
       const nodeData = graph.nodes.find(n => n.id === nodeId);
       if (nodeData && nodeData.file && nodeData.line) {
         openFileInEditor(nodeData.file, nodeData.line);
         return; // Don't focus when opening file
       }
     }
-    
-    // Normal click behavior - focus on the node
+
+    // Shift+Click: rely on Cytoscape's selection toggle; ensure we don't apply focus
+    if (isShift) {
+      try { clearFocus(); } catch {}
+      return;
+    }
+
+    // Normal click: clear any selection and focus
+    try { (cy as any).$(':selected').unselect(); } catch {}
     focus(nodeId);
   }
 
   function installBasics() {
     cy.on('tap', 'node', handleNodeClick);
     cy.on('tap', (evt) => {
-      if (evt.target === cy) clearFocus();
+      if (evt.target === cy) {
+        try { (cy as any).$(':selected').unselect(); } catch {}
+        clearFocus();
+      }
     });
     // Keyboard handlers
     document.addEventListener('keydown', (e) => {
@@ -186,6 +200,12 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
           if (isEditableTarget(e.target)) return;
           try { (cy as any).$(':selected').unselect(); } catch {}
           clearFocus();
+        }
+        // Shift-hold enables box selection (whitespace drag → selection box)
+        if (e.key === 'Shift') {
+          isShiftSelecting = true;
+          try { cy.boxSelectionEnabled(true); } catch {}
+          try { (cy as any).selectionType?.('additive'); } catch {}
         }
         // Space-hold temporary pan mode (ignored when typing in inputs)
         const isSpace = e.code === 'Space' || e.key === ' ';
@@ -199,6 +219,11 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     });
     document.addEventListener('keyup', (e) => {
       try {
+        if (e.key === 'Shift') {
+          isShiftSelecting = false;
+          try { cy.boxSelectionEnabled(false); } catch {}
+          try { (cy as any).selectionType?.('single'); } catch {}
+        }
         const isSpace = e.code === 'Space' || e.key === ' ';
         if (isSpace) {
           e.preventDefault();
@@ -220,6 +245,12 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     };
 
     if (container) {
+      // Replace selection on box selection start
+      try {
+        cy.on('boxstart', () => {
+          try { (cy as any).$(':selected').unselect(); } catch {}
+        });
+      } catch {}
       const onPointerDown = (ev: PointerEvent) => {
         if (!insideContainer(ev.target)) return;
         // Space-hold panning with left button

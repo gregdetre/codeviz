@@ -25,12 +25,18 @@ The details pane provides context for the current focus, keeping the canvas uncl
 - Scope: visible nodes; when a search term is present, faded nodes are excluded
 
 2) Node selected (function/class/variable)
-- Label, kind, signature, docstring (if available)
-- VS Code deep link to file:line
+- Label, kind, signature, docstring (when available)
+- VS Code deep link to `file:line`
 - Tags (LLM annotations if present)
 - Incoming/Outgoing neighbours as linkified lists
+- Code section: collapsed by default; expands to lazy‑load the source range for the node using `/api/source?file=…&start=…&end=…`.
+- Summarise action: button that calls `/api/summarise-node` to produce a concise Markdown summary. Optional “persist” toggle saves to `out/<target>/node_summaries.json`.
 
 3) Group selected (module/folder)
+4) Multiple selection (mixed kinds)
+- Target state: Summary header (total + per-kind counts), grouped lists (modules and entities by module), entries clickable to focus, and a clear-selection affordance.
+- Current state: Multiple selection is supported on the canvas; the pane still shows the last focused node until multi-select rendering is implemented.
+
 - Module: collapsible Functions/Classes/Variables section (same renderer as overview)
 - Folder: “Folder contents” listing composed of module sections for descendant modules
 - Lists respect visibility and search-hide; when no search term, selection-only fade is ignored
@@ -44,6 +50,8 @@ The details pane provides context for the current focus, keeping the canvas uncl
 
 - The pane mirrors the current visible scope; with an active search term in fade mode, lists exclude faded nodes.
 - Overview updates are throttled (~120 ms) and only scheduled on meaningful UI changes (search/typeahead, toggles, group-by, mode, refine/layout) and only when there is no active selection.
+ - Source is fetched only when the Code section is first opened. The request includes `start` and `end` when available so the server can slice on the backend.
+ - Summaries are generated on demand; when “persist” is enabled, the server writes to `node_summaries.json` next to the graph.
 
 ### Implementation overview
 
@@ -52,6 +60,7 @@ The details pane provides context for the current focus, keeping the canvas uncl
   - `renderEntityListShared(...)`
   - `renderModuleSectionShared(...)`
 - `app.ts` schedules overview refresh via a small throttle and never overwrites selection details.
+- Code section fetches from `/api/source`; summary button posts to `/api/summarise-node` and renders Markdown with `marked` + `DOMPurify` (loaded dynamically in the client).
 
 ### Future enhancements
 
