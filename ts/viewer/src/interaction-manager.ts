@@ -139,6 +139,15 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
 
       // Optional: keep collapsed-edge aggregation in sync if helper is available
       try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
+
+      // Fallback: if the node is still not materialised, expand all groups (non-animated)
+      try {
+        const n2 = cy.getElementById(targetNodeId);
+        if (!n2 || n2.empty()) {
+          if (typeof api.expandAll === 'function') api.expandAll({ animate: false });
+          try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
+        }
+      } catch {}
     } catch {}
   }
 
@@ -205,6 +214,9 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
         keep.nodes().style('display', 'element');
       }
     });
+    // Select and center the node so recompute can use its neighborhood
+    try { node.select(); } catch {}
+    try { cy.center(node); } catch {}
   }
 
   function handleNodeClick(evt: any) {

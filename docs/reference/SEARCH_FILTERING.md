@@ -14,7 +14,7 @@ A quick overview of how text search, the typeahead dropdown, and graph filtering
 - The search input always applies the filter (fade/hide) to the canvas; suggestions are additive UX for fast navigation.
 - Suggestions list includes both entity nodes and group nodes (module/file and folder) to allow selection of higher-level containers.
 - Selecting a suggestion focuses the node and updates the details panel; this does not clear the underlying search term.
-- Filtering respects current visibility toggles (functions/classes/variables) and current mode (e.g. modules view).
+- Filtering respects current visibility toggles (functions/classes/variables).
 
 ### Behaviours
 - Text input:
@@ -23,8 +23,8 @@ A quick overview of how text search, the typeahead dropdown, and graph filtering
 - Suggestions dropdown:
   - Ordering: folders first, then modules (files), then entities (functions/classes/variables).
   - Populates with best matches from:
-    - Entities: functions, classes, variables (only in Explore mode)
-    - Groups: modules (files) and folders (always)
+    - Entities: functions, classes, variables (always)
+    - Groups: modules (files) and folders
   - Up to 30 suggestions, ranked by category (folder < module < entity), then earliest match position, then label.
   - Keyboard: ArrowUp/ArrowDown to move, Enter to select; Escape to close.
   - Mouse: hover highlights, click to select.
@@ -49,7 +49,7 @@ A quick overview of how text search, the typeahead dropdown, and graph filtering
 ### Gotchas
 - If folder grouping is disabled, folder suggestions will not appear (no folder nodes exist).
 - Filters can hide elements that would otherwise be shown by focus; focus attempts to unhide relevant nodes, but visibility toggles still apply.
-- In Modules mode, only module and module import edges are present; entity suggestions are intentionally suppressed.
+// Modes removed: entity suggestions are always available alongside module/folder suggestions.
 
 ### Troubleshooting
 - No dropdown items: ensure you typed at least one non-space character; verify modules/folders exist (grouping enabled) and entities are visible by type toggles.

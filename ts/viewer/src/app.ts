@@ -347,39 +347,45 @@ export async function initApp() {
     });
   }
 
+  // Recompute layout helper (shared by button and programmatic calls)
+  async function recomputeLayoutLocal(aggressive: boolean = false): Promise<void> {
+    try {
+      // Snapshot current visibility to preserve hidden/visible states across layout
+      const prevDisplay: Record<string, string> = {};
+      try {
+        const all = cy.elements();
+        for (let i = 0; i < all.length; i++) {
+          const el = all[i];
+          try { prevDisplay[el.id()] = String(el.style('display')); } catch {}
+        }
+      } catch {}
+      let sub: any = undefined;
+      try {
+        const sel = cy.$(':selected');
+        if (sel && sel.length > 0) {
+          sub = (sel as any).closedNeighborhood ? (sel as any).closedNeighborhood() : sel.neighborhood().union(sel);
+        }
+      } catch {}
+      const opts: any = { hybridMode: vcfg.hybridMode as any };
+      if (aggressive) opts.fcose = { randomize: true, numIter: 1200 };
+      if (sub && sub.length > 0) opts.eles = sub;
+      await applyLayout(cy, layoutName, opts);
+      // Restore previous visibility exactly
+      try {
+        cy.batch(() => {
+          for (const id in prevDisplay) {
+            try { cy.getElementById(id).style('display', prevDisplay[id]); } catch {}
+          }
+        });
+      } catch {}
+    } catch {}
+  }
+
   // Recompute layout (no side effects; keep selection/filters/viewport)
   const recomputeLayoutBtn = document.getElementById('recomputeLayoutBtn') as HTMLButtonElement | null;
   if (recomputeLayoutBtn) {
     recomputeLayoutBtn.addEventListener('click', async () => {
-      try {
-        // Snapshot current visibility to preserve hidden/visible states across layout
-        const prevDisplay: Record<string, string> = {};
-        try {
-          const all = cy.elements();
-          for (let i = 0; i < all.length; i++) {
-            const el = all[i];
-            try { prevDisplay[el.id()] = String(el.style('display')); } catch {}
-          }
-        } catch {}
-        let sub: any = undefined;
-        try {
-          const sel = cy.$(':selected');
-          if (sel && sel.length > 0) {
-            sub = (sel as any).closedNeighborhood ? (sel as any).closedNeighborhood() : sel.neighborhood().union(sel);
-          }
-        } catch {}
-        const opts: any = { hybridMode: vcfg.hybridMode as any };
-        if (sub && sub.length > 0) opts.eles = sub;
-        await applyLayout(cy, layoutName, opts);
-        // Restore previous visibility exactly
-        try {
-          cy.batch(() => {
-            for (const id in prevDisplay) {
-              try { cy.getElementById(id).style('display', prevDisplay[id]); } catch {}
-            }
-          });
-        } catch {}
-      } catch {}
+      try { await recomputeLayoutLocal(false); } catch {}
     });
   }
 
@@ -387,35 +393,7 @@ export async function initApp() {
   const recomputeAggressiveBtn = document.getElementById('recomputeAggressiveBtn') as HTMLButtonElement | null;
   if (recomputeAggressiveBtn) {
     recomputeAggressiveBtn.addEventListener('click', async () => {
-      try {
-        // Snapshot current visibility to preserve hidden/visible states across layout
-        const prevDisplay: Record<string, string> = {};
-        try {
-          const all = cy.elements();
-          for (let i = 0; i < all.length; i++) {
-            const el = all[i];
-            try { prevDisplay[el.id()] = String(el.style('display')); } catch {}
-          }
-        } catch {}
-        let sub: any = undefined;
-        try {
-          const sel = cy.$(':selected');
-          if (sel && sel.length > 0) {
-            sub = (sel as any).closedNeighborhood ? (sel as any).closedNeighborhood() : sel.neighborhood().union(sel);
-          }
-        } catch {}
-        const opts: any = { hybridMode: vcfg.hybridMode as any, fcose: { randomize: true, numIter: 1200 } };
-        if (sub && sub.length > 0) opts.eles = sub;
-        await applyLayout(cy, layoutName, opts);
-        // Restore previous visibility exactly
-        try {
-          cy.batch(() => {
-            for (const id in prevDisplay) {
-              try { cy.getElementById(id).style('display', prevDisplay[id]); } catch {}
-            }
-          });
-        } catch {}
-      } catch {}
+      try { await recomputeLayoutLocal(true); } catch {}
     });
   }
 
@@ -537,20 +515,19 @@ export async function initApp() {
       // cat priority: 0 = folder, 1 = module (file), 2 = entity (function/class/variable)
       const scored: Array<{ s: Suggestion; score: number; cat: number }> = [];
 
-      // Entity nodes (functions, classes, variables) from raw graph – only when not in Modules mode
+      // Entity nodes (functions, classes, variables) from raw graph
+      // Modes were removed; always include entities in suggestions
       try {
-        if (mode !== 'modules') {
-          for (const n of graph.nodes) {
-            const id = String(n.id || '');
-            const label = String(n.label || '');
-            const moduleName = String(n.module || '');
-            const file = String(n.file || '');
-            const fields = [id.toLowerCase(), label.toLowerCase(), moduleName.toLowerCase(), file.toLowerCase()];
-            const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
-            if (indexes.length === 0) continue;
-            const score = Math.min(...indexes);
-            scored.push({ s: { id, label, module: moduleName, file, kind: String(n.kind || '') }, score, cat: 2 });
-          }
+        for (const n of graph.nodes) {
+          const id = String(n.id || '');
+          const label = String(n.label || '');
+          const moduleName = String(n.module || '');
+          const file = String(n.file || '');
+          const fields = [id.toLowerCase(), label.toLowerCase(), moduleName.toLowerCase(), file.toLowerCase()];
+          const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
+          if (indexes.length === 0) continue;
+          const score = Math.min(...indexes);
+          scored.push({ s: { id, label, module: moduleName, file, kind: String(n.kind || '') }, score, cat: 2 });
         }
       } catch {}
 
@@ -648,6 +625,7 @@ export async function initApp() {
       try {
         const node = cy.getElementById(nodeId);
         if (node && !node.empty()) {
+          try { node.select(); } catch {}
           try { cy.center(node); } catch {}
           try {
             const detailsNow = document.getElementById('details') as HTMLElement | null;
@@ -655,6 +633,8 @@ export async function initApp() {
           } catch {}
         }
       } catch {}
+      // Recompute layout using current selection after focusing
+      try { recomputeLayoutLocal(false); } catch {}
       hideDropdown();
     }
 
