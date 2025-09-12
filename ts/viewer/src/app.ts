@@ -7,13 +7,14 @@ import expandCollapse from "cytoscape-expand-collapse";
 (cytoscape as any).use(expandCollapse as any);
 import type { Core } from "cytoscape";
 import { graphToElements } from "./elements.js";
-import { generateStyles, applyModuleColorTint } from "./style.js";
+import { generateStyles, applyModuleColorTint, applyGroupBackgroundColors } from "./style.js";
 import { InteractionManager } from "./interaction-manager.js";
 import { search } from "./search.js";
 import type { Graph, ViewerConfig, ViewerMode } from "./graph-types.js";
 import { applyLayout, normalizeLayoutName } from "./layout-manager.js";
 import { loadGraph as loadGraphRaw, loadAnnotations } from "./load-graph.js";
 import { initFileOpener } from "./file-opener.js";
+import { renderDetails } from "./details-panel.js";
 
 async function loadGraph(): Promise<Graph> { return await loadGraphRaw(process.env.NODE_ENV !== 'production'); }
 
@@ -77,6 +78,7 @@ export async function initApp() {
   } catch {}
 
   applyModuleColorTint(cy);
+  applyGroupBackgroundColors(cy);
 
   // Initialize expand/collapse if available (disable animation to reduce jank)
   try {
@@ -202,6 +204,7 @@ export async function initApp() {
         cy.elements().remove();
         cy.add(newElements);
         applyModuleColorTint(cy);
+        applyGroupBackgroundColors(cy);
       });
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
       try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
@@ -220,6 +223,7 @@ export async function initApp() {
           cy.elements().remove();
           cy.add(newElements);
           applyModuleColorTint(cy);
+          applyGroupBackgroundColors(cy);
         });
         await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
         try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
@@ -243,7 +247,7 @@ export async function initApp() {
       if (refineBtn) {
         refineBtn.disabled = !isHybrid;
         if (!isHybrid) refineBtn.title = 'Enable ELK → fCoSE layout to use Re-layout';
-        else refineBtn.title = 'Re-run layout optimization';
+        else refineBtn.title = 'Re-run layout optimization (also clears selection)';
       }
     };
     updateHybridVisibility();
@@ -261,6 +265,15 @@ export async function initApp() {
   const refineBtn = document.getElementById('refineBtn') as HTMLButtonElement;
   if (refineBtn) {
     refineBtn.addEventListener('click', async () => {
+      // Clear any current selection to avoid having to find whitespace
+      try { (cy as any).$(':selected').unselect(); } catch {}
+      // Clear details panel if present
+      try {
+        const detailsElNow = document.getElementById('details') as HTMLElement | null;
+        if (detailsElNow) {
+          import('./details-panel.js').then(m => m.renderDetails(detailsElNow, null));
+        }
+      } catch {}
       await applyLayout(cy, 'fcose', { hybridMode: vcfg.hybridMode as any });
       try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
     });
@@ -279,10 +292,10 @@ export async function initApp() {
   if (detailsEl) {
     cy.on('tap', 'node', (evt) => {
       const node = evt.target;
-      import('./details-panel.js').then(m => m.renderDetails(detailsEl, node));
+      renderDetails(detailsEl, node);
     });
     cy.on('tap', (evt) => {
-      if (evt.target === cy) import('./details-panel.js').then(m => m.renderDetails(detailsEl, null));
+      if (evt.target === cy) renderDetails(detailsEl, null);
     });
   }
 

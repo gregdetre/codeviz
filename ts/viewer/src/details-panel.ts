@@ -31,6 +31,7 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
   const tags = node.data('tags') ?? {};
   const outgoing = node.outgoers('node');
   const incoming = node.incomers('node');
+  const tagKeys = Object.keys(tags);
   
   // Get workspace root and construct VS Code URL (encode path; append :line only if valid)
   const wsRoot = await getWorkspaceRoot();
@@ -53,7 +54,11 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
       ${modulePath ? `<div>module: ${escapeHtml(modulePath)}</div>` : ''}
       ${signature ? `<pre>${escapeHtml(signature)}</pre>` : ''}
       ${doc ? `<div class="doc">${escapeHtml(doc)}</div>` : ''}
-      ${Object.keys(tags).length ? `<div><strong>Tags</strong><ul>${Object.entries(tags).map(([k,v]) => `<li>${escapeHtml(k)}: ${escapeHtml(String(v))}</li>`).join('')}</ul></div>` : ''}
+      ${tagKeys.length
+        ? `<div><strong>Tags</strong><ul>${Object.entries(tags).map(([k,v]) => `<li>${escapeHtml(k)}: ${escapeHtml(String(v))}</li>`).join('')}</ul>
+             <div style="font-size:12px;color:#666;">LLM-generated (optional)</div>
+           </div>`
+        : `<div><strong>Tags</strong><div style="font-size:12px;color:#666;">None (LLM annotations optional)</div></div>`}
       <div style="margin-top:8px; display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
         <div>
           <div><strong>Outgoing</strong></div>
