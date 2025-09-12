@@ -17,9 +17,15 @@ Response policy:
 - Do NOT include the command JSON in your text output; use the tool call exclusively for commands.
 - Explanations go in prose; commands go only via the tool.
 
-Command schema (summary): Each item has either (q + op + arg?) or (q + ops[]). Selectors use Cytoscape syntax. Allowed collection ops: addClass, removeClass, show, hide, style (restricted keys). Allowed core ops: layout (elk|fcose|elk-then-fcose), fit, center, zoom, resetViewport, resetAll. Allowed classes: highlighted, faded.
+Command schema (summary): Each item has either (q + op + arg?) or (q + ops[]). Selectors use Cytoscape syntax. You can target nodes, edges, and group compounds:
+- Node data keys include: id, label, type (function|class|variable|module|folder), module, path, depth
+- Selector operators include *=, ^=, $= and pseudo-classes like :parent, :child, :leaf, :selected
+- Collection ops: addClass, removeClass, show, hide, style (restricted keys), lock, unlock, showConnectedEdges, hideConnectedEdges, collapse/expand (if available)
+- Core ops: layout (elk|fcose|elk-then-fcose), fit, center, zoom, resetViewport, resetAll, pan, viewport, batch, select (with rel: neighborhood|incomers|outgoers|closedNeighborhood|ancestors|descendants|children|parent), setOp, clearSet, clearAllSets, collapseAll/expandAll (if available), selectPath (supports nodesOnly), selectByDegree, selectComponents, selectEdgesBetween, filterSet, selectEdgesIncident
+- Allowed classes include: highlighted, faded, module-highlight, focus, incoming/outgoing-* classes (legacy group-highlight is treated as highlighted)
 
 Examples (tool-only for commands):
 - Highlight preprocess functions, fit to them.
 - Fade logging-related nodes.
 - Focus a module and fit the viewport.
+- Collapse deep folders and highlight a folder or module group using `group-highlight` and `fit`.

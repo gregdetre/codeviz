@@ -1,9 +1,17 @@
 # Viewer Commands (Compact JSON)
 
-Short reference for the compact, Cytoscape‑aligned JSON commands the assistant can produce and the viewer can execute.
+Short reference for the compact, Cytoscape‑aligned JSON commands the LLM assistant can produce and the viewer can execute.
+
+Goals/desiderata:
+- Prioritises the high-value low-risk/complexity features that we'll need for our codebase-viewer interface.
+- Provides almost all of the power of running Cytoscape.js commands. But in JSON, so it can be validated/secured.
+- Stay close to the real/standard Cytoscape.js interface (which AI will know from its pretraining data), so it'll be easy for the LLM chatbot to use.
+- Compact, i.e. doesn't waste tokens.
 
 ## See also
 
+- `PRODUCT_VISION_FEATURES.md`
+- `LLM_CHAT_INTERFACE.md`
 - `../conversations/250911b_llm_cytoscape_command_interface_design.md` – design + rationale
 - `../../ts/viewer/src/command-executor.ts` – executor implementation
 - `../../ts/viewer/src/state-snapshot.ts` – snapshot sent to the assistant
@@ -37,41 +45,53 @@ Multiple commands run sequentially; last command wins.
 
 Note: For convenience, several core ops also accept top-level fields in the command in addition to inside `arg` (e.g., `select` can take `q`, `from`, `rel`, `steps`, `as` at top level).
 
-## Selectors (v1)
+## Selectors (v1.2)
 
 Use Cytoscape selectors with a restricted feature set:
-- Element kinds: `node`, `edge`, `*`
-- Data attributes: `[type = 'function'|'class'|'variable'|'module']`, `[module = '...']`, `[label *= '...']`, `[id = '...']`
-- Negation: `:not(...)`
-- Unions: `node, edge`
+- **Element kinds**: `node`, `edge`, `*`
+- **Node data attributes**: `[type = 'function'|'class'|'variable'|'module'|'folder']`, `[module = '...']`, `[label *= '...']`, `[label ^= '...']`, `[label $= '...']`, `[id = '...']`, `[path *= '...']`, `[path ^= '...']`, `[path $= '...']`, `[depth = N]`
+- **Negation**: `:not(...)`
+- **Unions**: `node, edge`
+- **Pseudo-classes**: `:parent`, `:child`, `:leaf`, `:selected`
 
 Examples:
 ```text
 node[type = 'function']
+node[type = 'module']
+node[type = 'folder']
 node[label *= 'preprocess']
+node[path *= 'src/utils']
 node:not([module = 'tests'])
 *
 ```
 
-## Allowed operations (v2)
+## Allowed operations (v2.2)
 
 - Collection: `addClass`, `removeClass`, `show`, `hide`, `style` (restricted keys), `lock`, `unlock`, `showConnectedEdges`, `hideConnectedEdges`, `collapse` (optional), `expand` (optional)
-- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`, `select`, `setOp`, `clearSet`, `clearAllSets`, `collapseAll` (optional), `expandAll` (optional), `selectPath`, `selectByDegree`, `selectComponents`, `selectEdgesBetween`
-- Allowed classes: `highlighted`, `faded`, `focus`, `incoming-node`, `outgoing-node`, `incoming-edge`, `outgoing-edge`, `second-degree`, `module-highlight`
+- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`, `select`, `setOp`, `clearSet`, `clearAllSets`, `collapseAll` (optional), `expandAll` (optional), `selectPath` (`nodesOnly` optional), `selectByDegree`, `selectComponents`, `selectEdgesBetween`, `filterSet`, `selectEdgesIncident`
+- Allowed classes: `highlighted`, `faded`, `focus`, `incoming-node`, `outgoing-node`, `incoming-edge`, `outgoing-edge`, `second-degree`, `module-highlight`, `group-highlight`
 - Allowed style keys:
   - Base: `opacity`, `background-color`, `line-color`, `width`, `text-opacity`
   - Nodes: `border-width`, `border-color`, `shape`, `font-size`, `text-outline-width`, `text-outline-color`
   - Edges: `line-style`, `line-opacity`, `curve-style`, `target-arrow-shape`, `target-arrow-color`
 
-### New in v2
+### New in v2.2
 
 - Named sets: `select` stores results as `$name` for later commands. Caps: max 16 sets, 5k IDs each.
-- Traversal selection: `select` supports `from` + `rel` (`neighborhood|incomers|outgoers|closedNeighborhood`) with bounded `steps` (≤3).
+- Traversal selection: `select` supports `from` + `rel` (`neighborhood|incomers|outgoers|closedNeighborhood|ancestors|descendants|children|parent`) with bounded `steps` (≤3).
+- Set refinement: `filterSet` to refine a $set by selector.
+- Incident edges: `selectEdgesIncident` to capture edges touching a $set of nodes.
+- Path control: `selectPath` supports `nodesOnly` to exclude edges from the result.
 - Set algebra: `setOp` with `union` | `intersection` | `difference` to produce new sets.
 - Path/analytics: `selectPath` (shortest path via Dijkstra, capped), `selectByDegree` (min/max, `kind: total|in|out`), `selectComponents` (component membership).
 - Edge selection between sets: `selectEdgesBetween` from `$from` nodes to `$to` nodes (directed).
 - Optional expand/collapse: if the extension is present, `collapse`/`expand` on node selections and `collapseAll`/`expandAll` operate; otherwise they no-op with a warning.
 - Sets management: `clearSet` removes one set; `clearAllSets` removes all.
+-
+  Group selectors and styles: You can now target compound group nodes directly:
+  - Folders: `node[type = 'folder']`
+  - Modules (files): `node[type = 'module']`
+  - Use the standard `highlighted` class to emphasise groups (legacy `group-highlight` is aliased to `highlighted`).
 
 ### Layout options passthrough (safe subset)
 
@@ -92,9 +112,13 @@ Notes:
   - Default: folders deeper than 2 levels are auto-collapsed on load and when toggled on.
   - Expand/collapse: If the expand/collapse extension is available, `collapse`, `expand`, `collapseAll`, `expandAll` operate on selected nodes (parents) and groups.
 
-Examples (optional, no-op if extension unavailable):
+Examples (operate on groups; collapse commands are no-op if extension unavailable):
 ```json
-[{ "q": "node[type = 'folder']", "op": "collapse" }]
+[
+  { "q": "node[type = 'folder'][depth >= 3]", "op": "collapse" },
+  { "q": "node[type = 'module'][path *= 'src/utils']", "op": "addClass", "arg": "highlighted" },
+  { "op": "fit", "q": "node[type = 'module'][path *= 'src/utils']" }
+]
 ```
 
 Notes:
