@@ -35,6 +35,11 @@ This document explains how layout works in CodeViz, with a focus on execution/ca
 
 Implication: The initial layout emphasizes directional clarity and stable ranks; Re-layout favors compactness and aesthetics via force-directed refinement.
 
+### Group label placement
+
+- Module and folder group labels are positioned at the bottom-right, inside the group border.
+- Implemented via Cytoscape styles: `text-valign: bottom`, `text-halign: right` plus negative `text-margin-x`/`text-margin-y` to pull the label inside the border.
+
 ## Layout modes (high-level)
 - Default view: emphasizes function calls; imports available via `moduleImports`.
 - Modules view (future): emphasize module/package relationships.
