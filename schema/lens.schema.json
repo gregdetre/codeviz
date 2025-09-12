@@ -1,0 +1,158 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://codeviz.dev/schema/lens.schema.json",
+    "title": "CodeViz Viewer Lens",
+    "type": "object",
+    "properties": {
+        "version": {
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "schemaVersion": {
+            "type": "string",
+            "pattern": "^1\\.0\\.0$"
+        },
+        "viewer": {
+            "type": "object",
+            "properties": {
+                "groupFolders": {
+                    "type": "boolean"
+                },
+                "filterMode": {
+                    "type": "string",
+                    "enum": [
+                        "fade",
+                        "hide"
+                    ]
+                },
+                "tagFilter": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true
+                },
+                "viewport": {
+                    "type": "object",
+                    "properties": {
+                        "zoom": {
+                            "type": "number",
+                            "minimum": 0
+                        },
+                        "pan": {
+                            "type": "object",
+                            "properties": {
+                                "x": {
+                                    "type": "number"
+                                },
+                                "y": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "x",
+                                "y"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "zoom",
+                        "pan"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "required": [
+                "groupFolders",
+                "filterMode",
+                "viewport"
+            ],
+            "additionalProperties": false
+        },
+        "positions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "x": {
+                        "type": "number"
+                    },
+                    "y": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "id",
+                    "x",
+                    "y"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "collapsedIds": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true
+        },
+        "commands": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "q": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "op": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "arg": {},
+                    "ops": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 2,
+                            "items": [
+                                {
+                                    "type": "string"
+                                },
+                                {}
+                            ]
+                        }
+                    }
+                },
+                "additionalProperties": true
+            }
+        },
+        "generatedAt": {
+            "type": "string"
+        },
+        "modifiedAt": {
+            "type": "string"
+        },
+        "name": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "version",
+        "schemaVersion",
+        "viewer"
+    ],
+    "additionalProperties": true
+}

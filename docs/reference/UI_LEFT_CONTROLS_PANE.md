@@ -27,6 +27,7 @@ The left-hand pane hosts global controls for layout, grouping, filtering, viewpo
 
 1) Info and layout
 - Layout indicator (`#layoutInfo`) reflects the current layout name.
+- Config indicator (`#configInfo`) shows the active config file stem (e.g. `hellozenno_parent`).
 - Annotations status (`#annStatus`) shows whether LLM annotations are loaded.
 - Layout selector (`#layoutSelect`): choose between `elk`, `fcose`, or `elk-then-fcose` (hybrid sequential). Changing the selection applies the chosen layout and preserves viewport.
 

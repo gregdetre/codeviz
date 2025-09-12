@@ -276,12 +276,22 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       }
     } catch {}
 
+    // Derive config stem from provided configFilePath, if any
+    let configStem: string | undefined;
+    try {
+      if (opts.configFilePath) {
+        const base = basename(opts.configFilePath);
+        configStem = base.replace(/\.codeviz\.toml$/i, '').replace(/\.toml$/i, '');
+      }
+    } catch {}
+
     const cfg = { 
       layout: inferredLayout, 
       mode: (opts.viewerMode ?? "default"), 
       hybridMode: (opts.hybridMode ?? "sequential"),
       workspaceRoot: rawRoot,
       projectName,
+      configStem,
       highlight,
       colors
     };

@@ -61,8 +61,8 @@ async function run(commands: any[]) {
 async function testHighlightSubsetByLabel() {
   const { cy } = await run([
     { q: 'node', ops: [['addClass', 'faded']] },
-    { q: "node[label *= 'recipe']", ops: [['removeClass', 'faded'], ['addClass', 'highlighted']] },
-    { op: 'fit', q: "node[label *= 'recipe']" }
+    { q: "node[label *= 'print']", ops: [['removeClass', 'faded'], ['addClass', 'highlighted']] },
+    { op: 'fit', q: "node[label *= 'print']" }
   ]);
   const highlighted = cy.$('.highlighted');
   const faded = cy.$('.faded');
