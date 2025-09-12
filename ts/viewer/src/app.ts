@@ -37,10 +37,11 @@ export async function initApp() {
     elements,
     style: generateStyles(undefined as any, { highlight: vcfg.highlight }),
     wheelSensitivity: typeof vcfg.wheelSensitivity === 'number' ? vcfg.wheelSensitivity : undefined,
+    pixelRatio: 1.5,
     textureOnViewport: true,
-    motionBlur: true,
-    motionBlurOpacity: 0.1,
-    hideEdgesOnViewport: false,
+    motionBlur: false,
+    motionBlurOpacity: 0.0,
+    hideEdgesOnViewport: true,
     hideLabelsOnViewport: true
   });
   (window as any).__cy = cy; // expose for e2e tests
