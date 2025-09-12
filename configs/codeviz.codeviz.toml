@@ -10,7 +10,7 @@ exclude = [
 excludeModules = []
 
 [output]
-dir = "out/codeviz"  # will contain codebase_graph.json
+dir = "../out/<target>"  # will contain codebase_graph.json
 
 [viewer]
 layout = "elk-then-fcose"

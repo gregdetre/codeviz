@@ -1,5 +1,5 @@
 import { readFile, stat, mkdir } from "node:fs/promises";
-import { resolve, dirname, isAbsolute, join } from "node:path";
+import { resolve, dirname, isAbsolute, join, basename } from "node:path";
 import { parse } from "toml";
 import { z } from "zod";
 
@@ -81,6 +81,9 @@ async function ensureDirectory(dirPath: string): Promise<void> {
 export async function loadAndResolveConfigFromFile(configPath: string): Promise<ResolvedConfig> {
   const file = resolve(configPath);
   const cfgDir = dirname(file);
+  const configStem = basename(file)
+    .replace(/\.codeviz\.toml$/i, "")
+    .replace(/\.toml$/i, "");
   const toml = await readFile(file, "utf8");
   const parsed = parse(toml) as CodevizConfig;
   const result = ConfigSchema.safeParse(parsed);
@@ -90,30 +93,14 @@ export async function loadAndResolveConfigFromFile(configPath: string): Promise<
   }
   const cfg = result.data;
   const rawTarget = expandHomePath(cfg.target.dir);
-  let targetDir = isAbsolute(rawTarget) ? rawTarget : resolve(cfgDir, rawTarget);
-  // Fallbacks for user-friendly relative paths (repo root / parent of configs)
-  let s = await stat(targetDir).catch(() => null as any);
-  if (!s || !s.isDirectory()) {
-    const alt1 = resolve(process.cwd(), rawTarget);
-    const alt2 = resolve(dirname(cfgDir), rawTarget);
-    const altCandidates = [alt1, alt2];
-    for (const cand of altCandidates) {
-      const ss = await stat(cand).catch(() => null as any);
-      if (ss && ss.isDirectory()) { targetDir = cand; s = ss; break; }
-    }
-  }
+  const targetDir = isAbsolute(rawTarget) ? rawTarget : resolve(cfgDir, rawTarget);
+  const s = await stat(targetDir).catch(() => null as any);
   const rawOut = expandHomePath(cfg.output.dir);
-  let outputDir = isAbsolute(rawOut) ? rawOut : resolve(cfgDir, rawOut);
-  // Ensure output dir exists; if parent relative path was intended, try same fallbacks
-  let outStat = await stat(outputDir).catch(() => null as any);
-  if (!outStat) {
-    const alt1 = resolve(process.cwd(), rawOut);
-    const alt2 = resolve(dirname(cfgDir), rawOut);
-    for (const cand of [alt1, alt2]) {
-      const ss = await stat(cand).catch(() => null as any);
-      if (ss && ss.isDirectory()) { outputDir = cand; outStat = ss; break; }
-    }
+  if (!rawOut.includes("<target>")) {
+    throw new Error("Invalid config: output.dir must include the <target> placeholder (e.g. ../out/<target>)");
   }
+  const replacedOut = rawOut.split("<target>").join(configStem);
+  const outputDir = isAbsolute(replacedOut) ? replacedOut : resolve(cfgDir, replacedOut);
 
   // Validate targetDir exists and is directory
   if (!s || !s.isDirectory()) {

@@ -9,7 +9,7 @@ exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 excludeModules = []
 
 [output]
-dir = "out/hellozenno_backend"  # Folder relative to this config; will contain codebase_graph.json
+dir = "../out/<target>"  # Folder relative to this config; will contain codebase_graph.json
 
 [tags]
 project = ["llm", "expensive", "cli-entrypoint"]

@@ -1,5 +1,5 @@
 [target]
-dir = "./demo_codebase"
+dir = "../demo_codebase"
 
 [analyzer]
 exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
@@ -9,7 +9,7 @@ exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
 excludeModules = []
 
 [output]
-dir = "out/demo_codebase"  # Folder relative to this config; will contain codebase_graph.json
+dir = "../out/<target>"  # Folder relative to this config; will contain codebase_graph.json
 
 [tags]
 project = ["llm", "expensive", "cli-entrypoint"]

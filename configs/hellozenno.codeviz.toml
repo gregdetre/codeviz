@@ -1,0 +1,17 @@
+[target]
+dir = "/Users/greg/Dropbox/dev/experim/hellozenno"
+
+[analyzer]
+exclude = [
+  "**/__pycache__/**", "**/.venv/**", "**/tests/**", "**/node_modules/**",
+  "**/dist/**", "**/build/**", "**/out/**"
+]
+# includeOnly = ["backend/**/*.py", "frontend/**/*.ts", "frontend/**/*.tsx"]
+excludeModules = []
+
+[output]
+dir = "../out/<target>"
+
+[viewer]
+layout = "elk-then-fcose"
+port = 8003
