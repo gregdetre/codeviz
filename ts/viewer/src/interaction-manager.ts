@@ -10,6 +10,54 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
   const steps: number = Math.max(1, Number(highlight?.steps ?? 1));
   const hideNonHighlightedEdges: boolean = Boolean(highlight?.hideNonHighlightedEdges ?? true);
 
+  // Space-hold pan mode state
+  let isSpacePanActive = false;
+  let isMouseDown = false;
+  let previousAutoungrabify = false;
+  let previousBoxSelection = false;
+  const container = cy.container() as HTMLElement;
+
+  function isEditableTarget(t: EventTarget | null): boolean {
+    const el = t as HTMLElement | null;
+    if (!el) return false;
+    const tag = (el.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return true;
+    if ((el as any).isContentEditable) return true;
+    // If inside a searchable field container, treat as editable
+    return Boolean(el.closest && (el.closest('#searchBox') || el.closest('[contenteditable="true"]')));
+  }
+
+  function updateCursor() {
+    if (!container) return;
+    if (isSpacePanActive) {
+      container.style.cursor = isMouseDown ? 'grabbing' : 'grab';
+    } else {
+      container.style.cursor = '';
+    }
+  }
+
+  function enableSpacePan() {
+    if (isSpacePanActive) return;
+    isSpacePanActive = true;
+    // Snapshot previous interaction flags to restore later
+    try { previousAutoungrabify = cy.autoungrabify(); } catch { previousAutoungrabify = false; }
+    try { previousBoxSelection = cy.boxSelectionEnabled(); } catch { previousBoxSelection = false; }
+    // Disable node dragging and box selection so dragging pans the viewport even over nodes
+    try { cy.autoungrabify(true); } catch {}
+    try { cy.boxSelectionEnabled(false); } catch {}
+    updateCursor();
+  }
+
+  function disableSpacePan() {
+    if (!isSpacePanActive) return;
+    isSpacePanActive = false;
+    isMouseDown = false;
+    // Restore previous interaction flags
+    try { cy.autoungrabify(previousAutoungrabify); } catch {}
+    try { cy.boxSelectionEnabled(previousBoxSelection); } catch {}
+    updateCursor();
+  }
+
   function setFilterMode(mode: FilterMode) {
     filterMode = mode;
   }
@@ -108,9 +156,37 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     cy.on('tap', (evt) => {
       if (evt.target === cy) clearFocus();
     });
+    // Keyboard handlers
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') clearFocus();
+      try {
+        if (e.key === 'Escape') clearFocus();
+        // Space-hold temporary pan mode (ignored when typing in inputs)
+        const isSpace = e.code === 'Space' || e.key === ' ';
+        if (isSpace) {
+          if (isEditableTarget(e.target)) return; // don't interfere with typing
+          e.preventDefault();
+          if (!isSpacePanActive) enableSpacePan();
+        }
+      } catch {}
     });
+    document.addEventListener('keyup', (e) => {
+      try {
+        const isSpace = e.code === 'Space' || e.key === ' ';
+        if (isSpace) {
+          e.preventDefault();
+          disableSpacePan();
+        }
+      } catch {}
+    });
+    // Defensive cleanup if window loses focus/visibility while space is held
+    window.addEventListener('blur', () => { try { disableSpacePan(); } catch {} });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') { try { disableSpacePan(); } catch {} } });
+    // Track mouse state to switch cursor between grab/grabbing
+    if (container) {
+      container.addEventListener('mousedown', () => { isMouseDown = true; updateCursor(); });
+      container.addEventListener('mouseup', () => { isMouseDown = false; updateCursor(); });
+      container.addEventListener('mouseleave', () => { isMouseDown = false; updateCursor(); });
+    }
   }
 
   return { setFilterMode, focus, clearFocus, installBasics };
