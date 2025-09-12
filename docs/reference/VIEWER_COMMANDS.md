@@ -16,6 +16,7 @@ Goals/desiderata:
 - `../../ts/viewer/src/command-executor.ts` – executor implementation
 - `../../ts/viewer/src/state-snapshot.ts` – snapshot sent to the assistant
 - `../../ts/viewer/src/style.ts` – includes base styles and highlight classes
+- `KEYBOARD_SHORTCUTS.md` – viewer keyboard and modifier shortcuts
 
 ## Command shape
 

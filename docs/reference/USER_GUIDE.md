@@ -1,6 +1,6 @@
 # CodeViz User Guide
 
-This guide covers the key features and modes of the CodeViz interactive viewer. See also `UI_WIDGETS_ARRANGEMENT.md` for where controls live, and `LAYOUT.md` for layout details.
+This guide covers the key features and modes of the CodeViz interactive viewer. See also `UI_WIDGETS_ARRANGEMENT.md` for where controls live, `LAYOUT.md` for layout details, and `KEYBOARD_SHORTCUTS.md` for keyboard and modifier shortcuts.
 
 ## Viewer Modes
 

@@ -28,6 +28,7 @@ The viewer uses a three-pane grid: a left widget pane for controls, a central gr
 ### See also
 
 - `../reference/LAYOUT.md`: General layout and visual design guidelines for the viewer (includes hybrid details). See also `../reference/USER_GUIDE.md` for end‑user behavior.
+- `../reference/KEYBOARD_SHORTCUTS.md`: Reference of keyboard and modifier shortcuts in the viewer.
 - `../reference/GUI_CONTROLS.md` (when available): Control semantics and expected behavior.
 - `../reference/ICONS_SYMBOLS.md`: Visual symbols and icons used throughout the interface.
 - `../../ts/viewer/src/app.ts`: Event wiring for toolbar controls.
