@@ -352,6 +352,15 @@ export async function initApp() {
   if (recomputeLayoutBtn) {
     recomputeLayoutBtn.addEventListener('click', async () => {
       try {
+        // Snapshot current visibility to preserve hidden/visible states across layout
+        const prevDisplay: Record<string, string> = {};
+        try {
+          const all = cy.elements();
+          for (let i = 0; i < all.length; i++) {
+            const el = all[i];
+            try { prevDisplay[el.id()] = String(el.style('display')); } catch {}
+          }
+        } catch {}
         let sub: any = undefined;
         try {
           const sel = cy.$(':selected');
@@ -362,6 +371,14 @@ export async function initApp() {
         const opts: any = { hybridMode: vcfg.hybridMode as any };
         if (sub && sub.length > 0) opts.eles = sub;
         await applyLayout(cy, layoutName, opts);
+        // Restore previous visibility exactly
+        try {
+          cy.batch(() => {
+            for (const id in prevDisplay) {
+              try { cy.getElementById(id).style('display', prevDisplay[id]); } catch {}
+            }
+          });
+        } catch {}
       } catch {}
     });
   }
@@ -371,6 +388,15 @@ export async function initApp() {
   if (recomputeAggressiveBtn) {
     recomputeAggressiveBtn.addEventListener('click', async () => {
       try {
+        // Snapshot current visibility to preserve hidden/visible states across layout
+        const prevDisplay: Record<string, string> = {};
+        try {
+          const all = cy.elements();
+          for (let i = 0; i < all.length; i++) {
+            const el = all[i];
+            try { prevDisplay[el.id()] = String(el.style('display')); } catch {}
+          }
+        } catch {}
         let sub: any = undefined;
         try {
           const sel = cy.$(':selected');
@@ -381,6 +407,14 @@ export async function initApp() {
         const opts: any = { hybridMode: vcfg.hybridMode as any, fcose: { randomize: true, numIter: 1200 } };
         if (sub && sub.length > 0) opts.eles = sub;
         await applyLayout(cy, layoutName, opts);
+        // Restore previous visibility exactly
+        try {
+          cy.batch(() => {
+            for (const id in prevDisplay) {
+              try { cy.getElementById(id).style('display', prevDisplay[id]); } catch {}
+            }
+          });
+        } catch {}
       } catch {}
     });
   }
@@ -675,6 +709,8 @@ export async function initApp() {
   if (detailsEl) {
     cy.on('tap', 'node', (evt) => {
       const node = evt.target;
+      // expose annotations for details-pane consumption
+      (window as any).__cv_annotations = annotations;
       renderDetails(detailsEl, node);
     });
     cy.on('tap', (evt) => {
