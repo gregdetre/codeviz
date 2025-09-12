@@ -1,5 +1,6 @@
 import type { Core, Collection } from "cytoscape";
 import { applyLayout, normalizeLayoutName } from "./layout-manager.js";
+import { updateAutoGroupVisibility } from "./visibility.js";
 
 export type CompactCommand = {
   q?: string;
@@ -229,6 +230,7 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
     await applyLayout(cy, "fcose");
     try { (cy as any).resize?.(); } catch {}
     cy.fit(cy.elements(':visible'), 20);
+    try { updateAutoGroupVisibility(cy); } catch {}
     return errors;
   }
   if (op === "pan") {
@@ -255,6 +257,7 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
       } finally {
         cy.endBatch();
       }
+      try { updateAutoGroupVisibility(cy); } catch {}
     }
     return errors;
   }

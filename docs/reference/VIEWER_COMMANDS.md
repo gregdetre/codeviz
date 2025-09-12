@@ -55,6 +55,10 @@ Use Cytoscape selectors with a restricted feature set:
 - **Unions**: `node, edge`
 - **Pseudo-classes**: `:parent`, `:child`, `:leaf`, `:selected`
 
+Tag selectors:
+- Function nodes receive per-tag classes `.cv-tag-<tag>` (normalized, lowercase, non-alphanumerics → `-`).
+- Examples: `.cv-tag-important`, `.cv-tag-entrypoint`, `.cv-tag-llm`.
+
 Examples:
 ```text
 node[type = 'function']
@@ -127,6 +131,13 @@ Notes:
 - Aggregated edges for collapsed groups are not yet shown; detailed edges remain visible when expanded (planned).
 
 ## Common recipes
+- Highlight Important-tagged functions and fit:
+```json
+[
+  { "q": "node.cv-tag-important", "op": "addClass", "arg": "highlighted" },
+  { "op": "fit", "q": "node.cv-tag-important" }
+]
+```
 - Multi-step focus with named sets and halos:
 ```json
 [

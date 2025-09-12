@@ -31,7 +31,8 @@ A concise guide to how CodeViz tags functions, where tags live, and how the view
 - The Tags widget is default-collapsed and appears only when annotations are available.
 - All tags are selected by default. Shift-click on a tag to select “only this”. Quick actions: All / None.
 - Filtering semantics: a function is shown if it has at least one checked tag; nodes with no tags are shown only when `Untagged` is checked.
-- Non-matching function nodes are hidden via a dedicated overlay class; edges incident to hidden nodes are hidden.
+- Non-matching function nodes are hidden via a dedicated overlay class; edges incident to hidden nodes are hidden. Groups (modules/folders) are auto-hidden when all their member entities are hidden.
+- Each function node also receives per-tag CSS classes of the form `.cv-tag-<tag>` (e.g., `.cv-tag-important`, `.cv-tag-entrypoint`) for command-based selection.
 - Counts shown as `visible/total` per tag:
   - `total` = number of functions carrying that tag (stable over time)
   - `visible` = number of currently visible functions with that tag (dynamic; respects other tag selections and visibility state)
@@ -39,7 +40,7 @@ A concise guide to how CodeViz tags functions, where tags live, and how the view
 ### Implementation overview
 
 - `tags.ts` builds an index mapping tag → node IDs, and the `untagged` set. It also renders the widget and applies filter classes.
-- Styling uses the `.cv-tag-hidden` class for nodes and edges to avoid clobbering other visibility controls.
+- Styling uses the `.cv-tag-hidden` class for nodes and edges to avoid clobbering other visibility controls, and `.cv-group-hidden-auto` for auto-hiding groups whose members are all hidden.
 - The widget is rendered inside `#tagsSection` (`index.html`), with content in `#tagsList`.
 - Integration is wired in `app.ts` after graph and annotations load.
 

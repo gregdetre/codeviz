@@ -1,9 +1,11 @@
 import type { Core, Collection } from "cytoscape";
+import { updateAutoGroupVisibility } from "./visibility.js";
 
 export function search(cy: Core, term: string, mode: 'hide'|'fade' = 'fade'): { matches: Collection } {
   const q = term.trim().toLowerCase();
   if (!q) {
     cy.elements().removeClass('faded').style('display', 'element');
+    try { updateAutoGroupVisibility(cy); } catch {}
     return { matches: cy.collection() };
   }
   const matches = cy.nodes().filter(n => {
@@ -15,6 +17,7 @@ export function search(cy: Core, term: string, mode: 'hide'|'fade' = 'fade'): { 
   const rest = cy.elements().difference(matches.closedNeighborhood());
   if (mode === 'fade') rest.addClass('faded'); else rest.style('display', 'none');
   matches.removeClass('faded').style('display', 'element');
+  try { updateAutoGroupVisibility(cy); } catch {}
   return { matches };
 }
 

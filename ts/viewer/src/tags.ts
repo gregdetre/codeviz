@@ -1,5 +1,6 @@
 import type { Core } from "cytoscape";
 import type { Graph } from "./graph-types.js";
+import { updateAutoGroupVisibility } from "./visibility.js";
 
 export type TagIndex = {
   allTagKeys: string[]; // includes pinned and 'untagged' sentinel
@@ -24,6 +25,11 @@ function displayNameFor(tagKey: string, casePool?: string[]): string {
   }
   // Fallback: Title-case
   return key.length ? key.charAt(0).toUpperCase() + key.slice(1) : key;
+}
+
+function classNameForTag(tagKey: string): string {
+  const norm = normalizeTag(tagKey).replace(/[^a-z0-9_\-]+/g, '-');
+  return `cv-tag-${norm}`;
 }
 
 export function buildTagIndex(graph: Graph, annotations: any | null): TagIndex {
@@ -124,6 +130,19 @@ export function applyTagFilter(cy: Core, idx: TagIndex, selected: Set<string>): 
   try { cy.style().selector('.cv-tag-hidden').style({ display: 'none' } as any).update(); } catch {}
   try { cy.style().selector('edge.cv-tag-hidden').style({ display: 'none' } as any).update(); } catch {}
 
+  // Ensure per-tag CSS classes exist on function nodes for selector-based operations
+  try {
+    for (const [t, ids] of idx.tagKeyToNodeIds.entries()) {
+      const cls = classNameForTag(t);
+      for (const id of ids) {
+        try {
+          const el = cy.getElementById(id);
+          if (el && !el.empty()) el.addClass(cls);
+        } catch {}
+      }
+    }
+  } catch {}
+
   const normSelected = new Set(Array.from(selected).map(normalizeTag));
   const selectUntagged = normSelected.has('untagged');
 
@@ -164,6 +183,9 @@ export function applyTagFilter(cy: Core, idx: TagIndex, selected: Set<string>): 
       } catch {}
     });
   } catch {}
+
+  // Maintain auto-visibility for groups and collapsed meta-edges
+  try { updateAutoGroupVisibility(cy); } catch {}
 }
 
 export async function installTagsWidget(cy: Core, graph: Graph, annotations: any | null): Promise<void> {

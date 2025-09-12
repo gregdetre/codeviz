@@ -18,6 +18,7 @@ import { applyLayout, normalizeLayoutName } from "./layout-manager.js";
 import { loadGraph as loadGraphRaw, loadAnnotations } from "./load-graph.js";
 import { initFileOpener } from "./file-opener.js";
 import { renderDetails } from "./details-panel.js";
+import { updateAutoGroupVisibility } from "./visibility.js";
 
 async function loadGraph(): Promise<Graph> { return await loadGraphRaw(process.env.NODE_ENV !== 'production'); }
 
@@ -98,6 +99,7 @@ export async function initApp() {
 
   applyModuleColorTint(cy);
   applyGroupBackgroundColors(cy, tokens);
+  try { updateAutoGroupVisibility(cy); } catch {}
 
   // Inject minimal CSS for clickable tokens and Prism defaults scoped to our pane
   try {
@@ -332,6 +334,7 @@ export async function initApp() {
           cy.add(newElements);
           applyModuleColorTint(cy);
           applyGroupBackgroundColors(cy, tokens);
+          try { updateAutoGroupVisibility(cy); } catch {}
         });
         // Collapse all groups by default when regrouping
         try {
