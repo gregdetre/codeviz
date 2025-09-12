@@ -13,7 +13,7 @@ import { generateStyles, applyModuleColorTint, applyGroupBackgroundColors } from
 import { defaultTokensLight } from "./style-tokens.js";
 import { InteractionManager } from "./interaction-manager.js";
 import { search } from "./search.js";
-import type { Graph, ViewerConfig, ViewerMode } from "./graph-types.js";
+import type { Graph, ViewerConfig } from "./graph-types.js";
 import { applyLayout, normalizeLayoutName } from "./layout-manager.js";
 import { loadGraph as loadGraphRaw, loadAnnotations } from "./load-graph.js";
 import { initFileOpener } from "./file-opener.js";
@@ -38,7 +38,6 @@ export async function initApp() {
   // Initialize file opener with workspace root
   initFileOpener(vcfg);
 
-  let mode: ViewerMode = (vcfg.mode ?? 'explore') as ViewerMode;
   let groupFolders = true; // default: group by folders
   let layoutName = normalizeLayoutName(vcfg.layout);
   // Precompute module -> file mapping for quick lookups (used by search suggestions)
@@ -48,7 +47,7 @@ export async function initApp() {
       if (n.module && n.file && !moduleToFile.has(n.module)) moduleToFile.set(n.module, n.file);
     }
   } catch {}
-  const elements = graphToElements(graph, { mode, groupFolders });
+  const elements = graphToElements(graph, { mode: 'explore' as any, groupFolders });
   const cy = cytoscape({
     container: document.getElementById('cy') as HTMLElement,
     elements,
@@ -101,19 +100,50 @@ export async function initApp() {
     const ec = (cy as any).expandCollapse
       ? (cy as any).expandCollapse({ layoutBy: { name: 'fcose', animate: false, randomize: false, numIter: 250 }, animate: false, fisheye: false, groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' })
       : null;
+    // Targeted aggregator: keep aggregates only where at least one endpoint is a collapsed node
     const reaggregateEdges = () => {
       try {
         const api = (cy as any).expandCollapse('get');
         if (!api) return;
-        api.expandAllEdges();
-        api.collapseAllEdges({ groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
+        // Reset any prior collapsed-edge aggregates
+        if (typeof api.expandAllEdges === 'function') api.expandAllEdges();
+        // For each collapsed node, find direct meta-edges and collapse parallel edges by other endpoint+type
+        const collapsedNodes = cy.nodes('.cy-expand-collapse-collapsed-node');
+        if (!collapsedNodes || collapsedNodes.length === 0) return;
+        collapsedNodes.forEach((cn: any) => {
+          // Candidate edges connected to this collapsed node
+          const connected = cn.connectedEdges();
+          // Group by (otherId, type)
+          const bins: Record<string, any[]> = {};
+          connected.forEach((e: any) => {
+            const type = String(e.data('type') || e.data('edgeType') || 'unknown');
+            const src = e.source();
+            const tgt = e.target();
+            const other = src.id() === cn.id() ? tgt : src;
+            const key = other.id() + '::' + type;
+            (bins[key] = bins[key] || []).push(e);
+          });
+          Object.values(bins).forEach((edges: any[]) => {
+            if (edges.length < 2) return; // nothing to aggregate
+            try {
+              const col = cy.collection(edges);
+              if (typeof api.collapseEdgesBetweenNodes === 'function') {
+                api.collapseEdgesBetweenNodes(col.connectedNodes(), { groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
+              } else if (typeof api.collapseEdges === 'function') {
+                api.collapseEdges(col, { groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
+              }
+            } catch {}
+          });
+        });
       } catch {}
     };
+    // Expose for tests/devtools
+    (window as any).__cv = Object.assign((window as any).__cv || {}, { reaggregateCollapsedEdges: reaggregateEdges });
     // Auto-collapse all groups (folders and modules) on first load
     if (ec) {
       const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
       if (groups && groups.length > 0) ec.collapse(groups, { animate: false });
-      // After collapsing, aggregate parallel/meta edges to reduce clutter
+      // After collapsing, aggregate edges only around collapsed groups
       reaggregateEdges();
     }
     // Double-click (or quick double-tap) to toggle collapse on folder & module (file) groups
@@ -167,8 +197,7 @@ export async function initApp() {
 
   const layoutInfo = document.getElementById('layoutInfo');
   if (layoutInfo) layoutInfo.textContent = `Layout: ${layoutName}`;
-  const modeInfo = document.getElementById('modeInfo');
-  if (modeInfo) modeInfo.textContent = `Mode: ${mode}`;
+  // Modes removed; Explore is the default/static mode
   // Instrument layout timing
   const t0 = performance.now();
   await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
@@ -268,37 +297,6 @@ export async function initApp() {
   const filterMode = document.getElementById('filterMode') as HTMLSelectElement;
   if (filterMode) filterMode.addEventListener('change', () => { im.setFilterMode(filterMode.value as any); scheduleOverviewRefresh(); });
 
-  const modeSelect = document.getElementById('modeSelect') as HTMLSelectElement;
-  if (modeSelect) {
-    modeSelect.value = mode;
-    modeSelect.addEventListener('change', async () => {
-      mode = modeSelect.value as ViewerMode;
-      if (modeInfo) modeInfo.textContent = `Mode: ${mode}`;
-      const newElements = graphToElements(graph, { mode, groupFolders });
-      cy.batch(() => {
-        cy.elements().remove();
-        cy.add(newElements);
-        applyModuleColorTint(cy);
-        applyGroupBackgroundColors(cy, tokens);
-      });
-      // Collapse all groups by default after mode change
-      try {
-        const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
-        if (api) {
-          const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
-          if (groups.length > 0) api.collapse(groups, { animate: false });
-          try {
-            if (typeof api.expandAllEdges === 'function') api.expandAllEdges();
-            if (typeof api.collapseAllEdges === 'function') api.collapseAllEdges({ groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
-          } catch {}
-        }
-      } catch {}
-      await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
-      try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
-      scheduleOverviewRefresh();
-    });
-  }
-
   // Group-by UI wiring
   try {
     const groupFoldersToggle = document.getElementById('toggleGroupFolders') as HTMLInputElement | null;
@@ -306,7 +304,7 @@ export async function initApp() {
       groupFoldersToggle.checked = groupFolders;
       groupFoldersToggle.addEventListener('change', async () => {
         groupFolders = groupFoldersToggle.checked;
-        const newElements = graphToElements(graph, { mode, groupFolders });
+        const newElements = graphToElements(graph, { mode: 'explore' as any, groupFolders });
         cy.batch(() => {
           cy.elements().remove();
           cy.add(newElements);
@@ -319,10 +317,8 @@ export async function initApp() {
           if (api) {
             const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
             if (groups.length > 0) api.collapse(groups, { animate: false });
-            try {
-              if (typeof api.expandAllEdges === 'function') api.expandAllEdges();
-              if (typeof api.collapseAllEdges === 'function') api.collapseAllEdges({ groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
-            } catch {}
+            // Targeted edge aggregation
+            reaggregateEdges();
           }
         } catch {}
         await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
@@ -336,44 +332,99 @@ export async function initApp() {
   const layoutSelect = document.getElementById('layoutSelect') as HTMLSelectElement;
   if (layoutSelect) {
     layoutSelect.value = layoutName;
-    const updateHybridVisibility = () => {
-      const isHybrid = normalizeLayoutName(layoutSelect.value) === 'elk-then-fcose';
-      const refineBtn = document.getElementById('refineBtn') as HTMLButtonElement | null;
-      if (refineBtn) {
-        refineBtn.disabled = !isHybrid;
-        if (!isHybrid) refineBtn.title = 'Enable ELK → fCoSE layout to use Re-layout';
-        else refineBtn.title = 'Re-run layout optimization (clears selection and highlighting)';
-      }
-    };
-    updateHybridVisibility();
     layoutSelect.addEventListener('change', async () => {
       layoutName = normalizeLayoutName(layoutSelect.value);
       if (layoutInfo) layoutInfo.textContent = `Layout: ${layoutName}`;
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
       try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
-      updateHybridVisibility();
     });
   }
 
-  // hybrid submode UI removed; sequential is default
+  // Recompute layout (no side effects; keep selection/filters/viewport)
+  const recomputeLayoutBtn = document.getElementById('recomputeLayoutBtn') as HTMLButtonElement | null;
+  if (recomputeLayoutBtn) {
+    recomputeLayoutBtn.addEventListener('click', async () => {
+      try { await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any }); } catch {}
+    });
+  }
 
-  const refineBtn = document.getElementById('refineBtn') as HTMLButtonElement;
-  if (refineBtn) {
-    refineBtn.addEventListener('click', async () => {
-      // Clear any custom highlight/fade state managed by InteractionManager
-      try { im.clearFocus(); } catch {}
-      // Clear any current selection to avoid having to find whitespace
+  // Recenter viewport to visible elements
+  const recenterBtn = document.getElementById('recenterBtn') as HTMLButtonElement | null;
+  if (recenterBtn) {
+    recenterBtn.addEventListener('click', () => {
+      try { (cy as any).resize?.(); } catch {}
+      try { cy.fit(cy.elements(':visible'), 20); } catch {}
+    });
+  }
+
+  // Clear selection only
+  const clearSelectionBtn = document.getElementById('clearSelectionBtn') as HTMLButtonElement | null;
+  if (clearSelectionBtn) {
+    clearSelectionBtn.addEventListener('click', () => {
       try { (cy as any).$(':selected').unselect(); } catch {}
-      // Clear details panel if present
+    });
+  }
+
+  // Clear only styling/highlight classes (do not change display)
+  const clearStylingBtn = document.getElementById('clearStylingBtn') as HTMLButtonElement | null;
+  if (clearStylingBtn) {
+    clearStylingBtn.addEventListener('click', () => {
       try {
-        const detailsElNow = document.getElementById('details') as HTMLElement | null;
-        if (detailsElNow) {
-          import('./details-panel.js').then(m => m.renderDetails(detailsElNow, null));
+        cy.elements().removeClass('faded');
+        cy.elements().removeClass('focus incoming-node outgoing-node second-degree module-highlight');
+      } catch {}
+      scheduleOverviewRefresh();
+    });
+  }
+
+  // Clear filters: reset search, filter mode, and element toggles to defaults
+  const clearFiltersBtn = document.getElementById('clearFiltersBtn') as HTMLButtonElement | null;
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', () => {
+      try {
+        // Reset search
+        const sb = document.getElementById('searchBox') as HTMLInputElement | null;
+        if (sb) { sb.value = ''; }
+        search(cy, '', 'fade');
+        // Reset filter mode to fade
+        const fm = document.getElementById('filterMode') as HTMLSelectElement | null;
+        if (fm) { fm.value = 'fade'; im.setFilterMode('fade'); }
+        // Reset toggles to checked and apply
+        const toggleIds = [
+          'toggleCalls','toggleImports','toggleFunctions','toggleClasses','toggleVariables'
+        ];
+        for (const id of toggleIds) {
+          const el = document.getElementById(id) as HTMLInputElement | null;
+          if (el) {
+            el.checked = true;
+            el.dispatchEvent(new Event('change'));
+          }
         }
       } catch {}
-      await applyLayout(cy, 'fcose', { hybridMode: vcfg.hybridMode as any });
-      try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
       scheduleOverviewRefresh();
+    });
+  }
+
+  // Expand / Collapse all groups (if plugin available)
+  const expandAllBtn = document.getElementById('expandAllBtn') as HTMLButtonElement | null;
+  if (expandAllBtn) {
+    expandAllBtn.addEventListener('click', () => {
+      try {
+        const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
+        if (api && typeof api.expandAll === 'function') api.expandAll({ animate: false });
+        // Re-aggregate collapsed edges if helper exists
+        try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
+      } catch {}
+    });
+  }
+  const collapseAllBtn = document.getElementById('collapseAllBtn') as HTMLButtonElement | null;
+  if (collapseAllBtn) {
+    collapseAllBtn.addEventListener('click', () => {
+      try {
+        const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
+        if (api && typeof api.collapseAll === 'function') api.collapseAll({ animate: false });
+        try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
+      } catch {}
     });
   }
 
