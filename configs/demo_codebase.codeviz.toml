@@ -3,8 +3,8 @@ dir = "./demo_codebase"
 
 [analyzer]
 exclude = ["**/__pycache__/**", "**/.venv/**", "**/tests/**"]
-# Only analyze these files/dirs (optional). If commented out, analyze all .py files.
-# includeOnly = ["demo_codebase/**"]
+# Only analyze these files/dirs (optional). If commented out, analyze all language-default files.
+# includeOnly = ["demo_codebase/**", "demo_codebase/ts/**"]
 # Suppress edges/imports to these modules (e.g., external libs)
 excludeModules = []
 

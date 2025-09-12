@@ -25,12 +25,20 @@ async function waitForFileExists(filePath: string, timeoutMs = 60000, pollInterv
 
 async function loadGlobalConfig() {
   const repoRoot = resolve(fileURLToPath(new URL("../../../", import.meta.url)));
-  const configPath = join(repoRoot, "codeviz.config.toml");
-  
-  if (!existsSync(configPath)) {
+  // Prefer new filename, then fall back to legacy names for compatibility
+  const candidateNames = [
+    "codeviz.codeviz.toml", // new preferred
+    "global.config.toml",   // transitional (if present)
+    "codeviz.config.toml"   // legacy
+  ];
+  let configPath: string | undefined;
+  for (const name of candidateNames) {
+    const p = join(repoRoot, name);
+    if (existsSync(p)) { configPath = p; break; }
+  }
+  if (!configPath) {
     return { llm: { model: "anthropic:claude-sonnet-4:20250514", temperature: 0.2, maxTokens: 2000 } };
   }
-  
   try {
     const configContent = await readFile(configPath, "utf8");
     return parseToml(configContent);
@@ -374,7 +382,7 @@ export async function startServer(opts: { host: string; port: number; openBrowse
         } else {
           entry.summary = markdown;
         }
-        ann.updatedAt = new Date().toISOString();
+        ann.modifiedAt = new Date().toISOString();
         await writeFile(annPath, JSON.stringify(ann, null, 2), 'utf8');
       } catch (e: any) {
         const dir = dirname(resolvedDataFile);

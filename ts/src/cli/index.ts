@@ -1,6 +1,7 @@
 import { Cli, Command, Option } from "clipanion";
 import { resolve, join } from "node:path";
-import { runExtract } from "../analyzer/extract-python.js";
+import { runExtract as runExtractPython } from "../analyzer/extract-python.js";
+import { runExtract as runExtractTypeScript } from "../analyzer/extract-typescript.js";
 import { loadAndResolveConfigFromFile, ResolvedConfig } from "../config/loadConfig.js";
 import { startServer } from "../server/server.js";
 import { exec } from "node:child_process";
@@ -19,7 +20,30 @@ class ExtractPython extends Command {
     }
     const cfg: ResolvedConfig = await loadAndResolveConfigFromFile(resolve(this.configFile));
     const outPath = join(cfg.outputDir, "codebase_graph.json");
-    await runExtract({
+    await runExtractPython({
+      targetDir: cfg.targetDir,
+      outPath,
+      verbose: this.verbose,
+      analyzer: {
+        exclude: cfg.analyzer.exclude,
+        includeOnly: cfg.analyzer.includeOnly,
+        excludeModules: cfg.analyzer.excludeModules
+      }
+    });
+  }
+}
+
+class ExtractTypeScript extends Command {
+  static paths = [["extract", "typescript"], ["extract", "ts"]];
+  verbose = Option.Boolean("-v,--verbose", false);
+  configFile = Option.String("--config");
+  async execute() {
+    if (!this.configFile) {
+      throw new Error("--config is required and must point to a .toml file");
+    }
+    const cfg: ResolvedConfig = await loadAndResolveConfigFromFile(resolve(this.configFile));
+    const outPath = join(cfg.outputDir, "codebase_graph.json");
+    await runExtractTypeScript({
       targetDir: cfg.targetDir,
       outPath,
       verbose: this.verbose,
@@ -94,6 +118,7 @@ const cli = new Cli({
   binaryVersion: "0.1.0"
 });
 cli.register(ExtractPython);
+cli.register(ExtractTypeScript);
 cli.register(ViewOpen);
 class AnnotateClaude extends Command {
   static paths = [["annotate"]];

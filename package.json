@@ -16,6 +16,8 @@
         "preextract": "npm run build:cli",
         "extract": "node ts/dist/cli/index.js extract python \"$@\"",
         "extract:demo": "node ts/dist/cli/index.js extract python --config ./configs/demo_codebase.codeviz.toml",
+        "extract:ts": "node ts/dist/cli/index.js extract typescript \"$@\"",
+        "extract:demo:ts": "node ts/dist/cli/index.js extract typescript --config ./configs/demo_codebase.codeviz.toml",
         "preannotate": "npm run build:cli",
         "annotate": "node ts/dist/cli/index.js annotate",
         "dev:view": "vite --config ts/viewer/vite.config.ts",
@@ -53,6 +55,7 @@
         "toml": "^3.0.0",
         "tree-sitter": "^0.25.0",
         "tree-sitter-python": "^0.25.0",
+        "tree-sitter-javascript": "^0.21.0",
         "zod": "^3.23.8"
     },
     "devDependencies": {

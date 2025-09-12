@@ -1,0 +1,19 @@
+[target]
+dir = ".."  # project root relative to this file
+
+[analyzer]
+exclude = [
+  "**/node_modules/**", "**/dist/**", "**/ts/dist/**", "**/out/**",
+  "**/.venv/**", "**/__pycache__/**", "**/test-results/**"
+]
+# includeOnly = ["ts/**/*.ts", "ts/**/*.tsx", "demo_codebase/**/*.py", "demo_codebase/ts/**/*.ts"]
+excludeModules = []
+
+[output]
+dir = "out/codeviz"  # will contain codebase_graph.json
+
+[viewer]
+layout = "elk-then-fcose"
+port = 8002
+
+
