@@ -51,7 +51,7 @@ npm run extract -- --config ./configs/demo_codebase.codeviz.toml --verbose
 
 ## Annotation Command
 
-### `npm run annotate -- <target_dir>`
+### `npm run annotate -- --config <file.toml>`
 
 Generate LLM-based tags for function nodes and write `llm_annotation.json` alongside the graph in the same output folder.
 
@@ -65,11 +65,11 @@ Generate LLM-based tags for function nodes and write `llm_annotation.json` along
 #### Examples
 
 ```bash
-# Annotate all functions in the project with closed vocabulary
-npm run annotate -- demo_codebase
+# Annotate functions in the project configured by TOML (closed vocabulary)
+npm run annotate -- --config ./configs/demo_codebase.codeviz.toml
 
 # Suggest new tags (not applied), limited to top 300 by mixed ranking
-npm run annotate -- demo_codebase --vocab suggest --limit 300 --rank mixed
+npm run annotate -- --config ./configs/demo_codebase.codeviz.toml --vocab suggest --limit 300 --rank mixed
 ```
 
 ## Viewer Commands
@@ -101,7 +101,7 @@ npm run view -- --config ./configs/demo_codebase.codeviz.toml --host 0.0.0.0 --p
 npm run view -- --config ./configs/demo_codebase.codeviz.toml --no-browser
 
 # Don't kill existing processes on port
-npm run view -- --no-kill-existing
+npm run view -- --config ./configs/demo_codebase.codeviz.toml --no-kill-existing
 
 # Start with Modules mode and sequential hybrid refinement (default)
 npm run view -- --config ./configs/demo_codebase.codeviz.toml --mode modules --hybrid-mode sequential

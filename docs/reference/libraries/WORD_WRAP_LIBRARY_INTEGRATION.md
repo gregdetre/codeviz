@@ -6,7 +6,7 @@ TypeScript text wrapping utility with configurable delimiters, indentation, and 
 
 - `word-wrap` npm package: https://www.npmjs.com/package/word-wrap - official package page with usage examples
 - GitHub repository: https://github.com/jonschlinkert/word-wrap - source code and issue tracking
-- `ts/package.json` - project dependencies where word-wrap should be added
+- `package.json` - project dependencies where word-wrap should be added
 - `ts/src/cli/index.ts` - CLI implementation where text formatting may be needed
 - `FLOATING_UI_TOOLTIP_INTEGRATION.md` - Tooltip library that may need text wrapping for content
 - `../COMMAND_LINE_USAGE.md` - CLI documentation that covers text output scenarios

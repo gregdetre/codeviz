@@ -38,6 +38,7 @@ We're interested in Cytoscape.js features such as:
 ## v1 (CURRENT)
 - Static analysis of Python codebases only
 - Don't worry about performance/scalability. We'll be using it on small codebases.
+- Assumption: CodeViz runs locally (viewer/server/CLI operate on the local machine)
  - Viewer: nested folder → file → function grouping with compound nodes; expand/collapse enabled; default auto-collapse for folders deeper than 2 levels; "Group folders" toggle in left pane
  - New: optional LLM-driven annotations stored in `llm_annotation.json`; tag-based filtering UI (collapsed by default)
 

@@ -8,7 +8,7 @@ Comprehensive guide for integrating Floating UI tooltips into the CodeViz TypeSc
 - [Floating UI GitHub Repository](https://github.com/floating-ui/floating-ui) - Source code and issue tracking
 - `ts/viewer/` - Vite + TypeScript + Cytoscape.js frontend where tooltips will be implemented
 - `ts/src/server/server.ts` - Fastify server serving viewer + data
-- `ts/package.json` - Current project dependencies that will include @floating-ui/dom
+- `package.json` - Current project dependencies that will include @floating-ui/dom
 - `WORD_WRAP_LIBRARY_INTEGRATION.md` - Text wrapping for tooltip content formatting
 
 ## Principles, key decisions
