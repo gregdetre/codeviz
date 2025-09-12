@@ -46,6 +46,14 @@ function sanitizeFcoseOptions(arg: any): Record<string, unknown> {
 
 export async function applyLayout(cy: Core, name: LayoutName | 'hybrid', opts?: SafeLayoutOpts | HybridOpts | any): Promise<void> {
   const layoutName = normalizeLayoutName(name as string);
+  const elesOpt = (() => {
+    try {
+      const e = (opts as any)?.eles;
+      if (!e) return undefined;
+      if (typeof (e as any).length === 'number' && (e as any).length > 0) return e;
+    } catch {}
+    return undefined;
+  })();
 
   const runLayout = async (options: any): Promise<void> => {
     return new Promise<void>((resolve) => {
@@ -64,19 +72,19 @@ export async function applyLayout(cy: Core, name: LayoutName | 'hybrid', opts?: 
   if (layoutName === 'elk') {
     const elkOpts = sanitizeElkOptions((opts as any)?.elk);
     const animate = typeof (opts as any)?.animate === 'boolean' ? (opts as any).animate : false;
-    await runLayout({ name: 'elk', animate, nodeDimensionsIncludeLabels: true, elk: { 'elk.algorithm': elkOpts['elk.algorithm'] ?? 'layered', 'elk.direction': elkOpts['elk.direction'] ?? 'DOWN', ...(elkOpts['elk.edgeRouting'] ? { 'elk.edgeRouting': elkOpts['elk.edgeRouting'] } : {}) } } as any);
+    await runLayout({ name: 'elk', animate, nodeDimensionsIncludeLabels: true, eles: elesOpt, elk: { 'elk.algorithm': elkOpts['elk.algorithm'] ?? 'layered', 'elk.direction': elkOpts['elk.direction'] ?? 'DOWN', ...(elkOpts['elk.edgeRouting'] ? { 'elk.edgeRouting': elkOpts['elk.edgeRouting'] } : {}) } } as any);
     return;
   }
   if (layoutName === 'fcose') {
     const fc = sanitizeFcoseOptions((opts as any)?.fcose ?? opts);
-    await runLayout({ name: 'fcose', animate: (fc.animate as boolean) ?? false, randomize: (fc.randomize as boolean) ?? false, numIter: (fc.numIter as number) ?? 400 } as any);
+    await runLayout({ name: 'fcose', animate: (fc.animate as boolean) ?? false, randomize: (fc.randomize as boolean) ?? false, numIter: (fc.numIter as number) ?? 400, eles: elesOpt } as any);
     return;
   }
   // hybrid sequential: ELK then fCoSE, allowing limited overrides
   const elkOpts = sanitizeElkOptions((opts as any)?.elk);
   const fc = sanitizeFcoseOptions((opts as any)?.fcose);
-  await runLayout({ name: 'elk', animate: false, nodeDimensionsIncludeLabels: true, elk: { 'elk.algorithm': elkOpts['elk.algorithm'] ?? 'layered', 'elk.direction': elkOpts['elk.direction'] ?? 'DOWN' } } as any);
-  await runLayout({ name: 'fcose', animate: (fc.animate as boolean) ?? false, randomize: (fc.randomize as boolean) ?? false, numIter: (fc.numIter as number) ?? 400 } as any);
+  await runLayout({ name: 'elk', animate: false, nodeDimensionsIncludeLabels: true, eles: elesOpt, elk: { 'elk.algorithm': elkOpts['elk.algorithm'] ?? 'layered', 'elk.direction': elkOpts['elk.direction'] ?? 'DOWN' } } as any);
+  await runLayout({ name: 'fcose', animate: (fc.animate as boolean) ?? false, randomize: (fc.randomize as boolean) ?? false, numIter: (fc.numIter as number) ?? 400, eles: elesOpt } as any);
 }
 
 // Note: constrained hybrid mode removed

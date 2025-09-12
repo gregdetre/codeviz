@@ -88,6 +88,34 @@ As the CodeViz interface grows, consider adding:
 - Ensure sufficient color contrast
 - Test with screen readers and keyboard navigation
 
+## Loading Spinner (LLM chat)
+
+Use the Phosphor `spinner` glyph with a tiny CSS keyframe. Minimal setup:
+
+```html
+<span id="llm-loading" class="cv-loading" hidden>
+  <i class="ph ph-spinner" aria-hidden="true"></i>
+  <span style="font-size:12px; color:#666;">Thinking…</span>
+</span>
+```
+
+```css
+.cv-loading .ph-spinner { display: inline-block; animation: cv-spin 1s linear infinite; }
+@keyframes cv-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cv-loading .ph-spinner { animation: none; } }
+```
+
+```ts
+const loadingEl = document.getElementById('llm-loading');
+loadingEl?.removeAttribute('hidden'); // show while waiting
+loadingEl?.setAttribute('hidden', ''); // hide when done
+```
+
+Notes:
+- Ensure `@phosphor-icons/web` is imported in the viewer entry.
+- See actual usage in `ts/viewer/index.html` and lifecycle toggling in `ts/viewer/src/chat/chat.ts`.
+- More patterns in `docs/reference/libraries/PHOSPHOR_ICONS.md`.
+
 ## See Also
 
 - `VISUAL_DESIGN_STYLING.md`: Overall visual design components, styling libraries, and UI/UX implementation patterns

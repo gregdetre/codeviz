@@ -214,10 +214,13 @@
         .cv-flash-focus {
             animation: cv-flash-focus 1s ease-out;
         }
+
         @keyframes cv-flash-focus {
             0% {
-                background-color: #fff9c4; /* soft yellow */
+                background-color: #fff9c4;
+                /* soft yellow */
             }
+
             100% {
                 background-color: transparent;
             }
@@ -238,11 +241,6 @@
                 </select>
             </label>
             <!-- Hybrid submode removed: constrained mode no longer supported; sequential is default -->
-            <label><input type="checkbox" id="toggleCalls" checked /> calls</label>
-            <label><input type="checkbox" id="toggleImports" checked /> imports</label>
-            <label><input type="checkbox" id="toggleFunctions" checked /> functions</label>
-            <label><input type="checkbox" id="toggleClasses" checked /> classes</label>
-            <label><input type="checkbox" id="toggleVariables" checked /> variables</label>
             <label><input type="checkbox" id="toggleGroupFolders" checked /> group folders</label>
             <label>filter
                 <select id="filterMode">
@@ -256,7 +254,7 @@
                 title="Aggressive layout for selection + neighbors (or all if none)">Aggressive recompute</button>
             <button id="recenterBtn" title="Fit to selection (or visible if none)">Recenter</button>
             <button id="clearSelectionBtn" title="De-select all selected elements">Clear selection</button>
-            <button id="clearFiltersBtn" title="Reset search and element toggles to defaults">Clear filters</button>
+            <button id="clearFiltersBtn" title="Reset search and filter mode to defaults">Clear filters</button>
             <button id="clearStylingBtn" title="Remove focus/highlight styling without changing visibility">Clear
                 styling</button>
             <div style="border-top: 1px solid #e5e7eb; margin-top: 6px; padding-top: 6px;"></div>
@@ -266,6 +264,10 @@
                 <input type="search" id="searchBox" placeholder="Search…" />
                 <div id="searchResults" class="search-results" hidden></div>
             </div>
+            <details id="tagsSection" style="border-top: 1px solid #e5e7eb; padding-top: 8px;" hidden>
+                <summary style="cursor:pointer; font-weight:600;">Tags</summary>
+                <div id="tagsList" style="margin-top:6px;"></div>
+            </details>
             <div id="chat"
                 style="border-top: 1px solid #e5e7eb; padding-top: 8px; display:flex; flex-direction:column; flex:1; min-height:0;">
                 <div

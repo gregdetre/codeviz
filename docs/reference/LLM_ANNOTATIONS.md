@@ -14,6 +14,7 @@ CodeViz can optionally enrich the core graph with LLM-generated tags to aid filt
 - `ts/src/annotation/annotate.ts` — Implementation that computes metrics and writes `llm_annotation.json`.
 - `ts/src/server/server.ts` — Serves the graph and optional annotations to the viewer.
 - `ts/viewer/` — Viewer integration; optional status indicator in the left toolbar.
+- `docs/reference/TAGGING.md` — How tags are presented and filtered in the viewer
 
 ## Principles and key decisions
 
@@ -73,7 +74,7 @@ Notes:
   - Returns `200` and JSON when present
   - Returns `204 No Content` when missing
 - The viewer treats missing annotations as optional and shows a subtle status in the left toolbar, e.g., “Annotations: none (optional)”.
-- Future: a Tags filter widget will allow filtering visible nodes by tags.
+- Tags filter widget: when annotations are present, the left pane shows a default-collapsed Tags section with counts and checkboxes. See `TAGGING.md`.
 
 
 ## Limitations

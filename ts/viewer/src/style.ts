@@ -9,11 +9,16 @@ export function generateStyles(tokens: Tokens = defaultTokensLight, opts?: { dar
   const t = tokens;
   const h = opts?.highlight || {} as any;
   const colors = Object.assign({ focus: '#0ea5e9', incoming: '#ef4444', outgoing: '#10b981', moduleOutline: '#0ea5e9' }, h.colors || {});
-  const opac = Object.assign({ fadedNodes: t.colors.states.fadedOpacity ?? 0.15, fadedText: 0.4, secondDegreeNodes: 0.5, secondDegreeEdges: 0.6 }, h.opacity || {});
-  const widths = Object.assign({ edge: 2, edgeHighlighted: 3, nodeBorder: 1, nodeBorderHighlighted: 3 }, h.widths || {});
+  const opac = Object.assign({ fadedNodes: t.colors.states.fadedOpacity ?? 0.15, fadedText: 0.4, secondDegreeNodes: 0.45, secondDegreeEdges: 0.35 }, h.opacity || {});
+  const widths = Object.assign({ edge: 2, edgeHighlighted: 4, nodeBorder: 1, nodeBorderHighlighted: 3 }, h.widths || {});
   return [
     { selector: 'node', style: { 'label': 'data(displayLabel)', 'text-valign': 'center', 'text-halign': 'center', 'font-size': t.sizes.font, 'background-color': '#fff', 'border-color': '#ddd', 'border-width': widths.nodeBorder, 'text-wrap': 'wrap', 'text-max-width': 120 } },
     { selector: '$node > node', style: { 'background-opacity': 0.2, 'padding': t.sizes.compoundPadding, 'shape': 'round-rectangle' } },
+    // Collapsed groups: render as a distinct, strong shape so they don't look like regular nodes
+    { selector: 'node.cy-expand-collapse-collapsed-node', style: { 'shape': 'diamond', 'border-width': 3, 'border-color': '#111827', 'background-opacity': 0.95, 'text-valign': 'center', 'text-halign': 'center', 'text-wrap': 'wrap', 'text-max-width': 200, 'shadow-blur': 8, 'shadow-opacity': 0.25, 'shadow-color': '#111827' } },
+    // Ensure collapsed module or folder groups use centered labels (override group label positioning)
+    { selector: 'node[type = "module"].cy-expand-collapse-collapsed-node', style: { 'text-valign': 'center', 'text-halign': 'center', 'font-size': t.sizes.font + 1 } },
+    { selector: 'node[type = "folder"].cy-expand-collapse-collapsed-node', style: { 'text-valign': 'center', 'text-halign': 'center', 'font-weight': 'bold' } },
     { selector: 'node[type = "function"]', style: { 'background-color': t.colors.node.function } },
     { selector: 'node[type = "class"]', style: { 'background-color': t.colors.node.class } },
     { selector: 'node[type = "variable"]', style: { 'background-color': t.colors.node.variable } },
@@ -61,11 +66,11 @@ export function generateStyles(tokens: Tokens = defaultTokensLight, opts?: { dar
       }
     } },
     // Directional highlighting styles
-    { selector: '.focus', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.focus, 'border-opacity': 0.95 } as any },
-    { selector: '.incoming-node', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.incoming } },
-    { selector: '.outgoing-node', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.outgoing } },
-    { selector: 'edge.incoming-edge', style: { 'line-color': colors.incoming, 'target-arrow-color': colors.incoming, 'width': widths.edgeHighlighted } },
-    { selector: 'edge.outgoing-edge', style: { 'line-color': colors.outgoing, 'target-arrow-color': colors.outgoing, 'width': widths.edgeHighlighted } },
+    { selector: '.focus', style: { 'border-width': widths.nodeBorderHighlighted + 1, 'border-color': colors.focus, 'border-opacity': 0.98, 'z-compound-depth': 'top', 'shadow-blur': 12, 'shadow-opacity': 0.45, 'shadow-color': colors.focus, 'text-outline-width': 3 } as any },
+    { selector: '.incoming-node', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.incoming, 'z-compound-depth': 'top', 'text-outline-width': 2 } },
+    { selector: '.outgoing-node', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.outgoing, 'z-compound-depth': 'top', 'text-outline-width': 2 } },
+    { selector: 'edge.incoming-edge', style: { 'line-color': colors.incoming, 'target-arrow-color': colors.incoming, 'width': widths.edgeHighlighted, 'opacity': 1 } },
+    { selector: 'edge.outgoing-edge', style: { 'line-color': colors.outgoing, 'target-arrow-color': colors.outgoing, 'width': widths.edgeHighlighted, 'opacity': 1 } },
     { selector: 'edge.second-degree', style: { 'opacity': opac.secondDegreeEdges } },
     { selector: 'node.second-degree', style: { 'opacity': opac.secondDegreeNodes } },
     { selector: 'node.module-highlight', style: { 'border-color': colors.moduleOutline, 'border-width': 3 } },

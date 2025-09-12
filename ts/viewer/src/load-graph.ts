@@ -35,4 +35,17 @@ export async function loadAnnotations(): Promise<any | null> {
   }
 }
 
+// Load a single node's summary from annotations if present
+export function getSummaryForNode(annotations: any | null, nodeId: string): string | null {
+  try {
+    if (!annotations || !Array.isArray(annotations.nodes)) return null;
+    const entry = annotations.nodes.find((n: any) => n && n.id === nodeId);
+    if (!entry) return null;
+    const s = entry.summary;
+    return typeof s === 'string' && s.trim().length > 0 ? s : null;
+  } catch {
+    return null;
+  }
+}
+
 

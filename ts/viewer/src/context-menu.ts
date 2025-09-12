@@ -66,7 +66,7 @@ export function installContextMenu(
     ]
   });
 
-  // Group menu: modules (files) and folders
+  // Group menu: modules (files) and folders (explicit for now; generic parent nodes are handled by double-click)
   (cy as any).cxtmenu({
     selector: 'node[type = "module"], node[type = "folder"]',
     menuRadius: 120,
@@ -96,8 +96,15 @@ export function installContextMenu(
           select: () => {
             try {
               if (!api) return;
-              if (api.isExpandable(ele)) api.expand(ele, { animate: false });
-              else if (api.isCollapsible(ele)) api.collapse(ele, { animate: false });
+              if (api.isExpandable(ele)) {
+                // Preflight: restore any meta-edges so expand can rehydrate leaf edges
+                try { if (typeof (api as any).expandAllEdges === 'function') (api as any).expandAllEdges(); } catch {}
+                api.expand(ele, { animate: false });
+              } else if (api.isCollapsible(ele)) {
+                api.collapse(ele, { animate: false });
+              }
+              // Targeted re-aggregation: only around collapsed endpoints
+              try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
             } catch {}
           }
         },
@@ -116,13 +123,7 @@ export function installContextMenu(
     openMenuEvents: 'cxttapstart',
     commands: () => {
       const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
-      const reaggregate = () => {
-        try {
-          if (!api) return;
-          if (typeof api.expandAllEdges === 'function') api.expandAllEdges();
-          if (typeof api.collapseAllEdges === 'function') api.collapseAllEdges({ groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
-        } catch {}
-      };
+      const reaggregate = () => { try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {} };
       return [
         {
           content: 'Collapse all groups',
@@ -130,7 +131,7 @@ export function installContextMenu(
           select: () => {
             try {
               if (!api) return;
-              const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
+              const groups = cy.nodes('node:parent');
               api.collapse(groups, { animate: false });
               reaggregate();
             } catch {}
@@ -142,7 +143,9 @@ export function installContextMenu(
           select: () => {
             try {
               if (!api) return;
-              const groups = cy.nodes('node[type = "folder"], node[type = "module"]');
+              const groups = cy.nodes('node:parent');
+              // Preflight: ensure any meta-edges are expanded so leaf edges are restored
+              try { if (typeof (api as any).expandAllEdges === 'function') (api as any).expandAllEdges(); } catch {}
               api.expand(groups, { animate: false });
               reaggregate();
             } catch {}

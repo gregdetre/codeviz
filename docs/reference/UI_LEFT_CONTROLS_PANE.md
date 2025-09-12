@@ -12,6 +12,7 @@ A concise, evergreen guide to the behaviour, structure, and integration of the l
 - `../../ts/viewer/index.html` – pane structure and control element IDs
 - `../../ts/viewer/src/app.ts` – wiring of controls, listeners, and throttled updates
 - `../../ts/viewer/src/search.ts` – filter implementation
+- `../../ts/viewer/src/tags.ts` – Tags widget: tag indexing, ordering, and visibility logic
 - `../../ts/viewer/src/layout-manager.ts` – layout selection and execution
 - `../../ts/viewer/src/command-executor.ts` – compact command execution for programmatic control
 
@@ -49,7 +50,13 @@ The left-hand pane hosts global controls for layout, grouping, filtering, viewpo
 - Selecting a suggestion focuses the node, centres it, triggers the right-hand details pane update, and runs a local layout recompute for the selection.
 - Clearing the input removes the filter and restores default element visibility.
 
-6) Embedded chat
+6) Tags (optional, when annotations present)
+- Default-collapsed section listing tags: `Important`, `Entrypoint`, `Untagged`, then others ordered by count.
+- All tags are selected by default. Shift-click a tag to select “only this”. Quick actions: All / None.
+- Function nodes without any tags are controlled by the virtual `Untagged` option.
+- Non-matching functions are hidden; edges with hidden endpoints are also hidden.
+
+7) Embedded chat
 - The Chat section is loaded lazily and integrates with the LLM to analyse and manipulate the graph.
 - UI includes message history, input field, and a loading indicator. See `LLM_CHAT_INTERFACE.md` for requirements and architecture.
 

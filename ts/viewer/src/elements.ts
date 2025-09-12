@@ -76,7 +76,7 @@ export function graphToElements(graph: Graph, opts: { mode: ViewerMode; groupFol
 
   for (const n of graph.nodes) {
     const displayLabel = insertBreakpoints(n.label);
-    elements.push({ data: { id: n.id, label: n.label, displayLabel, type: n.kind, parent: `module:${n.module}`, module: n.module, file: n.file, line: n.line, signature: n.signature ?? '', doc: n.doc ?? '', tags: n.tags ?? {} } });
+    elements.push({ data: { id: n.id, label: n.label, displayLabel, type: n.kind, parent: `module:${n.module}`, module: n.module, file: n.file, line: n.line, endLine: (n as any).endLine ?? null, signature: n.signature ?? '', doc: n.doc ?? '', tags: n.tags ?? {} } });
   }
 
   let skipped = 0;

@@ -172,8 +172,15 @@ async function execCollectionOp(cy: Core, q: string | undefined, op: string, arg
       return errors;
     }
     try {
-      if (op === 'collapse') ec.collapse(eles.nodes());
-      else ec.expand(eles.nodes());
+      if (op === 'collapse') {
+        ec.collapse(eles.nodes());
+      } else {
+        // Preflight: ensure meta-edges are expanded so leaf edges are restored on expand
+        try { if (typeof (ec as any).expandAllEdges === 'function') (ec as any).expandAllEdges(); } catch {}
+        ec.expand(eles.nodes());
+      }
+      // Targeted re-aggregation around collapsed endpoints
+      try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
     } catch (e: any) {
       errors.push(String(e?.message || e));
     }
@@ -361,8 +368,15 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
       return errors;
     }
     try {
-      if (op === 'collapseAll') ec.collapseAll();
-      else ec.expandAll();
+      if (op === 'collapseAll') {
+        ec.collapseAll();
+      } else {
+        // Preflight: restore leaf edges before expanding nodes
+        try { if (typeof (ec as any).expandAllEdges === 'function') (ec as any).expandAllEdges(); } catch {}
+        ec.expandAll();
+      }
+      // Targeted re-aggregation around collapsed endpoints
+      try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
     } catch (e: any) {
       errors.push(String(e?.message || e));
     }

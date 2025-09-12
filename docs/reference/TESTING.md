@@ -1,6 +1,11 @@
 # Testing
 
-Minimal, actionable commands to run tests.
+## Principles
+
+Prefer a very small number of high-coverage tests, and try to avoid mocking.
+
+Prefer backend (i.e. non-browser) tests where you can.
+
 
 ## Node tests (no browser)
 

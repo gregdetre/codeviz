@@ -100,7 +100,7 @@ class AnnotateClaude extends Command {
   configFile = Option.String("--config");
   vocab = Option.String("--vocab", "closed");
   contextBudget = Option.String("--context-budget", "100000");
-  model = Option.String("--model", "opus-4.1");
+  model = Option.String("--model", "sonnet");
   async execute() {
     if (!this.configFile) {
       throw new Error("--config is required and must point to a .toml file");

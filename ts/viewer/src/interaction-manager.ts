@@ -166,12 +166,23 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
       cy.edges().removeClass('incoming-edge outgoing-edge second-degree');
       cy.elements().style('display', 'element');
 
-      // First-degree
-      const E_out = node.outgoers('edge');
+      // Determine seed set for focus. For groups (modules/folders), use all descendant
+      // entity nodes so their neighborhood is considered; for leaf nodes, just the node.
+      const isGroup = typeof (node as any).isParent === 'function' ? (node as any).isParent() : false;
+      let seed = isGroup
+        ? (node as any).descendants('node[type != "module"][type != "folder"]')
+        : node;
+      // Fallback: if a group has no leaf descendants (unexpected), use all descendants
+      if (isGroup && (!seed || (seed as any).empty())) {
+        try { seed = (node as any).descendants('node'); } catch {}
+      }
+
+      // First-degree relative to seed
+      const E_out = (seed as any).outgoers('edge');
       const N_out = E_out.targets();
-      const E_in = node.incomers('edge');
+      const E_in = (seed as any).incomers('edge');
       const N_in = E_in.sources();
-      const E_self = node.connectedEdges().filter(e => e.source().id() === node.id() && e.target().id() === node.id());
+      const E_self = (seed as any).connectedEdges().filter((e: any) => e.source().id() === e.target().id());
 
       // Second-degree if enabled: neighbors of neighbors (excluding first-degree and self)
       let N2 = cy.collection();
@@ -183,8 +194,8 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
         E2 = N2.connectedEdges().difference(E_out.union(E_in).union(E_self));
       }
 
-      // Modules containing highlighted nodes
-      const modules = node.union(N_in).union(N_out).union(N2).parents('node[type = "module"]');
+      // Modules containing highlighted nodes (include seed so the selected module is outlined)
+      const modules = (seed as any).union(N_in).union(N_out).union(N2).parents('node[type = "module"]');
 
       // Apply classes
       node.addClass('focus');
@@ -199,7 +210,16 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
       }
       modules.addClass('module-highlight');
 
-      const keep = node.union(N_in).union(N_out).union(E_in).union(E_out).union(E_self).union(N2).union(E2).union(modules);
+      const keep = (node as any)
+        .union(seed as any)
+        .union(N_in)
+        .union(N_out)
+        .union(E_in)
+        .union(E_out)
+        .union(E_self)
+        .union(N2)
+        .union(E2)
+        .union(modules);
       const rest = cy.elements().difference(keep);
 
       if (hideNonHighlightedEdges) {

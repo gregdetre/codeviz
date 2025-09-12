@@ -97,6 +97,22 @@ export async function initApp() {
   applyModuleColorTint(cy);
   applyGroupBackgroundColors(cy, tokens);
 
+  // Inject minimal CSS for clickable tokens and Prism defaults scoped to our pane
+  try {
+    const id = 'cv-clickable-style';
+    if (!document.getElementById(id)) {
+      const styleEl = document.createElement('style');
+      styleEl.id = id;
+      styleEl.textContent = `
+        .cv-clickable { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+        .cv-clickable:hover { text-decoration-style: solid; background: rgba(59, 130, 246, 0.10); }
+        #details pre[class*="language-"] { margin: 0; background: transparent; }
+        #details code[class*="language-"] { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px; }
+      `;
+      document.head.appendChild(styleEl);
+    }
+  } catch {}
+
   // Initialize expand/collapse if available (disable animation/fisheye; lightweight layout)
   try {
     const ec = (cy as any).expandCollapse
@@ -169,7 +185,7 @@ export async function initApp() {
           console.warn('expand/collapse toggle failed', err);
         }
       };
-      cy.on('tap', 'node:parent', (evt) => {
+      cy.on('tap', 'node:parent, node.cy-expand-collapse-collapsed-node', (evt) => {
         try {
           // Prefer native double-click count when available
           const oe: any = (evt as any).originalEvent;
@@ -235,7 +251,13 @@ export async function initApp() {
       }
     }
   } catch {}
-  // TODO: use annotations to render tag-based filter widget (v1.1)
+  // Tags widget (left pane) — default collapsed; appears only if annotations present
+  try {
+    const mod = await import('./tags.js');
+    await mod.installTagsWidget(cy as any, graph, annotations);
+  } catch (err) {
+    console.warn('Tags widget unavailable:', err);
+  }
 
   // Update title based on selection focus
   try {
@@ -290,16 +312,7 @@ export async function initApp() {
     console.warn('Tooltips not available:', err);
   }
 
-  const callsToggle = document.getElementById('toggleCalls') as HTMLInputElement;
-  if (callsToggle) callsToggle.addEventListener('change', () => { cy.edges('[type = "calls"]').style('display', callsToggle.checked ? 'element' : 'none'); });
-  const importsToggle = document.getElementById('toggleImports') as HTMLInputElement;
-  if (importsToggle) importsToggle.addEventListener('change', () => { cy.edges('[type = "imports"]').style('display', importsToggle.checked ? 'element' : 'none'); });
-  const fnToggle = document.getElementById('toggleFunctions') as HTMLInputElement;
-  if (fnToggle) fnToggle.addEventListener('change', () => { cy.nodes('[type = "function"]').style('display', fnToggle.checked ? 'element' : 'none'); scheduleOverviewRefresh(); });
-  const clsToggle = document.getElementById('toggleClasses') as HTMLInputElement;
-  if (clsToggle) clsToggle.addEventListener('change', () => { cy.nodes('[type = "class"]').style('display', clsToggle.checked ? 'element' : 'none'); scheduleOverviewRefresh(); });
-  const varToggle = document.getElementById('toggleVariables') as HTMLInputElement;
-  if (varToggle) varToggle.addEventListener('change', () => { cy.nodes('[type = "variable"]').style('display', varToggle.checked ? 'element' : 'none'); scheduleOverviewRefresh(); });
+  // Removed individual visibility toggles for calls/imports/functions/classes/variables
 
   const filterMode = document.getElementById('filterMode') as HTMLSelectElement;
   if (filterMode) filterMode.addEventListener('change', () => { im.setFilterMode(filterMode.value as any); scheduleOverviewRefresh(); });
@@ -444,7 +457,7 @@ export async function initApp() {
     });
   }
 
-  // Clear filters: reset search, filter mode, and element toggles to defaults
+  // Clear filters: reset search and filter mode to defaults
   const clearFiltersBtn = document.getElementById('clearFiltersBtn') as HTMLButtonElement | null;
   if (clearFiltersBtn) {
     clearFiltersBtn.addEventListener('click', () => {
@@ -456,17 +469,6 @@ export async function initApp() {
         // Reset filter mode to fade
         const fm = document.getElementById('filterMode') as HTMLSelectElement | null;
         if (fm) { fm.value = 'fade'; im.setFilterMode('fade'); }
-        // Reset toggles to checked and apply
-        const toggleIds = [
-          'toggleCalls','toggleImports','toggleFunctions','toggleClasses','toggleVariables'
-        ];
-        for (const id of toggleIds) {
-          const el = document.getElementById(id) as HTMLInputElement | null;
-          if (el) {
-            el.checked = true;
-            el.dispatchEvent(new Event('change'));
-          }
-        }
       } catch {}
       scheduleOverviewRefresh();
     });

@@ -44,3 +44,29 @@ Implication: The initial layout emphasizes directional clarity and stable ranks;
 ## Notes
 - Recenter is a camera-only action that fits the viewport to visible elements.
 - Expand/Collapse changes topology and may warrant a recompute for best results.
+
+## Aggregation and group edge semantics
+
+The viewer supports collapsing folder/file groups using compound nodes and an expand/collapse plugin. Edge visibility and aggregation follow these rules:
+
+- When both endpoints are expanded (visible as leaf nodes), show node-level edges only. Group-level aggregates between those endpoints are hidden.
+- When one endpoint is collapsed and the other is expanded, show a single aggregated edge per edge type between the collapsed group and the expanded node. The edge width reflects the number of underlying leaf edges. Leaf edges that terminate inside the collapsed group are hidden.
+- When both endpoints are collapsed, show a single aggregated edge per edge type between the two groups. Edge widths reflect the count of underlying leaf edges.
+- Edges whose both endpoints lie inside the same collapsed group are hidden (no self-loop is drawn on the group).
+
+Implementation details:
+
+- Aggregation scope is targeted: aggregates exist only where at least one endpoint is a collapsed node. This keeps expanded areas at node-level granularity and avoids clutter.
+- On expand operations, the system first restores any previously collapsed meta-edges so leaf edges can be fully rehydrated, then re-aggregates around any remaining collapsed endpoints. Collapse operations are followed by the same targeted re-aggregation.
+- All UI paths (double-click on a group, group context menu, core context menu expand/collapse-all, and command executor ops) use the same sequence to maintain consistency:
+  1) If expanding: preflight restore of collapsed meta-edges
+  2) Perform expand/collapse
+  3) Targeted re-aggregation around collapsed endpoints
+
+Generic group support:
+
+- The viewer treats any compound node (`node:parent`) as a group for expand/collapse purposes. Default actions such as initial collapse, regroup collapse, and core-menu expand/collapse-all operate on `node:parent`, so future group types (e.g. packages, namespaces, services) inherit the same behaviour automatically. Styling and tooltips may still be type-specific.
+
+Testing:
+
+- UI tests verify that aggregates only exist when an endpoint is collapsed, that double-click vs context menu produce matching results, that mixed-state transitions maintain boundary rules, and that expanding all removes all aggregates.

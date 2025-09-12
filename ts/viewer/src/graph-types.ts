@@ -17,6 +17,7 @@ export type GraphNode = {
   label: string;
   file: string;
   line: number;
+  endLine?: number; // inclusive end line for source range
   module: string;
   kind: "function" | "class" | "variable" | string;
   tags?: Record<string, string | number | boolean>;

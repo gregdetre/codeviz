@@ -58,7 +58,9 @@ export async function runExtract(opts: { targetDir: string; outPath: string; ver
         const name = findIdentifier(node) || "<anon>";
         const id = `${moduleName}.${name}`;
         const signature = extractFunctionSignature(node);
-        nodes.push({ id, label: name, file: toUnix(relFile), line: node.startPosition.row + 1, module: moduleName, kind: "function", tags: {}, signature, doc: null });
+        const doc = extractFunctionDocstring(node, source);
+        const endLine = (node.endPosition?.row ?? node.startPosition.row) + 1;
+        nodes.push({ id, label: name, file: toUnix(relFile), line: node.startPosition.row + 1, module: moduleName, kind: "function", tags: {}, signature, doc, endLine });
         groupsMap.get(moduleName)!.push(id);
         currentFuncId = id;
       } else if (node.type === "call" && currentFuncId) {
@@ -128,16 +130,21 @@ function extractFunctionSignature(node: any): string {
   
   // Find the parameters child node
   let parametersNode = null;
+  let returnTypeText: string | null = null;
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
     if (child.type === "parameters") {
       parametersNode = child;
       break;
     }
+    // Capture return type annotation if present (Python grammar often exposes 'type' after '->')
+    if (child.type === "type") {
+      try { returnTypeText = String(child.text || '').trim() || null; } catch {}
+    }
   }
   
   if (!parametersNode) {
-    return `${name}()`;
+    return `${name}()` + (returnTypeText ? ` -> ${returnTypeText}` : '');
   }
   
   const params: string[] = [];
@@ -202,7 +209,8 @@ function extractFunctionSignature(node: any): string {
     }
   }
   
-  return `${name}(${params.join(', ')})`;
+  const sig = `${name}(${params.join(', ')})`;
+  return returnTypeText ? `${sig} -> ${returnTypeText}` : sig;
 }
 
 function getCallCalleeText(callNode: any): string | null {
@@ -213,6 +221,70 @@ function getCallCalleeText(callNode: any): string | null {
   if (first.type === "attribute") return first.text;
   if (first.type === "identifier" || first.type === "name") return first.text;
   return first.text || null;
+}
+
+// Attempt to extract a Python docstring from a function_definition node
+function extractFunctionDocstring(funcNode: any, source: string): string | null {
+  try {
+    // Find the function block/suite which contains statements
+    let block: any = null;
+    for (let i = 0; i < funcNode.childCount; i++) {
+      const ch = funcNode.child(i);
+      if (ch && (ch.type === "block" || ch.type === "suite")) { block = ch; break; }
+    }
+    if (!block) return null;
+    // Find first expression_statement in the block
+    for (let i = 0; i < block.childCount; i++) {
+      const st = block.child(i);
+      if (!st) continue;
+      // Skip newlines/indent/dedent nodes if present in this grammar
+      if (st.type === "\n" || st.type === "indent" || st.type === "dedent") continue;
+      if (st.type === "expression_statement") {
+        // Expect a single string literal (or concatenated strings)
+        const lit = st.text?.trim() ?? "";
+        if (!lit) return null;
+        // Heuristic: consider it a docstring if literal starts with quotes
+        const maybe = unquotePythonStringLiteral(lit);
+        if (maybe !== lit) {
+          return dedentDocstring(maybe);
+        }
+      }
+      // If the first non-trivia is not an expression_statement, no docstring
+      break;
+    }
+  } catch {}
+  return null;
+}
+
+function unquotePythonStringLiteral(lit: string): string {
+  let s = lit.trim();
+  // Remove optional prefixes like r, f, u, b in any combination of length <= 2
+  s = s.replace(/^(?:[rRuUbB][fF]?|[fF][rR]?|[rRuUbB])/, '');
+  const tripleDq = '"""';
+  const tripleSq = "'''";
+  if (s.startsWith(tripleDq) && s.endsWith(tripleDq)) return s.slice(3, -3);
+  if (s.startsWith(tripleSq) && s.endsWith(tripleSq)) return s.slice(3, -3);
+  if (s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1);
+  if (s.startsWith("'") && s.endsWith("'")) return s.slice(1, -1);
+  return lit; // not a plain string literal
+}
+
+function dedentDocstring(text: string): string {
+  let s = text;
+  // Trim a single leading newline common in triple-quoted docstrings
+  if (s.startsWith("\n")) s = s.slice(1);
+  const lines = s.split(/\r?\n/);
+  // Compute minimum indentation (ignore empty lines)
+  let minIndent: number | null = null;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const m = /^(\s*)/.exec(line);
+    const indent = m ? m[1].length : 0;
+    if (minIndent === null || indent < minIndent) minIndent = indent;
+  }
+  if (!minIndent) return s.trim();
+  const dedented = lines.map(l => l.slice(Math.min(l.length, minIndent!))).join('\n');
+  return dedented.trim();
 }
 
 function extractTopImports(text: string): string[] {

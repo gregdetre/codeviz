@@ -5,11 +5,14 @@ test('viewer homepage loads and has cytoscape container', async ({ page, baseURL
   await expect(page).toHaveTitle(/CodeViz \(TS\)/);
   const cy = page.locator('#cy');
   await expect(cy).toBeVisible();
-  // Wait for cytoscape to initialize by checking for a canvas inside the container
-  await expect(page.locator('#cy canvas').first()).toBeVisible({ timeout: 10000 });
+  // Wait for Cytoscape to initialize: canvas attached and graph has nodes
+  await page.waitForSelector('#cy canvas', { state: 'attached', timeout: 10000 });
+  await page.waitForFunction(() => {
+    const w: any = window as any;
+    try { return !!w.__cy && typeof w.__cy.nodes === 'function' && w.__cy.nodes().length > 0; } catch { return false; }
+  }, { timeout: 10000 });
   // Toolbar should be visible
   await expect(page.locator('.toolbar')).toBeVisible();
-  await expect(page.locator('#modeSelect')).toBeVisible();
 });
 
 test('graph JSON endpoint returns valid schema-ish structure', async ({ baseURL }) => {
