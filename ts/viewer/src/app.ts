@@ -191,14 +191,14 @@ export async function initApp() {
   const importsToggle = document.getElementById('toggleImports') as HTMLInputElement;
   if (importsToggle) importsToggle.addEventListener('change', () => { cy.edges('[type = "imports"]').style('display', importsToggle.checked ? 'element' : 'none'); });
   const fnToggle = document.getElementById('toggleFunctions') as HTMLInputElement;
-  if (fnToggle) fnToggle.addEventListener('change', () => { cy.nodes('[type = "function"]').style('display', fnToggle.checked ? 'element' : 'none'); });
+  if (fnToggle) fnToggle.addEventListener('change', () => { cy.nodes('[type = "function"]').style('display', fnToggle.checked ? 'element' : 'none'); scheduleOverviewRefresh(); });
   const clsToggle = document.getElementById('toggleClasses') as HTMLInputElement;
-  if (clsToggle) clsToggle.addEventListener('change', () => { cy.nodes('[type = "class"]').style('display', clsToggle.checked ? 'element' : 'none'); });
+  if (clsToggle) clsToggle.addEventListener('change', () => { cy.nodes('[type = "class"]').style('display', clsToggle.checked ? 'element' : 'none'); scheduleOverviewRefresh(); });
   const varToggle = document.getElementById('toggleVariables') as HTMLInputElement;
-  if (varToggle) varToggle.addEventListener('change', () => { cy.nodes('[type = "variable"]').style('display', varToggle.checked ? 'element' : 'none'); });
+  if (varToggle) varToggle.addEventListener('change', () => { cy.nodes('[type = "variable"]').style('display', varToggle.checked ? 'element' : 'none'); scheduleOverviewRefresh(); });
 
   const filterMode = document.getElementById('filterMode') as HTMLSelectElement;
-  if (filterMode) filterMode.addEventListener('change', () => im.setFilterMode(filterMode.value as any));
+  if (filterMode) filterMode.addEventListener('change', () => { im.setFilterMode(filterMode.value as any); scheduleOverviewRefresh(); });
 
   const modeSelect = document.getElementById('modeSelect') as HTMLSelectElement;
   if (modeSelect) {
@@ -215,6 +215,7 @@ export async function initApp() {
       });
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
       try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
+      scheduleOverviewRefresh();
     });
   }
 
@@ -240,6 +241,7 @@ export async function initApp() {
           const ec = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
           if (ec && foldersDeep.length > 0) ec.collapse(foldersDeep);
         } catch {}
+        scheduleOverviewRefresh();
       });
     }
   } catch {}
@@ -285,6 +287,7 @@ export async function initApp() {
       } catch {}
       await applyLayout(cy, 'fcose', { hybridMode: vcfg.hybridMode as any });
       try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
+      scheduleOverviewRefresh();
     });
   }
 
@@ -397,6 +400,7 @@ export async function initApp() {
         selectedIndex = -1;
         suggestions = computeSuggestions(searchBox.value);
         renderDropdown(suggestions);
+        scheduleOverviewRefresh();
       }, 150);
     });
 
@@ -444,6 +448,33 @@ export async function initApp() {
       if (evt.target === cy) renderDetails(detailsEl, null);
     });
   }
+
+  // Throttled overview refresh when no selection is active
+  const scheduleOverviewRefresh = (() => {
+    let scheduled = false;
+    return () => {
+      if (scheduled) return;
+      scheduled = true;
+      setTimeout(() => {
+        scheduled = false;
+        try {
+          const selected = cy.$(':selected');
+          if (selected && selected.length > 0) return; // do not overwrite selection details
+          const detailsNow = document.getElementById('details') as HTMLElement | null;
+          if (!detailsNow) return;
+          import('./details-panel.js').then(m => m.renderDetails(detailsNow, null)).catch(() => {});
+        } catch {}
+      }, 120);
+    };
+  })();
+
+  // Initial render: show hierarchical overview on first load
+  try {
+    const detailsNow = document.getElementById('details') as HTMLElement | null;
+    if (detailsNow) {
+      renderDetails(detailsNow, null);
+    }
+  } catch {}
 
   // Lazy-load chat client
   try {

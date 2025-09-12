@@ -18,7 +18,12 @@ async function getWorkspaceRoot(): Promise<string> {
 export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | null): Promise<void> {
   targetEl.innerHTML = '';
   if (!node) {
-    targetEl.innerHTML = '<div data-testid="details-empty">No selection</div>';
+    // Render hierarchical overview of current visible (non-faded) scope
+    try {
+      renderOverview(targetEl);
+    } catch {
+      targetEl.innerHTML = '<div data-testid="details-empty">No selection</div>';
+    }
     return;
   }
   const label = node.data('label') ?? node.id();
@@ -32,6 +37,43 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
   const outgoing = node.outgoers('node');
   const incoming = node.incomers('node');
   const tagKeys = Object.keys(tags);
+  
+  // Optional: if a group (module/folder) is selected, show its contents overview
+  let groupContentsHtml = '';
+  try {
+    const cy: any = (window as any).__cy;
+    if (cy && kind === 'module') {
+      const modId: string = String((node as any).data('path') || '');
+      if (modId) {
+        const m = collectModuleEntryShared(cy, modId);
+        const section = renderModuleSectionShared(m);
+        if (section) {
+          groupContentsHtml = `
+            <div style="margin-top:10px;">
+              <div style="font-weight:600; margin-bottom:6px;">Contents</div>
+              ${section}
+            </div>
+          `;
+        }
+      }
+    } else if (cy && kind === 'folder') {
+      const mods = (node as any).descendants('node[type = "module"]');
+      if (mods && mods.length > 0) {
+        const entries: ListingModuleEntry[] = [];
+        mods.forEach((mn: any) => {
+          const modId: string = String(mn.data('path') || '');
+          if (modId) entries.push(collectModuleEntryShared(cy, modId));
+        });
+        entries.sort((a, b) => a.label.localeCompare(b.label));
+        const html = entries.map(renderModuleSectionShared).filter(Boolean).join('');
+        if (html) {
+          groupContentsHtml = `
+            <div style=\"margin-top:10px;\">\n              <div style=\"font-weight:600; margin-bottom:6px;\">Folder contents</div>\n              ${html}\n            </div>
+          `;
+        }
+      }
+    }
+  } catch {}
   
   // Get workspace root and construct VS Code URL (encode path; append :line only if valid)
   const wsRoot = await getWorkspaceRoot();
@@ -73,12 +115,14 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
           </ul>
         </div>
       </div>
+      ${groupContentsHtml}
     </div>
   `;
   targetEl.innerHTML = html;
   targetEl.querySelectorAll('a[data-node-id]').forEach((el) => {
     el.addEventListener('click', (evt) => {
       evt.preventDefault();
+      try { (evt as any).stopPropagation?.(); } catch {}
       const id = (el as HTMLElement).getAttribute('data-node-id')!;
       const cy = node.cy();
       const target = cy.getElementById(id);
@@ -94,6 +138,245 @@ export async function renderDetails(targetEl: HTMLElement, node: NodeSingular | 
 
 function escapeHtml(str: string): string {
   return str.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+}
+
+// Shared types and helpers for module/folder listings
+type ListingEntityItem = { id: string; label: string; kind: 'function' | 'class' | 'variable' };
+type ListingModuleEntry = { id: string; label: string; functions: ListingEntityItem[]; classes: ListingEntityItem[]; variables: ListingEntityItem[] };
+
+function collectModuleEntryShared(cy: any, moduleId: string): ListingModuleEntry {
+  const modNode = cy.getElementById(`module:${moduleId}`);
+  const modLabel = (modNode && !modNode.empty()) ? String(modNode.data('label') || moduleId) : moduleId;
+  const m: ListingModuleEntry = { id: moduleId, label: modLabel, functions: [], classes: [], variables: [] };
+  const scoped = cy.nodes('[type = "function"], [type = "class"], [type = "variable"]').filter(':visible').not('.faded');
+  scoped.forEach((n: any) => {
+    if (String(n.data('module') || '') !== moduleId) return;
+    const kind = String(n.data('type') || 'function') as any;
+    const item: ListingEntityItem = { id: String(n.id()), label: String(n.data('label') || n.id()), kind };
+    if (kind === 'function') m.functions.push(item);
+    else if (kind === 'class') m.classes.push(item);
+    else m.variables.push(item);
+  });
+  m.functions.sort((a, b) => a.label.localeCompare(b.label));
+  m.classes.sort((a, b) => a.label.localeCompare(b.label));
+  m.variables.sort((a, b) => a.label.localeCompare(b.label));
+  return m;
+}
+
+function renderEntityListShared(title: string, list: ListingEntityItem[]): string {
+  if (!list || list.length === 0) return '';
+  const items = list.map(it => `<li><a href="#" data-node-id="${escapeHtml(it.id)}">${escapeHtml(it.label)}</a></li>`).join('');
+  return `
+    <details>
+      <summary>${escapeHtml(title)} (${list.length})</summary>
+      <ul style="margin: 6px 0 6px 16px;">${items}</ul>
+    </details>
+  `;
+}
+
+function renderModuleSectionShared(m: ListingModuleEntry): string {
+  const f = m.functions.length, c = m.classes.length, v = m.variables.length;
+  const counts = [f ? `${f} fn` : '', c ? `${c} cls` : '', v ? `${v} var` : ''].filter(Boolean).join(', ');
+  const body = [
+    renderEntityListShared('Functions', m.functions),
+    renderEntityListShared('Classes', m.classes),
+    renderEntityListShared('Variables', m.variables)
+  ].filter(Boolean).join('');
+  if (!body) return '';
+  return `
+    <details open>
+      <summary><a href="#" data-node-id="module:${escapeHtml(m.id)}">${escapeHtml(m.label)}</a>${counts ? ` (${counts})` : ''}</summary>
+      <div style="margin-left: 12px;">${body}</div>
+    </details>
+  `;
+}
+
+
+// Overview (no-selection) renderer: hierarchical, collapsible, filter-aware
+function renderOverview(targetEl: HTMLElement): void {
+  const cy: any = (window as any).__cy;
+  if (!cy || typeof cy.nodes !== 'function') {
+    targetEl.innerHTML = '<div data-testid="details-empty">No selection</div>';
+    return;
+  }
+
+  // Scope: visible and not faded (works for both hide and fade modes)
+  const scopeEntities = cy
+    .nodes('[type = "function"], [type = "class"], [type = "variable"]')
+    .filter(':visible')
+    .not('.faded');
+
+  const totalEntities = scopeEntities.length;
+
+  // If nothing matches current filter, show an empty-state message
+  if (totalEntities === 0) {
+    const anyNodesVisible = cy.nodes(':visible').not('.faded').length > 0;
+    targetEl.innerHTML = `
+      <div data-testid="overview">
+        <div style="font-weight:600; margin-bottom:6px;">Overview</div>
+        <div style="font-size:12px; color:#666;">${anyNodesVisible ? 'No functions/classes/variables match current filter.' : 'No visible nodes match current filter.'}</div>
+      </div>
+    `;
+    return;
+  }
+
+  const hasFolders = cy.nodes('node[type = "folder"]').length > 0;
+
+  type EntityItem = { id: string; label: string; kind: 'function' | 'class' | 'variable' };
+  type ModuleEntry = { id: string; label: string; functions: EntityItem[]; classes: EntityItem[]; variables: EntityItem[] };
+
+  const moduleMap = new Map<string, ModuleEntry>();
+
+  // Group entities by their module
+  scopeEntities.forEach((n: any) => {
+    const moduleId: string = String(n.data('module') || '');
+    const kind: 'function' | 'class' | 'variable' = String(n.data('type') || 'function') as any;
+    if (!moduleId) return;
+    let m = moduleMap.get(moduleId);
+    if (!m) {
+      const modNode = cy.getElementById(`module:${moduleId}`);
+      const modLabel = (modNode && !modNode.empty()) ? (String(modNode.data('label') || moduleId)) : moduleId;
+      m = { id: moduleId, label: modLabel, functions: [], classes: [], variables: [] };
+      moduleMap.set(moduleId, m);
+    }
+    const item: EntityItem = { id: String(n.id()), label: String(n.data('label') || n.id()), kind };
+    if (kind === 'function') m.functions.push(item);
+    else if (kind === 'class') m.classes.push(item);
+    else m.variables.push(item);
+  });
+
+  // Sort module entries and their entity lists
+  const sortedModules = Array.from(moduleMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  for (const m of sortedModules) {
+    m.functions.sort((a, b) => a.label.localeCompare(b.label));
+    m.classes.sort((a, b) => a.label.localeCompare(b.label));
+    m.variables.sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  // If folder grouping is active, build folder tree from module parent chains
+  type FolderNode = { id: string; label: string; depth: number; children: Map<string, FolderNode>; modules: ModuleEntry[] };
+  const folderById = new Map<string, FolderNode>();
+  const rootFolders = new Set<string>();
+
+  function ensureFolderNode(node: any): FolderNode {
+    const id: string = String(node.id());
+    let f = folderById.get(id);
+    if (!f) {
+      f = { id, label: String(node.data('label') || node.data('path') || id), depth: Number(node.data('depth') || 0), children: new Map(), modules: [] };
+      folderById.set(id, f);
+    }
+    return f;
+  }
+
+  if (hasFolders) {
+    for (const m of sortedModules) {
+      const modNode = cy.getElementById(`module:${m.id}`);
+      if (!modNode || modNode.empty()) continue;
+      const ancestors = modNode.parents('node[type = "folder"]');
+      if (ancestors.length === 0) continue;
+      // Sort by depth ascending to establish hierarchy
+      const chain = ancestors.sort((a: any, b: any) => (Number(a.data('depth') || 0) - Number(b.data('depth') || 0)));
+      // Link chain in our map
+      let prev: FolderNode | null = null;
+      chain.forEach((folderNode: any) => {
+        const cur = ensureFolderNode(folderNode);
+        if (!prev) rootFolders.add(cur.id);
+        else if (!prev.children.has(cur.id)) prev.children.set(cur.id, cur);
+        prev = cur;
+      });
+      // Attach module to the deepest folder
+      if (prev) prev.modules.push(m);
+    }
+  }
+
+  // Helpers to render lists
+  function renderEntityList(title: string, list: EntityItem[]): string {
+    return renderEntityListShared(title, list as unknown as ListingEntityItem[]);
+  }
+
+  function renderModule(m: ModuleEntry): string {
+    return renderModuleSectionShared(m as unknown as ListingModuleEntry);
+  }
+
+  function collectFolderStats(fid: string): { modules: number; entities: number } {
+    const f = folderById.get(fid);
+    if (!f) return { modules: 0, entities: 0 };
+    let modules = 0;
+    let entities = 0;
+    for (const m of f.modules) {
+      modules += 1;
+      entities += m.functions.length + m.classes.length + m.variables.length;
+    }
+    for (const child of f.children.values()) {
+      const s = collectFolderStats(child.id);
+      modules += s.modules;
+      entities += s.entities;
+    }
+    return { modules, entities };
+  }
+
+  function renderFolder(fid: string): string {
+    const f = folderById.get(fid);
+    if (!f) return '';
+    // Skip empty folders
+    const stats = collectFolderStats(fid);
+    if (stats.modules === 0) return '';
+    const childFolders = Array.from(f.children.values()).sort((a, b) => a.label.localeCompare(b.label));
+    const childrenHtml = [
+      ...childFolders.map(ch => renderFolder(ch.id)),
+      ...f.modules.map(renderModule)
+    ].filter(Boolean).join('');
+    return `
+      <details open>
+        <summary><a href="#" data-node-id="${escapeHtml(f.id)}">${escapeHtml(f.label)}</a> (${stats.modules} mod, ${stats.entities} items)</summary>
+        <div style="margin-left: 12px;">${childrenHtml}</div>
+      </details>
+    `;
+  }
+
+  let contentHtml = '';
+  if (hasFolders) {
+    const roots = Array.from(rootFolders.values());
+    // Some modules may be at root without folder ancestors; render them under a virtual group
+    const orphanModules = sortedModules.filter(m => {
+      const modNode = cy.getElementById(`module:${m.id}`);
+      return !modNode || modNode.empty() || modNode.parents('node[type = "folder"]').length === 0;
+    });
+    const foldersHtml = roots
+      .map(fid => renderFolder(fid))
+      .filter(Boolean)
+      .join('');
+    const orphansHtml = orphanModules.length ? `
+      <details open>
+        <summary>Other modules (${orphanModules.length})</summary>
+        <div style="margin-left: 12px;">${orphanModules.map(renderModule).join('')}</div>
+      </details>
+    ` : '';
+    contentHtml = foldersHtml + orphansHtml;
+  } else {
+    // No folder grouping: render modules at top level
+    contentHtml = sortedModules.map(renderModule).filter(Boolean).join('');
+  }
+
+  const header = `<div style="font-weight:600; margin-bottom:6px;">Overview</div>`;
+  const sub = `<div style="font-size:12px; color:#666; margin-bottom:6px;">Showing ${totalEntities} items across ${sortedModules.length} modules</div>`;
+  targetEl.innerHTML = `<div data-testid="overview">${header}${sub}${contentHtml || '<div style="font-size:12px; color:#666;">Nothing to show.</div>'}</div>`;
+
+  // Wire anchor clicks to focus nodes
+  targetEl.querySelectorAll('a[data-node-id]').forEach((el) => {
+    el.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      try { (evt as any).stopPropagation?.(); } catch {}
+      const id = (el as HTMLElement).getAttribute('data-node-id')!;
+      try {
+        const target = cy.getElementById(id);
+        if (target && !target.empty()) {
+          (target as any).trigger('tap');
+          cy.center(target);
+        }
+      } catch {}
+    });
+  });
 }
 
 

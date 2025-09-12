@@ -16,7 +16,7 @@ The viewer uses a three-pane grid: a left widget pane for controls, a central gr
 
 - `ts/viewer/index.html`: Defines the three-column grid and widget markup. The toolbar remains identified by the same element IDs (e.g., `#layoutSelect`, `#modeSelect`, `#searchBox`).
 - `ts/viewer/src/app.ts`: Wires control events by querying elements by ID. No behavioral changes are required due to the move.
-- `ts/viewer/src/details-panel.ts`: Renders the right details pane with VS Code integration via clickable file paths with VS Code icons.
+- `ts/viewer/src/details-panel.ts`: Renders the right details pane with VS Code integration via clickable file paths with VS Code icons. For details of behaviour and states (overview, selection, groups), see `VIEWER_DETAILS_PANE.md`.
 - `ts/viewer/src/style.ts`: Cytoscape stylesheet for graph elements (unchanged by layout).
 
 ### Layout details
