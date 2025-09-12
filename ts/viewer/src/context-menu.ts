@@ -145,6 +145,33 @@ export function installContextMenu(
         }
       });
 
+      // Exclude actions
+      try {
+        const type = String(ele.data('type') || '');
+        if (type === 'module') {
+          const path = String(ele.data('path') || '');
+          if (path) {
+            cmds.push({
+              content: 'Exclude file',
+              select: async () => {
+                try { await fetch('/api/config/exclude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ paths: [path] }) }); } catch {}
+              }
+            });
+          }
+        } else if (type === 'folder') {
+          const folderPath = String(ele.data('path') || '');
+          if (folderPath) {
+            const glob = `${folderPath}/**`;
+            cmds.push({
+              content: 'Exclude folder',
+              select: async () => {
+                try { await fetch('/api/config/exclude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ paths: [glob] }) }); } catch {}
+              }
+            });
+          }
+        }
+      } catch {}
+
       cmds.push({
         content: 'Unfocus',
         select: () => { try { mgr.clearFocus(); } catch {} }

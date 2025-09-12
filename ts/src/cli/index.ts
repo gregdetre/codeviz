@@ -33,6 +33,40 @@ class ExtractPython extends Command {
   }
 }
 
+class ExtractAll extends Command {
+  static paths = [["extract"]];
+  verbose = Option.Boolean("-v,--verbose", false);
+  configFile = Option.String("--config");
+  async execute() {
+    if (!this.configFile) {
+      throw new Error("--config is required and must point to a .toml file");
+    }
+    const cfg: ResolvedConfig = await loadAndResolveConfigFromFile(resolve(this.configFile));
+    const outPath = join(cfg.outputDir, "codebase_graph.json");
+    // Always handle all available languages by default: run Python then TypeScript (TS merges)
+    await runExtractPython({
+      targetDir: cfg.targetDir,
+      outPath,
+      verbose: this.verbose,
+      analyzer: {
+        exclude: cfg.analyzer.exclude,
+        includeOnly: cfg.analyzer.includeOnly,
+        excludeModules: cfg.analyzer.excludeModules
+      }
+    });
+    await runExtractTypeScript({
+      targetDir: cfg.targetDir,
+      outPath,
+      verbose: this.verbose,
+      analyzer: {
+        exclude: cfg.analyzer.exclude,
+        includeOnly: cfg.analyzer.includeOnly,
+        excludeModules: cfg.analyzer.excludeModules
+      }
+    });
+  }
+}
+
 class ExtractTypeScript extends Command {
   static paths = [["extract", "typescript"], ["extract", "ts"]];
   verbose = Option.Boolean("-v,--verbose", false);
@@ -93,7 +127,7 @@ class ViewOpen extends Command {
     console.log(chalk.cyan(`Browser URL: http://${resolvedHost}:${resolvedPort}`));
 
     const dataFilePath = join(cfg.outputDir, "codebase_graph.json");
-    await startServer({ host: resolvedHost, port: resolvedPort, openBrowser: !this.noBrowser, viewerLayout, viewerMode: mode, hybridMode: this.hybridMode, workspaceRoot: cfg.targetDir, dataFilePath });
+    await startServer({ host: resolvedHost, port: resolvedPort, openBrowser: !this.noBrowser, viewerLayout, viewerMode: mode, hybridMode: this.hybridMode, workspaceRoot: cfg.targetDir, dataFilePath, configFilePath: resolve(this.configFile) });
   }
 
   private async killProcessOnPort(port: number) {
@@ -117,6 +151,7 @@ const cli = new Cli({
   binaryLabel: "CodeViz (TS)",
   binaryVersion: "0.1.0"
 });
+cli.register(ExtractAll);
 cli.register(ExtractPython);
 cli.register(ExtractTypeScript);
 cli.register(ViewOpen);

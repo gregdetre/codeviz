@@ -70,17 +70,17 @@ node:not([module = 'tests'])
 *
 ```
 
-## Allowed operations (v2.2)
+## Allowed operations (v2.3)
 
 - Collection: `addClass`, `removeClass`, `show`, `hide`, `style` (restricted keys), `lock`, `unlock`, `showConnectedEdges`, `hideConnectedEdges`, `collapse` (optional), `expand` (optional)
-- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`, `select`, `setOp`, `clearSet`, `clearAllSets`, `collapseAll` (optional), `expandAll` (optional), `selectPath` (`nodesOnly` optional), `selectByDegree`, `selectComponents`, `selectEdgesBetween`, `filterSet`, `selectEdgesIncident`
+- Core: `layout` (`elk` | `fcose` | `elk-then-fcose`), `fit`, `center`, `zoom`, `resetViewport`, `resetAll`, `pan`, `viewport`, `batch`, `select`, `setOp`, `clearSet`, `clearAllSets`, `collapseAll` (optional), `expandAll` (optional), `selectPath` (`nodesOnly` optional), `selectByDegree`, `selectComponents`, `selectEdgesBetween`, `filterSet`, `selectEdgesIncident`, `cv.groupFolders`, `cv.applyTagFilter`, `cv.setPositions`, `cv.collapseIds`, `cv.expandIds`
 - Allowed classes: `highlighted`, `faded`, `focus`, `incoming-node`, `outgoing-node`, `incoming-edge`, `outgoing-edge`, `second-degree`, `module-highlight`, `group-highlight`
 - Allowed style keys:
   - Base: `opacity`, `background-color`, `line-color`, `width`, `text-opacity`
   - Nodes: `border-width`, `border-color`, `shape`, `font-size`, `text-outline-width`, `text-outline-color`
   - Edges: `line-style`, `line-opacity`, `curve-style`, `target-arrow-shape`, `target-arrow-color`
 
-### New in v2.2
+### New in v2.4
 
 - Named sets: `select` stores results as `$name` for later commands. Caps: max 16 sets, 5k IDs each.
 - Traversal selection: `select` supports `from` + `rel` (`neighborhood|incomers|outgoers|closedNeighborhood|ancestors|descendants|children|parent`) with bounded `steps` (≤3).
@@ -92,6 +92,25 @@ node:not([module = 'tests'])
 - Edge selection between sets: `selectEdgesBetween` from `$from` nodes to `$to` nodes (directed).
 - Optional expand/collapse: if the extension is present, `collapse`/`expand` on node selections and `collapseAll`/`expandAll` operate; otherwise they no-op with a warning.
 - Sets management: `clearSet` removes one set; `clearAllSets` removes all.
+
+- Viewer namespace additions:
+  - `cv.excludePaths { paths: string[] }` — Persist glob patterns to the active config’s `[analyzer].exclude` and return immediately (no reload).
+  - `cv.excludeModules { modules: string[] }` — Persist module names to `[analyzer].excludeModules` and return immediately (no reload).
+  - `cv.extract {}` — Trigger server-side extract with the current config; the UI typically reloads after completion.
+  - `cv.reloadGraph {}` — Convenience: reloads the page.
+
+#### Viewer namespace (`cv.*`)
+
+These are viewer-specific helper ops used by the Lens system and the assistant. They are no-ops if the required modules are not available.
+
+- `cv.groupFolders { enabled: boolean }` — Suggest regrouping by folders (applied by lens/app logic).
+- `cv.applyTagFilter { selected: string[] }` — Programmatically apply tag filtering.
+- `cv.setPositions { positions: [{ id, x, y }] }` — Set absolute node positions.
+- `cv.collapseIds { ids: string[] }` / `cv.expandIds { ids: string[] }` — Collapse/expand specific nodes (if expand/collapse plugin present).
+- `cv.excludePaths { paths: string[] }` — Persist exclude globs to TOML.
+- `cv.excludeModules { modules: string[] }` — Persist excluded modules to TOML.
+- `cv.extract {}` — Trigger extract via server.
+- `cv.reloadGraph {}` — Reload the viewer page.
 -
   Group selectors and styles: You can now target compound group nodes directly:
   - Folders: `node[type = 'folder']`
@@ -156,6 +175,16 @@ Notes:
   { "q": "node", "ops": [["addClass", "faded"]] },
   { "q": "node[label *= 'preprocess']", "ops": [["removeClass", "faded"], ["addClass", "highlighted"]] },
   { "op": "fit", "q": "node[label *= 'preprocess']" }
+]
+```
+
+- Persist excludes and run extract manually:
+```json
+[
+  { "op": "cv.excludePaths", "arg": { "paths": ["src/obsolete/**"] } },
+  { "op": "cv.excludeModules", "arg": { "modules": ["legacy_utils"] } },
+  { "op": "cv.extract" },
+  { "op": "cv.reloadGraph" }
 ]
 ```
 

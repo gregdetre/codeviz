@@ -15,7 +15,7 @@ export type ExecutionResult = {
 };
 
 const ALLOWED_COLLECTION_OPS = new Set(["addClass", "removeClass", "show", "hide", "style", "lock", "unlock", "showConnectedEdges", "hideConnectedEdges", "collapse", "expand"]);
-const ALLOWED_CORE_OPS = new Set(["layout", "fit", "center", "zoom", "resetViewport", "resetAll", "pan", "viewport", "batch", "select", "setOp", "clearSet", "clearAllSets", "collapseAll", "expandAll", "selectPath", "selectByDegree", "selectComponents", "selectEdgesBetween", "filterSet", "selectEdgesIncident"]);
+const ALLOWED_CORE_OPS = new Set(["layout", "fit", "center", "zoom", "resetViewport", "resetAll", "pan", "viewport", "batch", "select", "setOp", "clearSet", "clearAllSets", "collapseAll", "expandAll", "selectPath", "selectByDegree", "selectComponents", "selectEdgesBetween", "filterSet", "selectEdgesIncident", "cv.groupFolders", "cv.applyTagFilter", "cv.setPositions", "cv.collapseIds", "cv.expandIds", "cv.excludePaths", "cv.excludeModules", "cv.extract", "cv.reloadGraph"]);
 const ALLOWED_CLASSES = new Set(["highlighted", "faded", "focus", "incoming-node", "outgoing-node", "incoming-edge", "outgoing-edge", "second-degree", "module-highlight"]);
 const ALLOWED_STYLE_KEYS = new Set([
   // existing
@@ -192,6 +192,92 @@ async function execCollectionOp(cy: Core, q: string | undefined, op: string, arg
 
 async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any): Promise<string[]> {
   const errors: string[] = [];
+  // Viewer namespace operations (cv.*)
+  if (op.startsWith('cv.')) {
+    if (op === 'cv.groupFolders') {
+      // no-op here; this is handled by lens application or app code
+      return errors;
+    }
+    if (op === 'cv.applyTagFilter') {
+      try {
+        const selected: string[] = Array.isArray(arg?.selected) ? arg.selected : [];
+        const graph = (window as any).__cv_graph as any;
+        const annotations = (window as any).__cv_annotations as any;
+        if (graph) {
+          const mod = await import('./tags.js');
+          const idx = (mod as any).buildTagIndex(graph, annotations);
+          (mod as any).applyTagFilter(cy, idx, new Set(selected));
+        }
+      } catch (e: any) {
+        errors.push(String(e?.message || e));
+      }
+      return errors;
+    }
+    if (op === 'cv.setPositions') {
+      try {
+        const positions: Array<{ id: string; x: number; y: number }> = Array.isArray(arg?.positions) ? arg.positions : [];
+        if (positions.length > 0) {
+          cy.batch(() => {
+            for (const p of positions) {
+              try {
+                const n = cy.getElementById(String(p.id));
+                if (n && !n.empty() && n.isNode && n.isNode()) n.position({ x: Number(p.x) || 0, y: Number(p.y) || 0 } as any);
+              } catch {}
+            }
+          });
+        }
+      } catch (e: any) {
+        errors.push(String(e?.message || e));
+      }
+      return errors;
+    }
+    if (op === 'cv.collapseIds' || op === 'cv.expandIds') {
+      const ids: string[] = Array.isArray(arg?.ids) ? arg.ids : [];
+      try {
+        const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
+        if (api && ids.length > 0) {
+          const targets = cy.collection(ids.map((id) => cy.getElementById(String(id))).filter((el: any) => el && el.nonempty()));
+          if (targets && targets.length > 0) {
+            if (op === 'cv.collapseIds') api.collapse(targets, { animate: false }); else api.expand(targets, { animate: false });
+            try { (window as any).__cv?.reaggregateCollapsedEdges?.(); } catch {}
+          }
+        }
+      } catch (e: any) {
+        errors.push(String(e?.message || e));
+      }
+      return errors;
+    }
+    if (op === 'cv.excludePaths' || op === 'cv.excludeModules') {
+      try {
+        const payload: any = {};
+        if (op === 'cv.excludePaths') payload.paths = Array.isArray(arg?.paths) ? arg.paths : [];
+        if (op === 'cv.excludeModules') payload.modules = Array.isArray(arg?.modules) ? arg.modules : [];
+        await fetch('/api/config/exclude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+      } catch (e: any) {
+        errors.push(String(e?.message || e));
+      }
+      return errors;
+    }
+    if (op === 'cv.extract') {
+      try {
+        await fetch('/api/extract', { method: 'POST' });
+      } catch (e: any) {
+        errors.push(String(e?.message || e));
+      }
+      return errors;
+    }
+    if (op === 'cv.reloadGraph') {
+      try {
+        // Simple approach: reload the whole page
+        (window as any).location?.reload?.();
+      } catch (e: any) {
+        errors.push(String(e?.message || e));
+      }
+      return errors;
+    }
+    errors.push(`Unsupported viewer op: ${op}`);
+    return errors;
+  }
   if (op === "layout") {
     const nameRaw = (arg?.name ?? arg ?? "fcose") as string;
     const name = normalizeLayoutName(nameRaw);

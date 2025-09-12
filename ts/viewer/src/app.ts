@@ -64,6 +64,7 @@ export async function initApp() {
     boxSelectionEnabled: false
   });
   (window as any).__cy = cy; // expose for e2e tests
+  ;(window as any).__cv_graph = graph; // expose graph for viewer ops
 
   // Keep Cytoscape aware of container size changes
   try {
@@ -742,6 +743,67 @@ export async function initApp() {
   } catch (err) {
     console.warn('Chat unavailable:', err);
   }
+
+  // Lenses UI wiring
+  try {
+    const mod = await import('./lenses-ui.js');
+    await mod.installLensesUI(cy as any, graph, annotations, {
+      getGroupFolders: () => groupFolders,
+      setGroupFolders: async (enabled: boolean) => {
+        try {
+          const groupFoldersToggle = document.getElementById('toggleGroupFolders') as HTMLInputElement | null;
+          if (groupFoldersToggle) groupFoldersToggle.checked = enabled;
+          if (enabled !== groupFolders) {
+            groupFolders = enabled;
+            const newElements = graphToElements(graph, { mode: 'explore' as any, groupFolders });
+            cy.batch(() => {
+              cy.elements().remove();
+              cy.add(newElements);
+              applyModuleColorTint(cy);
+              applyGroupBackgroundColors(cy, tokens);
+              try { updateAutoGroupVisibility(cy); } catch {}
+            });
+            try {
+              const api = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
+              if (api) {
+                const groups = cy.nodes('node:parent');
+                if (groups.length > 0) api.collapse(groups, { animate: false });
+                (window as any).__cv?.reaggregateCollapsedEdges?.();
+              }
+            } catch {}
+            await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
+            try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
+          }
+        } catch {}
+      },
+      getFilterMode: () => (document.getElementById('filterMode') as HTMLSelectElement | null)?.value || 'fade',
+      setFilterMode: (mode: 'fade' | 'hide') => { const fm = document.getElementById('filterMode') as HTMLSelectElement | null; if (fm) { fm.value = mode; im.setFilterMode(mode as any); } }
+    });
+  } catch (err) {
+    console.warn('Lenses UI unavailable:', err);
+  }
+
+  // Manual Extract button: calls server and reloads page
+  try {
+    const btn = document.getElementById('extractBtn') as HTMLButtonElement | null;
+    const status = document.getElementById('extractStatus') as HTMLSpanElement | null;
+    if (btn) {
+      btn.addEventListener('click', async () => {
+        try { if (status) status.hidden = false; } catch {}
+        try { btn.disabled = true; } catch {}
+        try {
+          const res = await fetch('/api/extract', { method: 'POST' });
+          if (!res.ok) throw new Error(`Extract failed (${res.status})`);
+        } catch (e) {
+          console.warn('Extract failed', e);
+        } finally {
+          try { if (status) status.hidden = true; } catch {}
+          try { btn.disabled = false; } catch {}
+          try { window.location.reload(); } catch {}
+        }
+      });
+    }
+  } catch {}
 }
 
 

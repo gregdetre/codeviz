@@ -276,9 +276,29 @@
                 <input type="search" id="searchBox" placeholder="Search…" />
                 <div id="searchResults" class="search-results" hidden></div>
             </div>
+            <details id="extractSection" style="border-top: 1px solid #e5e7eb; padding-top: 8px;">
+                <summary style="cursor:pointer; font-weight:600;">Extraction</summary>
+                <div style="margin-top:6px; display:flex; gap:6px; align-items:center;">
+                    <button id="extractBtn" title="Run extractor and rebuild graph">Extract</button>
+                    <span id="extractStatus" class="cv-loading" hidden>
+                        <i class="ph ph-spinner" aria-hidden="true"></i>
+                        <span style="font-size:12px; color:#666;">Extracting…</span>
+                    </span>
+                </div>
+            </details>
             <details id="tagsSection" style="border-top: 1px solid #e5e7eb; padding-top: 8px;" hidden>
                 <summary style="cursor:pointer; font-weight:600;">Tags</summary>
                 <div id="tagsList" style="margin-top:6px;"></div>
+            </details>
+            <details id="lensesSection" style="border-top: 1px solid #e5e7eb; padding-top: 8px;">
+                <summary style="cursor:pointer; font-weight:600;">Lenses</summary>
+                <div id="lensesList" style="margin-top:6px; display:flex; flex-direction:column; gap:4px;"></div>
+                <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                    <button id="lensSaveAsBtn" title="Save current view as a new lens">Save As…</button>
+                    <button id="lensSaveBtn" title="Save current lens" disabled>Save</button>
+                    <button id="lensDeleteBtn" title="Delete current lens" disabled>Delete</button>
+                    <span id="currentLensName" style="margin-left:auto; font-size:12px; color:#666;">(none)</span>
+                </div>
             </details>
             <div id="chat"
                 style="border-top: 1px solid #e5e7eb; padding-top: 8px; display:flex; flex-direction:column; flex:1; min-height:0;">

@@ -11,10 +11,13 @@ A concise, evergreen guide to the behaviour, structure, and integration of the l
 - `UI_RIGHT_DETAILS_PANE.md` – right-hand details pane reference (complements this pane)
 - `../../ts/viewer/index.html` – pane structure and control element IDs
 - `../../ts/viewer/src/app.ts` – wiring of controls, listeners, and throttled updates
+- `../../ts/viewer/src/lens.ts` – build/apply Lens utilities
+- `../../ts/viewer/src/lenses-ui.ts` – Lenses section UI wiring
 - `../../ts/viewer/src/search.ts` – filter implementation
 - `../../ts/viewer/src/tags.ts` – Tags widget: tag indexing, ordering, and visibility logic
 - `../../ts/viewer/src/layout-manager.ts` – layout selection and execution
 - `../../ts/viewer/src/command-executor.ts` – compact command execution for programmatic control
+ - `../../ts/src/server/server.ts` – endpoints for exclusions and manual extract
 
 ### Introduction
 
@@ -56,7 +59,15 @@ The left-hand pane hosts global controls for layout, grouping, filtering, viewpo
 - Function nodes without any tags are controlled by the virtual `Untagged` option.
 - Non-matching functions are hidden; edges with hidden endpoints are also hidden.
 
-7) Embedded chat
+7) Lenses
+- Default-collapsed section to Save/Save As/Delete lenses and list existing ones from `/out/lenses/index.json`.
+- Loading a lens applies grouping, tag filter, collapsed groups, positions, viewport, and replays any commands.
+- Lenses persist to the same directory as the active `codebase_graph.json` under a `lenses/` subfolder.
+
+8) Embedded chat
+9) Extraction (manual)
+- A simple section with an Extract button that calls `/api/extract` on the server and then reloads the page.
+- Exclusions added via the context menu or commands are persisted to the active `.codeviz.toml` and applied when Extract is run.
 - The Chat section is loaded lazily and integrates with the LLM to analyse and manipulate the graph.
 - UI includes message history, input field, and a loading indicator. See `LLM_CHAT_INTERFACE.md` for requirements and architecture.
 

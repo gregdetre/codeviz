@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import type { FastifyInstance } from "fastify";
 import fastifyStatic from "@fastify/static";
-import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, readdir, unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, join, basename, dirname } from "node:path";
 import { homedir } from "node:os";
@@ -13,6 +13,86 @@ import { parse as parseToml } from "toml";
 import { z } from "zod";
 
 type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
+
+function escapeRegLiteral(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Heuristic TOML array mutator: adds items to an array under a section, preserving existing formatting
+function mutateTomlArray(content: string, section: string, key: string, items: string[]): string {
+  if (!items || items.length === 0) return content;
+  const secHeaderRe = new RegExp(`^\\[${escapeRegLiteral(section)}\\]\\s*$`, 'm');
+  const mSec = secHeaderRe.exec(content);
+  const arraySnippetFor = (indent: string, arrIndent: string, arrItems: string[]) => {
+    const lines = arrItems.map(s => `${arrIndent}${JSON.stringify(s)}`).join(',\n');
+    return `${indent}${key} = [\n${lines}\n${indent}]`;
+  };
+  if (!mSec) {
+    // Append new section at end
+    const indent = '';
+    const arrIndent = '  ';
+    const block = `\n\n[${section}]\n${arraySnippetFor(indent, arrIndent, items)}\n`;
+    return content + block;
+  }
+  // Find end of section (start of next section or EOF)
+  const secStart = mSec.index + mSec[0].length;
+  const nextSecRe = /^\s*\[[^\]]+\]\s*$/gm;
+  nextSecRe.lastIndex = secStart;
+  const mNext = nextSecRe.exec(content);
+  const secEnd = mNext ? mNext.index : content.length;
+  const before = content.slice(0, secStart);
+  const block = content.slice(secStart, secEnd);
+  const after = content.slice(secEnd);
+  // Try to find existing key array in block
+  const keyLineRe = new RegExp(`^(\t|\s*)${escapeRegLiteral(key)}\s*=`, 'm');
+  const mKeyLine = keyLineRe.exec(block);
+  const arrRe = new RegExp(`${escapeRegLiteral(key)}\s*=\s*\[([\s\S]*?)\]`);
+  const mArr = arrRe.exec(block);
+  if (mArr && mKeyLine) {
+    const keyIndent = (mKeyLine[1] || '');
+    const full = mArr[0];
+    const arrInner = mArr[1];
+    const closingIdx = mArr.index + full.lastIndexOf(']');
+    const arrAbsStart = mArr.index;
+    const arrAbsEnd = arrAbsStart + full.length;
+    const arrBefore = block.slice(0, arrAbsStart);
+    const arrBody = block.slice(arrAbsStart, arrAbsEnd);
+    const arrAfter = block.slice(arrAbsEnd);
+    // Determine indentation for items
+    const lines = arrBody.split(/\r?\n/);
+    const closingLine = lines[lines.length - 1] || '';
+    const bracketIndent = (/^(\s*)\]/.exec(closingLine) || [,''])[1] || keyIndent;
+    const itemIndent = bracketIndent + (bracketIndent.includes('\t') ? '\t' : '  ');
+    let beforeInside = arrBody.slice(0, arrBody.lastIndexOf(']'));
+    // Ensure trailing comma before inserting if there are existing items
+    if (arrInner && arrInner.trim().length > 0) {
+      if (!/,\s*$/.test(beforeInside)) {
+        beforeInside = beforeInside.replace(/\s*$/, ',\n');
+      }
+    } else {
+      // Empty array was like [] or [\n\t\n]; normalize to multiline
+      // Build a fresh array block
+      const newBlock = `${keyIndent}${key} = [\n${items.map(s => `${itemIndent}${JSON.stringify(s)}`).join(',\n')}\n${keyIndent}]`;
+      const newBlockCombined = arrBefore + newBlock + arrAfter;
+      return before + newBlockCombined + after;
+    }
+    const insertion = items.map(s => `${itemIndent}${JSON.stringify(s)}`).join(',\n') + `\n${bracketIndent}`;
+    const newArrBody = beforeInside + insertion + ']';
+    const combined = arrBefore + newArrBody + arrAfter;
+    return before + combined + after;
+  }
+  // No existing key array: insert a new one at end of block
+  // Determine indentation based on first non-empty line in block
+  const blockLines = block.split(/\r?\n/);
+  let indent = '';
+  for (const ln of blockLines) {
+    const m = /^(\s*)\S/.exec(ln);
+    if (m) { indent = m[1]; break; }
+  }
+  const arrIndent = indent + (indent.includes('\t') ? '\t' : '  ');
+  const addition = `\n${arraySnippetFor(indent, arrIndent, items)}\n`;
+  return before + block + addition + after;
+}
 
 async function waitForFileExists(filePath: string, timeoutMs = 60000, pollIntervalMs = 500): Promise<boolean> {
   const start = Date.now();
@@ -57,7 +137,7 @@ async function loadAssistantPrompt() {
   }
 }
 
-export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string; dataFilePath?: string; workspaceRoot?: string }): Promise<FastifyInstance> {
+export async function startServer(opts: { host: string; port: number; openBrowser: boolean; viewerLayout?: string; viewerMode?: string; hybridMode?: string; dataFilePath?: string; workspaceRoot?: string; configFilePath?: string }): Promise<FastifyInstance> {
   const app = Fastify();
   // Resolve viewer dist robustly across run contexts (tsx, node, different CWDs)
   const candidates = [
@@ -211,6 +291,17 @@ export async function startServer(opts: { host: string; port: number; openBrowse
   app.get("/schema/codebase_graph.schema.json", async (_req, reply) => {
     try {
       const schemaPath = join(repoRoot, "schema", "codebase_graph.schema.json");
+      const schema = await readFile(schemaPath, "utf8");
+      reply.type("application/json").send(schema);
+    } catch (err: any) {
+      reply.code(500).send({ error: "ENOENT", message: String(err?.message || err) });
+    }
+  });
+
+  // Serve lens schema for client-side validation or tooling
+  app.get("/schema/lens.schema.json", async (_req, reply) => {
+    try {
+      const schemaPath = join(repoRoot, "schema", "lens.schema.json");
       const schema = await readFile(schemaPath, "utf8");
       reply.type("application/json").send(schema);
     } catch (err: any) {
@@ -424,6 +515,114 @@ export async function startServer(opts: { host: string; port: number; openBrowse
   });
 
   app.register(fastifyStatic, { root, prefix: "/" });
+
+  // --- Analyzer config mutation and manual extract endpoints ---
+  app.post("/api/config/exclude", async (req, reply) => {
+    try {
+      const body: any = (req as any).body || {};
+      const addPaths: string[] = Array.isArray(body?.paths) ? body.paths.map((s: any) => String(s)).filter(Boolean) : [];
+      const addModules: string[] = Array.isArray(body?.modules) ? body.modules.map((s: any) => String(s)).filter(Boolean) : [];
+      const configFile = String(opts.configFilePath || "");
+      if (!configFile) { reply.code(400).send({ error: "NO_CONFIG", message: "Server not started with --config; cannot persist excludes" }); return; }
+      let content = await readFile(configFile, "utf8");
+      // Parse to determine current state and avoid duplicates
+      let parsed: any = {};
+      try { parsed = parseToml(content) as any; } catch {}
+      if (!parsed.analyzer) parsed.analyzer = {};
+      const currentExclude: string[] = Array.isArray(parsed.analyzer.exclude) ? parsed.analyzer.exclude.slice() : [];
+      const currentExcludeModules: string[] = Array.isArray(parsed.analyzer.excludeModules) ? parsed.analyzer.excludeModules.slice() : [];
+      const toAddPaths = addPaths.filter(p => !currentExclude.includes(p));
+      const toAddModules = addModules.filter(m => !currentExcludeModules.includes(m));
+      if (toAddPaths.length === 0 && toAddModules.length === 0) {
+        reply.type("application/json").send({ ok: true, added: { paths: [], modules: [] } });
+        return;
+      }
+      // Mutate TOML text in-place, preserving formatting
+      content = mutateTomlArray(content, "analyzer", "exclude", toAddPaths);
+      content = mutateTomlArray(content, "analyzer", "excludeModules", toAddModules);
+      await writeFile(configFile, content, "utf8");
+      reply.type("application/json").send({ ok: true, added: { paths: toAddPaths, modules: toAddModules } });
+    } catch (err: any) {
+      reply.code(500).send({ error: "EXCLUDE_PERSIST_FAILED", message: String(err?.message || err) });
+    }
+  });
+
+  app.post("/api/extract", async (_req, reply) => {
+    try {
+      const configFile = String(opts.configFilePath || "");
+      if (!configFile) { reply.code(400).send({ error: "NO_CONFIG", message: "Server not started with --config; cannot extract" }); return; }
+      const { loadAndResolveConfigFromFile } = await import("../config/loadConfig.js");
+      const cfg = await loadAndResolveConfigFromFile(resolve(configFile));
+      const outPath = join(cfg.outputDir, "codebase_graph.json");
+      const { runExtract: runExtractPython } = await import("../analyzer/extract-python.js");
+      const { runExtract: runExtractTypeScript } = await import("../analyzer/extract-typescript.js");
+      await runExtractPython({ targetDir: cfg.targetDir, outPath, analyzer: { exclude: cfg.analyzer.exclude, includeOnly: cfg.analyzer.includeOnly, excludeModules: cfg.analyzer.excludeModules } });
+      await runExtractTypeScript({ targetDir: cfg.targetDir, outPath, analyzer: { exclude: cfg.analyzer.exclude, includeOnly: cfg.analyzer.includeOnly, excludeModules: cfg.analyzer.excludeModules } });
+      reply.type("application/json").send({ ok: true });
+    } catch (err: any) {
+      reply.code(500).send({ error: "EXTRACT_FAILED", message: String(err?.message || err) });
+    }
+  });
+
+  // Lens CRUD: list, fetch, save, delete
+  app.get("/out/lenses/index.json", async (_req, reply) => {
+    try {
+      const dir = dirname(resolvedDataFile);
+      const lensesDir = join(dir, "lenses");
+      await mkdir(lensesDir, { recursive: true });
+      const files = (await readdir(lensesDir)).filter(f => f.endsWith('.json'));
+      const names = files.map(f => f.replace(/\.json$/i, ''));
+      reply.type("application/json").send({ names });
+    } catch (err: any) {
+      reply.code(500).send({ error: "LENS_LIST_ERROR", message: String(err?.message || err) });
+    }
+  });
+
+  app.get("/out/lenses/:name.json", async (req, reply) => {
+    try {
+      const name = String((req.params as any).name || "").replace(/[^A-Za-z0-9_\-]/g, "");
+      if (!name) { reply.code(400).send({ error: "BAD_REQUEST", message: "Missing name" }); return; }
+      const dir = dirname(resolvedDataFile);
+      const file = join(dir, "lenses", `${name}.json`);
+      const json = await readFile(file, "utf8");
+      reply.type("application/json").send(json);
+    } catch (err: any) {
+      reply.code(404).send({ error: "LENS_NOT_FOUND", message: String(err?.message || err) });
+    }
+  });
+
+  app.post("/api/lens/save", async (req, reply) => {
+    try {
+      const body: any = (req as any).body || {};
+      const nameRaw = String(body?.name || "");
+      const name = nameRaw.replace(/[^A-Za-z0-9_\-]/g, "").slice(0, 64);
+      const lens = body?.lens;
+      if (!name || !lens) { reply.code(400).send({ error: "BAD_REQUEST", message: "Missing name or lens" }); return; }
+      const dir = dirname(resolvedDataFile);
+      const lensesDir = join(dir, "lenses");
+      await mkdir(lensesDir, { recursive: true });
+      const file = join(lensesDir, `${name}.json`);
+      const data = typeof lens === 'string' ? lens : JSON.stringify(lens, null, 2);
+      await writeFile(file, data, "utf8");
+      reply.type("application/json").send({ ok: true, name });
+    } catch (err: any) {
+      reply.code(500).send({ error: "LENS_SAVE_ERROR", message: String(err?.message || err) });
+    }
+  });
+
+  app.delete("/api/lens/:name", async (req, reply) => {
+    try {
+      const name = String((req.params as any).name || "").replace(/[^A-Za-z0-9_\-]/g, "");
+      if (!name) { reply.code(400).send({ error: "BAD_REQUEST", message: "Missing name" }); return; }
+      const dir = dirname(resolvedDataFile);
+      const file = join(dir, "lenses", `${name}.json`);
+      if (!existsSync(file)) { reply.code(404).send({ error: "LENS_NOT_FOUND", message: "No such lens" }); return; }
+      await unlink(file);
+      reply.type("application/json").send({ ok: true, name });
+    } catch (err: any) {
+      reply.code(500).send({ error: "LENS_DELETE_ERROR", message: String(err?.message || err) });
+    }
+  });
 
   await app.listen({ host: opts.host, port: opts.port });
   if (opts.openBrowser) {

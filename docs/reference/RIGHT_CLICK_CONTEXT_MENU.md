@@ -26,6 +26,7 @@ Brief reference for the viewer’s radial right‑click context menu. This menu 
 - Copy – copy the element’s ID or label to the clipboard
 - Hide – temporarily hide the element from the view
 - Deps – show dependencies for the selected element in the details pane
+- Exclude file/folder – persist a glob to `[analyzer].exclude` in the active config (module = file; folder = `<folder>/**`). Run Extract from the left pane to apply.
 
 ### Developer notes
 
