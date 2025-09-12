@@ -5,6 +5,7 @@ This document describes the right‑hand details pane in the CodeViz viewer: wha
 ### See also
 
 - `UI_WIDGETS_ARRANGEMENT.md` – overall placement of controls and panes (left toolbar, central canvas, right details)
+- `UI_RIGHT_DETAILS_PANE.md` – UI-centric summary of the right-hand pane (quick reference)
 - `LAYOUT.md` – graph layout behaviours and when the right pane updates after layout operations
 - `VIEWER_COMMANDS.md` – user actions and hotkeys that can affect selection and filtering
 - `../ts/viewer/src/details-panel.ts` – implementation of details rendering and overview listing
