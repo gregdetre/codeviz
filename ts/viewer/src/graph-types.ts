@@ -54,6 +54,7 @@ export type ViewerConfig = {
   workspaceRoot?: string;
   projectName?: string;
   highlight?: HighlightConfig;
+  wheelSensitivity?: number;
 };
 
 export type HighlightConfig = {

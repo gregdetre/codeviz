@@ -8,41 +8,36 @@ export function initFileOpener(config: ViewerConfig) {
 
 export function openFileInEditor(filePath: string, line: number, editor: 'vscode' | 'cursor' = 'vscode') {
   if (!workspaceRoot) {
-    console.warn('Cannot open file: workspace root not configured');
+    showToast('Cannot open file: workspace root not configured. Ensure the server provides workspaceRoot (pass --target to CLI).');
     return false;
   }
 
   // Convert relative path to absolute
-  const absolutePath = filePath.startsWith('/') 
-    ? filePath 
+  const joined = filePath.startsWith('/')
+    ? filePath
     : `${workspaceRoot}/${filePath}`;
+  const absolutePath = joined.replace(/\\/g, '/');
 
   // Create editor URL
-  const url = `${editor}://file${absolutePath}:${line}`;
+  if (!filePath || absolutePath.trim().length === 0) {
+    showToast('Cannot open file: empty or invalid file path');
+    return false;
+  }
+  const lineNum = Number(line);
+  if (!Number.isFinite(lineNum) || lineNum <= 0) {
+    showToast(`Invalid line number: ${String(line)}. Provide a positive integer.`);
+    return false;
+  }
+  const lineSuffix = `:${lineNum}`;
+  const url = `${editor}://file${encodeURI(absolutePath)}${lineSuffix}`;
   
   try {
     // Try to open the URL - this will either work or show a browser dialog
     window.open(url, '_self');
     return true;
   } catch (error) {
-    console.error('Failed to open file in editor:', error);
-    // Fallback: copy command to clipboard
-    copyOpenCommand(absolutePath, line, editor);
+    showToast(`Failed to open editor URL. URL=${url}. Error=${String((error as any)?.message || error)}`);
     return false;
-  }
-}
-
-function copyOpenCommand(absolutePath: string, line: number, editor: string) {
-  const command = `${editor} "${absolutePath}:${line}"`;
-  
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(command).then(() => {
-      showToast(`Copied to clipboard: ${command}`);
-    }).catch(() => {
-      showToast(`Failed to copy. Manual command: ${command}`);
-    });
-  } else {
-    showToast(`Manual command: ${command}`);
   }
 }
 
@@ -53,7 +48,7 @@ function showToast(message: string) {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #374151;
+    background: #7f1d1d;
     color: white;
     padding: 12px 16px;
     border-radius: 8px;
