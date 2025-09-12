@@ -6,6 +6,7 @@ import { startServer } from "../server/server.js";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import chalk from "chalk";
+import { runAnnotateViaClaude, VocabMode } from "../annotation/annotate-via-claude.js";
 
 
 class ExtractPython extends Command {
@@ -94,4 +95,26 @@ const cli = new Cli({
 });
 cli.register(ExtractPython);
 cli.register(ViewOpen);
+class AnnotateClaude extends Command {
+  static paths = [["annotate"]];
+  configFile = Option.String("--config");
+  vocab = Option.String("--vocab", "closed");
+  contextBudget = Option.String("--context-budget", "100000");
+  model = Option.String("--model", "opus-4.1");
+  async execute() {
+    if (!this.configFile) {
+      throw new Error("--config is required and must point to a .toml file");
+    }
+    const vocab = (this.vocab as VocabMode);
+    if (!["closed","open","suggest"].includes(vocab)) {
+      throw new Error("--vocab must be one of closed|open|suggest");
+    }
+    const budget = Number(this.contextBudget);
+    if (!Number.isFinite(budget) || budget <= 0) {
+      throw new Error("--context-budget must be a positive integer of tokens");
+    }
+    await runAnnotateViaClaude({ configFile: resolve(this.configFile), vocab, contextBudget: budget, model: this.model });
+  }
+}
+cli.register(AnnotateClaude);
 cli.runExit(process.argv.slice(2));
