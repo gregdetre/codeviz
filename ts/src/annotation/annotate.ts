@@ -101,8 +101,9 @@ export async function runAnnotate(opts: { targetDir: string; outDir: string; voc
         suggestCounts[tag] = (suggestCounts[tag] ?? 0) + 1;
       }
     }
-
-    nodesOut.push({ id: r.id, tags: tags.length ? tags : [] });
+    if (tags.length > 0) {
+      nodesOut.push({ id: r.id, tags });
+    }
   }
 
   const out = {
