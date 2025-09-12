@@ -3,6 +3,7 @@ import { resolve, join } from "node:path";
 import { runExtract as runExtractPython } from "../analyzer/extract-python.js";
 import { runExtract as runExtractTypeScript } from "../analyzer/extract-typescript.js";
 import { loadAndResolveConfigFromFile, ResolvedConfig } from "../config/loadConfig.js";
+import { loadGlobalConfig } from "../config/loadGlobalConfig.js";
 import { startServer } from "../server/server.js";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
@@ -43,27 +44,40 @@ class ExtractAll extends Command {
     }
     const cfg: ResolvedConfig = await loadAndResolveConfigFromFile(resolve(this.configFile));
     const outPath = join(cfg.outputDir, "codebase_graph.json");
-    // Always handle all available languages by default: run Python then TypeScript (TS merges)
-    await runExtractPython({
-      targetDir: cfg.targetDir,
-      outPath,
-      verbose: this.verbose,
-      analyzer: {
-        exclude: cfg.analyzer.exclude,
-        includeOnly: cfg.analyzer.includeOnly,
-        excludeModules: cfg.analyzer.excludeModules
+    const g = await loadGlobalConfig().catch(() => ({} as any));
+    const langs = Array.isArray(g?.extractAll?.languages) && g.extractAll.languages.length > 0
+      ? g.extractAll.languages.map((s: any) => String(s).toLowerCase())
+      : ["python", "typescript", "javascript"]; // default
+
+    // Ensure Python runs before others so later merges can extend the graph
+    const ordered = Array.from(new Set(["python", ...langs.filter((l: string) => l !== "python")]));
+    for (const lang of ordered) {
+      if (lang === "python") {
+        await runExtractPython({
+          targetDir: cfg.targetDir,
+          outPath,
+          verbose: this.verbose,
+          analyzer: {
+            exclude: cfg.analyzer.exclude,
+            includeOnly: cfg.analyzer.includeOnly,
+            excludeModules: cfg.analyzer.excludeModules
+          }
+        });
+      } else if (lang === "typescript" || lang === "javascript" || lang === "ts" || lang === "js") {
+        await runExtractTypeScript({
+          targetDir: cfg.targetDir,
+          outPath,
+          verbose: this.verbose,
+          analyzer: {
+            exclude: cfg.analyzer.exclude,
+            includeOnly: cfg.analyzer.includeOnly,
+            excludeModules: cfg.analyzer.excludeModules
+          }
+        });
+      } else {
+        console.warn(chalk.yellow(`extract: unsupported language '${lang}', skipping`));
       }
-    });
-    await runExtractTypeScript({
-      targetDir: cfg.targetDir,
-      outPath,
-      verbose: this.verbose,
-      analyzer: {
-        exclude: cfg.analyzer.exclude,
-        includeOnly: cfg.analyzer.includeOnly,
-        excludeModules: cfg.analyzer.excludeModules
-      }
-    });
+    }
   }
 }
 

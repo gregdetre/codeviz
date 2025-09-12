@@ -15,6 +15,9 @@ export type GlobalConfig = {
     host?: string;
     port?: number;
   };
+  extractAll?: {
+    languages?: string[];
+  };
 };
 
 function getGlobalConfigCandidatePaths(): string[] {
@@ -24,6 +27,8 @@ function getGlobalConfigCandidatePaths(): string[] {
   if (override) candidates.push(resolve(override));
   // Project root config file
   candidates.push(resolve(process.cwd(), "codeviz.config.toml"));
+  // Legacy/global alias supported for convenience
+  candidates.push(resolve(process.cwd(), "global.toml"));
   return [...new Set(candidates)];
 }
 
