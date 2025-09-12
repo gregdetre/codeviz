@@ -46,6 +46,15 @@ export async function initApp() {
   });
   (window as any).__cy = cy; // expose for e2e tests
 
+  // Keep Cytoscape aware of container size changes
+  try {
+    const container = document.getElementById('cy') as HTMLElement | null;
+    if (container && typeof (window as any).ResizeObserver !== 'undefined') {
+      const ro = new (window as any).ResizeObserver(() => { try { cy.resize(); } catch {} });
+      ro.observe(container);
+    }
+  } catch {}
+
   // Forward important console messages to server log in dev
   try {
     const send = (m: string) => { try { fetch('/api/log', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: m }) }); } catch {} };
@@ -94,7 +103,7 @@ export async function initApp() {
   const t0 = performance.now();
   await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
   try { console.debug(`[cv] layout '${layoutName}' done in ${(performance.now()-t0).toFixed(1)}ms`); } catch {}
-  try { requestAnimationFrame(() => cy.fit()); } catch {}
+  try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
 
   const im = InteractionManager(cy, graph, vcfg);
   im.installBasics();
@@ -195,7 +204,7 @@ export async function initApp() {
         applyModuleColorTint(cy);
       });
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
-      try { requestAnimationFrame(() => cy.fit()); } catch {}
+      try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
     });
   }
 
@@ -213,7 +222,7 @@ export async function initApp() {
           applyModuleColorTint(cy);
         });
         await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
-        try { requestAnimationFrame(() => cy.fit()); } catch {}
+        try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
         // Auto-collapse folder depth > 2
         try {
           const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 2);
@@ -242,7 +251,7 @@ export async function initApp() {
       layoutName = normalizeLayoutName(layoutSelect.value);
       if (layoutInfo) layoutInfo.textContent = `Layout: ${layoutName}`;
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
-      try { requestAnimationFrame(() => cy.fit()); } catch {}
+      try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
       updateHybridVisibility();
     });
   }
@@ -253,7 +262,7 @@ export async function initApp() {
   if (refineBtn) {
     refineBtn.addEventListener('click', async () => {
       await applyLayout(cy, 'fcose', { hybridMode: vcfg.hybridMode as any });
-      try { requestAnimationFrame(() => cy.fit()); } catch {}
+      try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
     });
   }
 

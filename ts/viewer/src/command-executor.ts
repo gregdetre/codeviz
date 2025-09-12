@@ -190,13 +190,15 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
     return errors;
   }
   if (op === "fit") {
-    if (q) cy.fit(resolveCollection(cy, q));
-    else cy.fit();
+    try { (cy as any).resize?.(); } catch {}
+    if (q) cy.fit(resolveCollection(cy, q), 20);
+    else cy.fit(cy.elements(':visible'), 20);
     return errors;
   }
   if (op === "center") {
+    try { (cy as any).resize?.(); } catch {}
     if (q) cy.center(resolveCollection(cy, q));
-    else cy.center();
+    else cy.center(cy.elements(':visible'));
     return errors;
   }
   if (op === "zoom") {
@@ -213,7 +215,8 @@ async function execCoreOp(cy: Core, q: string | undefined, op: string, arg?: any
     cy.elements().removeClass("faded");
     cy.elements().style("display", "element");
     await applyLayout(cy, "fcose");
-    cy.fit();
+    try { (cy as any).resize?.(); } catch {}
+    cy.fit(cy.elements(':visible'), 20);
     return errors;
   }
   if (op === "pan") {

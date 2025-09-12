@@ -15,8 +15,10 @@ function enableSidebarResize() {
     const vw = window.innerWidth;
     const sidebarWidth = Math.max(340, Math.min(560, vw - e.clientX));
     root.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
+    try { const cy: any = (window as any).__cy; if (cy && typeof cy.resize === 'function') cy.resize(); } catch {}
   });
-  window.addEventListener('mouseup', () => { dragging = false; });
+  window.addEventListener('mouseup', () => { dragging = false; try { const cy: any = (window as any).__cy; if (cy && typeof cy.resize === 'function') cy.resize(); } catch {} });
+  window.addEventListener('resize', () => { try { const cy: any = (window as any).__cy; if (cy && typeof cy.resize === 'function') cy.resize(); } catch {} });
 }
 
 enableSidebarResize();
