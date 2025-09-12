@@ -16,9 +16,13 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
   let isMiddlePanActive = false;
   let previousAutoungrabify = false;
   let previousBoxSelection = false;
+  let previousUserPanning = true;
+  let previousPanning = true;
   const container = cy.container() as HTMLElement;
   let lastPointerX = 0;
   let lastPointerY = 0;
+
+  const dbg = (...args: any[]) => { try { if ((window as any).__cvPanDebug) console.debug('[cv-pan]', ...args); } catch {} };
 
   function isEditableTarget(t: EventTarget | null): boolean {
     const el = t as HTMLElement | null;
@@ -47,9 +51,14 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     // Snapshot previous interaction flags to restore later
     try { previousAutoungrabify = cy.autoungrabify(); } catch { previousAutoungrabify = false; }
     try { previousBoxSelection = cy.boxSelectionEnabled(); } catch { previousBoxSelection = false; }
+    try { previousUserPanning = cy.userPanningEnabled(); } catch { previousUserPanning = true; }
+    try { previousPanning = typeof (cy as any).panningEnabled === 'function' ? (cy as any).panningEnabled() : true; } catch { previousPanning = true; }
     // Disable node dragging and box selection so dragging pans the viewport even over nodes
     try { cy.autoungrabify(true); } catch {}
     try { cy.boxSelectionEnabled(false); } catch {}
+    try { cy.userPanningEnabled(true); } catch {}
+    try { if (typeof (cy as any).panningEnabled === 'function') (cy as any).panningEnabled(true); } catch {}
+    dbg('space: enablePan', { previousAutoungrabify, previousBoxSelection, previousUserPanning, previousPanning });
     updateCursor();
   }
 
@@ -60,6 +69,9 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
     // Restore previous interaction flags
     try { cy.autoungrabify(previousAutoungrabify); } catch {}
     try { cy.boxSelectionEnabled(previousBoxSelection); } catch {}
+    try { cy.userPanningEnabled(previousUserPanning); } catch {}
+    try { if (typeof (cy as any).panningEnabled === 'function') (cy as any).panningEnabled(previousPanning); } catch {}
+    dbg('space: disablePan');
     updateCursor();
   }
 
@@ -171,6 +183,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
           if (isEditableTarget(e.target)) return; // don't interfere with typing
           e.preventDefault();
           if (!isSpacePanActive) enableSpacePan();
+          dbg('keydown space');
         }
       } catch {}
     });
@@ -180,6 +193,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
         if (isSpace) {
           e.preventDefault();
           disableSpacePan();
+          dbg('keyup space');
         }
       } catch {}
     });
@@ -199,6 +213,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
           updateCursor();
           ev.preventDefault();
           ev.stopPropagation();
+          dbg('pointerdown space-pan', { x: ev.clientX, y: ev.clientY });
           return;
         }
         // Middle-mouse panning regardless of Space
@@ -212,6 +227,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
           updateCursor();
           ev.preventDefault();
           ev.stopPropagation();
+          dbg('pointerdown middle-pan', { x: ev.clientX, y: ev.clientY });
           return;
         }
       };
@@ -224,6 +240,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
         try { cy.panBy({ x: dx, y: dy }); } catch {}
         ev.preventDefault();
         ev.stopPropagation();
+        dbg('pointermove panBy', { dx, dy });
       };
       const onPointerUp = (ev: PointerEvent) => {
         if (!isMouseDown) return;
@@ -233,6 +250,7 @@ export function InteractionManager(cy: Core, graph: Graph, vcfg?: ViewerConfig) 
         updateCursor();
         ev.preventDefault();
         ev.stopPropagation();
+        dbg('pointerup');
       };
       container.addEventListener('pointerdown', onPointerDown, { capture: true } as any);
       container.addEventListener('pointermove', onPointerMove, { capture: true } as any);
