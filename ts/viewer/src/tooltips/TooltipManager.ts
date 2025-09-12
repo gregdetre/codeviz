@@ -62,6 +62,14 @@ function formatModuleTooltip(node: cytoscape.NodeSingular): string {
   return content;
 }
 
+function formatFolderTooltip(node: cytoscape.NodeSingular): string {
+  const label = node.data('label') ?? node.id();
+  const path = node.data('path') ?? '';
+  let content = `<strong>Folder: ${escapeHtml(label)}</strong>`;
+  if (path) content += `<div style="opacity:0.8">${escapeHtml(path)}</div>`;
+  return content;
+}
+
 function escapeHtml(str: string): string {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 }
@@ -103,6 +111,11 @@ export function installTooltips(cy: cytoscape.Core) {
     show(evt.target, formatModuleTooltip(evt.target));
   });
   cy.on('mouseout', 'node[type = "module"]', hide);
+
+  cy.on('mouseover', 'node[type = "folder"]', (evt) => {
+    show(evt.target, formatFolderTooltip(evt.target));
+  });
+  cy.on('mouseout', 'node[type = "folder"]', hide);
 
   // Hide on pan/zoom to avoid lagging tooltips
   cy.on('pan zoom', hide);

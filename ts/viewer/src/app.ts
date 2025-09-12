@@ -8,6 +8,7 @@ import expandCollapse from "cytoscape-expand-collapse";
 import type { Core } from "cytoscape";
 import { graphToElements } from "./elements.js";
 import { generateStyles, applyModuleColorTint, applyGroupBackgroundColors } from "./style.js";
+import { defaultTokensLight } from "./style-tokens.js";
 import { InteractionManager } from "./interaction-manager.js";
 import { search } from "./search.js";
 import type { Graph, ViewerConfig, ViewerMode } from "./graph-types.js";
@@ -25,18 +26,24 @@ async function loadViewerConfig(): Promise<ViewerConfig> {
 
 export async function initApp() {
   const [graph, vcfg, annotations] = await Promise.all([loadGraph(), loadViewerConfig(), loadAnnotations()]);
+  // Prepare tokens override from config colors, if provided
+  const tokens = { ...defaultTokensLight } as any;
+  if (vcfg && vcfg.colors) {
+    if (vcfg.colors.moduleBg && typeof vcfg.colors.moduleBg.h === 'number') tokens.colors.node.moduleBg = vcfg.colors.moduleBg as any;
+    if (vcfg.colors.folderBg && typeof vcfg.colors.folderBg.h === 'number') tokens.colors.node.folderBg = vcfg.colors.folderBg as any;
+  }
 
   // Initialize file opener with workspace root
   initFileOpener(vcfg);
 
   let mode: ViewerMode = (vcfg.mode ?? 'explore') as ViewerMode;
-  let groupFolders = false; // default: no folder grouping
+  let groupFolders = true; // default: group by folders
   let layoutName = normalizeLayoutName(vcfg.layout);
   const elements = graphToElements(graph, { mode, groupFolders });
   const cy = cytoscape({
     container: document.getElementById('cy') as HTMLElement,
     elements,
-    style: generateStyles(undefined as any, { highlight: vcfg.highlight }),
+    style: generateStyles(tokens, { highlight: vcfg.highlight }),
     wheelSensitivity: typeof vcfg.wheelSensitivity === 'number' ? vcfg.wheelSensitivity : undefined,
     pixelRatio: 1.5,
     textureOnViewport: true,
@@ -78,7 +85,7 @@ export async function initApp() {
   } catch {}
 
   applyModuleColorTint(cy);
-  applyGroupBackgroundColors(cy);
+  applyGroupBackgroundColors(cy, tokens);
 
   // Initialize expand/collapse if available (disable animation to reduce jank)
   try {
@@ -204,7 +211,7 @@ export async function initApp() {
         cy.elements().remove();
         cy.add(newElements);
         applyModuleColorTint(cy);
-        applyGroupBackgroundColors(cy);
+        applyGroupBackgroundColors(cy, tokens);
       });
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
       try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
@@ -223,7 +230,7 @@ export async function initApp() {
           cy.elements().remove();
           cy.add(newElements);
           applyModuleColorTint(cy);
-          applyGroupBackgroundColors(cy);
+          applyGroupBackgroundColors(cy, tokens);
         });
         await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
         try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
@@ -247,7 +254,7 @@ export async function initApp() {
       if (refineBtn) {
         refineBtn.disabled = !isHybrid;
         if (!isHybrid) refineBtn.title = 'Enable ELK → fCoSE layout to use Re-layout';
-        else refineBtn.title = 'Re-run layout optimization (also clears selection)';
+        else refineBtn.title = 'Re-run layout optimization (clears selection and highlighting)';
       }
     };
     updateHybridVisibility();
@@ -265,6 +272,8 @@ export async function initApp() {
   const refineBtn = document.getElementById('refineBtn') as HTMLButtonElement;
   if (refineBtn) {
     refineBtn.addEventListener('click', async () => {
+      // Clear any custom highlight/fade state managed by InteractionManager
+      try { im.clearFocus(); } catch {}
       // Clear any current selection to avoid having to find whitespace
       try { (cy as any).$(':selected').unselect(); } catch {}
       // Clear details panel if present
