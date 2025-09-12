@@ -26,18 +26,38 @@ export function generateStyles(tokens: Tokens = defaultTokensLight, opts?: { dar
     { selector: 'edge[type = "moduleImport"]', style: { 'line-color': t.colors.edges.imports, 'target-arrow-color': t.colors.edges.imports, 'line-style': 'dashed', 'width': 'mapData(weight, 1, 10, 1, 4)' } },
     // Aggregated edges created by expand-collapse plugin
     { selector: 'edge.cy-expand-collapse-collapsed-edge', style: {
-      'line-style': 'dashed',
-      'opacity': 0.9,
-      'text-opacity': 0.7,
-      'label': (e: any) => {
-        try { const n = (e.data('collapsedEdges')?.length ?? 0); return n > 1 ? `(${n})` : ''; } catch { return ''; }
-      },
+      'line-style': 'solid',
+      'line-cap': 'round',
+      'opacity': 0.98,
+      // No label by default to reduce clutter on heavy aggregates
+      'label': '',
       'font-size': t.sizes.font - 1,
-      'text-background-opacity': 0.65,
-      'text-background-color': '#ffffff',
-      'text-background-shape': 'round-rectangle',
+      // Subtle halo to feel "meaty"
+      'shadow-blur': 6,
+      'shadow-opacity': 0.35,
+      'shadow-color': (e: any) => {
+        const k = String(e.data('type') || e.data('edgeType') || '').toLowerCase();
+        if (k === 'calls') return t.colors.edges.calls;
+        if (k === 'imports' || k === 'moduleimport') return t.colors.edges.imports;
+        if (k === 'runtime') return t.colors.edges.runtime;
+        return '#666';
+      },
+      'line-color': (e: any) => {
+        const k = String(e.data('type') || e.data('edgeType') || '').toLowerCase();
+        if (k === 'calls') return t.colors.edges.calls;
+        if (k === 'imports' || k === 'moduleimport') return t.colors.edges.imports;
+        if (k === 'runtime') return t.colors.edges.runtime;
+        return '#666';
+      },
+      'target-arrow-color': (e: any) => {
+        const k = String(e.data('type') || e.data('edgeType') || '').toLowerCase();
+        if (k === 'calls') return t.colors.edges.calls;
+        if (k === 'imports' || k === 'moduleimport') return t.colors.edges.imports;
+        if (k === 'runtime') return t.colors.edges.runtime;
+        return '#666';
+      },
       'width': (edge: any) => {
-        try { const n = Math.max(1, Number(edge.data('collapsedEdges')?.length ?? 1)); return 2 + Math.log2(n); } catch { return 2; }
+        try { const n = Math.max(1, Number(edge.data('collapsedEdges')?.length ?? 1)); return 3 + Math.log2(n); } catch { return 3; }
       }
     } },
     // Directional highlighting styles

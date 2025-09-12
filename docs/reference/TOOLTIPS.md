@@ -182,8 +182,8 @@ cy.on('pan zoom', hide);
 ### Aggregated edges (collapsed groups)
 - When folder/file groups are collapsed, edges between groups are aggregated using the expand-collapse plugin.
 - The aggregated edge gains class `cy-expand-collapse-collapsed-edge` and holds its underlying edges in `edge.data('collapsedEdges')`.
-- We render a dashed line with logarithmic width: `width = 2 + log2(N)` where N is the number of underlying edges.
-- The edge label shows `(N)` only when N > 1.
+- Visual style: solid, thick line with a soft coloured halo; width scales as `3 + log2(N)` where N is the number of underlying edges.
+- No label by default (to reduce clutter); hover to inspect.
 - Tooltip content includes:
   - Type (calls/imports)
   - Source group → target group
