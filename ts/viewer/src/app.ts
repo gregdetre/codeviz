@@ -88,7 +88,9 @@ export async function initApp() {
     console.error = (...args: any[]) => {
       try {
         origError(...args);
-        const s = args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+        const s = args.map(a => {
+          try { return (typeof a === 'string' ? a : JSON.stringify(a)); } catch { return String(a); }
+        }).join(' ');
         if (s.length < 1500) send(`[error] ${s}`);
       } catch {}
     };
