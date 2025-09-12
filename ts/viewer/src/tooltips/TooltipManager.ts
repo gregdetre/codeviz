@@ -70,23 +70,28 @@ export function installTooltips(cy: cytoscape.Core) {
   const tooltip = ensureTooltipEl();
   let cleanup: (() => void) | null = null;
 
+  let hoverTimer: any = null;
   function show(node: cytoscape.NodeSingular, html: string) {
-    tooltip.innerHTML = html;
-    tooltip.style.display = 'block';
-    const ref = createVirtualElement(node, cy);
-    cleanup = autoUpdate(ref as any, tooltip, () => {
-      computePosition(ref as any, tooltip, {
-        placement: 'top',
-        middleware: [offset(8), flip(), shift({ padding: 6 })]
-      }).then(({ x, y }) => {
-        Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
+    if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
+    hoverTimer = setTimeout(() => {
+      tooltip.innerHTML = html;
+      tooltip.style.display = 'block';
+      const ref = createVirtualElement(node, cy);
+      cleanup = autoUpdate(ref as any, tooltip, () => {
+        computePosition(ref as any, tooltip, {
+          placement: 'top',
+          middleware: [offset(8), flip(), shift({ padding: 6 })]
+        }).then(({ x, y }) => {
+          Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
+        });
       });
-    });
+    }, 120);
   }
 
   function hide() {
     tooltip.style.display = 'none';
     if (cleanup) { cleanup(); cleanup = null; }
+    if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
   }
 
   cy.on('mouseover', 'node[type = "function"]', (evt) => {

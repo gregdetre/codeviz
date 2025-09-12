@@ -25,7 +25,7 @@ export function generateStyles(tokens: Tokens = defaultTokensLight, opts?: { dar
     { selector: 'edge[type = "runtime"]', style: { 'line-color': t.colors.edges.runtime, 'target-arrow-color': t.colors.edges.runtime, 'line-style': 'dotted' } },
     { selector: 'edge[type = "moduleImport"]', style: { 'line-color': t.colors.edges.imports, 'target-arrow-color': t.colors.edges.imports, 'line-style': 'dashed', 'width': 'mapData(weight, 1, 10, 1, 4)' } },
     // Directional highlighting styles
-    { selector: '.focus', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.focus, 'border-opacity': 0.95, 'box-shadow': `0 0 0 2px ${colors.focus}` } as any },
+    { selector: '.focus', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.focus, 'border-opacity': 0.95 } as any },
     { selector: '.incoming-node', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.incoming } },
     { selector: '.outgoing-node', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.outgoing } },
     { selector: 'edge.incoming-edge', style: { 'line-color': colors.incoming, 'target-arrow-color': colors.incoming, 'width': widths.edgeHighlighted } },

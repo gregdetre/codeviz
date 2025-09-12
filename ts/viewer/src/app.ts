@@ -36,9 +36,36 @@ export async function initApp() {
     container: document.getElementById('cy') as HTMLElement,
     elements,
     style: generateStyles(undefined as any, { highlight: vcfg.highlight }),
-    wheelSensitivity: typeof vcfg.wheelSensitivity === 'number' ? vcfg.wheelSensitivity : undefined
+    wheelSensitivity: typeof vcfg.wheelSensitivity === 'number' ? vcfg.wheelSensitivity : undefined,
+    pixelRatio: 1,
+    textureOnViewport: true,
+    motionBlur: true,
+    motionBlurOpacity: 0.1,
+    hideEdgesOnViewport: false,
+    hideLabelsOnViewport: true
   });
   (window as any).__cy = cy; // expose for e2e tests
+
+  // Forward important console messages to server log in dev
+  try {
+    const send = (m: string) => { try { fetch('/api/log', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: m }) }); } catch {} };
+    const origWarn = console.warn.bind(console);
+    console.warn = (...args: any[]) => {
+      try {
+        origWarn(...args);
+        const s = args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+        if (s.length < 1500) send(`[warn] ${s}`);
+      } catch {}
+    };
+    const origError = console.error ? console.error.bind(console) : origWarn;
+    console.error = (...args: any[]) => {
+      try {
+        origError(...args);
+        const s = args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+        if (s.length < 1500) send(`[error] ${s}`);
+      } catch {}
+    };
+  } catch {}
 
   applyModuleColorTint(cy);
 
@@ -63,7 +90,10 @@ export async function initApp() {
   if (layoutInfo) layoutInfo.textContent = `Layout: ${layoutName}`;
   const modeInfo = document.getElementById('modeInfo');
   if (modeInfo) modeInfo.textContent = `Mode: ${mode}`;
+  // Instrument layout timing
+  const t0 = performance.now();
   await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
+  try { console.debug(`[cv] layout '${layoutName}' done in ${(performance.now()-t0).toFixed(1)}ms`); } catch {}
   try { requestAnimationFrame(() => cy.fit()); } catch {}
 
   const im = InteractionManager(cy, graph, vcfg);
@@ -144,9 +174,11 @@ export async function initApp() {
       mode = modeSelect.value as ViewerMode;
       if (modeInfo) modeInfo.textContent = `Mode: ${mode}`;
       const newElements = graphToElements(graph, { mode, groupFolders });
-      cy.elements().remove();
-      cy.add(newElements);
-      applyModuleColorTint(cy);
+      cy.batch(() => {
+        cy.elements().remove();
+        cy.add(newElements);
+        applyModuleColorTint(cy);
+      });
       await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
       try { requestAnimationFrame(() => cy.fit()); } catch {}
     });
@@ -160,9 +192,11 @@ export async function initApp() {
       groupFoldersToggle.addEventListener('change', async () => {
         groupFolders = groupFoldersToggle.checked;
         const newElements = graphToElements(graph, { mode, groupFolders });
-        cy.elements().remove();
-        cy.add(newElements);
-        applyModuleColorTint(cy);
+        cy.batch(() => {
+          cy.elements().remove();
+          cy.add(newElements);
+          applyModuleColorTint(cy);
+        });
         await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
         try { requestAnimationFrame(() => cy.fit()); } catch {}
         // Auto-collapse folder depth > 2

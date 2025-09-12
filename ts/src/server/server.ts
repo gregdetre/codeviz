@@ -184,6 +184,20 @@ export async function startServer(opts: { host: string; port: number; openBrowse
     }
   });
 
+  // Lightweight log ingestion endpoint to capture client timings/errors in dev
+  app.post("/api/log", async (req, reply) => {
+    try {
+      const body: any = (req as any).body || {};
+      const msg = String(body?.message ?? "");
+      if (msg && msg.length < 2000) {
+        try { await writeFile(logFile, (await readFile(logFile, "utf8")) + msg + "\n", "utf8"); } catch {}
+      }
+      reply.code(204).send();
+    } catch {
+      reply.code(204).send();
+    }
+  });
+
   // Minimal chat endpoint (v2): tool-calling via AI SDK; returns prose + compact commands
   app.post("/api/chat", async (req, reply) => {
     try {

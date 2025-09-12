@@ -66,7 +66,8 @@ export function hashHslForModule(name: string, base: Hsl = defaultTokensLight.co
 }
 
 export function hslToCss(hsl: Hsl): string {
-  return `hsl(${hsl.h} ${hsl.s}% ${hsl.l}%)`;
+  // Use comma-separated HSL for broad compatibility with Cytoscape style parser
+  return `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
 }
 
 export function contrastOn(bg: string): string {

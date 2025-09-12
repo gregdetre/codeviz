@@ -69,14 +69,14 @@ export async function applyLayout(cy: Core, name: LayoutName | 'hybrid', opts?: 
   }
   if (layoutName === 'fcose') {
     const fc = sanitizeFcoseOptions((opts as any)?.fcose ?? opts);
-    await runLayout({ name: 'fcose', animate: (fc.animate as boolean) ?? true, randomize: (fc.randomize as boolean) ?? false, numIter: (fc.numIter as number) ?? 1000 } as any);
+    await runLayout({ name: 'fcose', animate: (fc.animate as boolean) ?? false, randomize: (fc.randomize as boolean) ?? false, numIter: (fc.numIter as number) ?? 400 } as any);
     return;
   }
   // hybrid sequential: ELK then fCoSE, allowing limited overrides
   const elkOpts = sanitizeElkOptions((opts as any)?.elk);
   const fc = sanitizeFcoseOptions((opts as any)?.fcose);
   await runLayout({ name: 'elk', animate: false, nodeDimensionsIncludeLabels: true, elk: { 'elk.algorithm': elkOpts['elk.algorithm'] ?? 'layered', 'elk.direction': elkOpts['elk.direction'] ?? 'DOWN' } } as any);
-  await runLayout({ name: 'fcose', animate: (fc.animate as boolean) ?? true, randomize: (fc.randomize as boolean) ?? false, numIter: (fc.numIter as number) ?? 1000 } as any);
+  await runLayout({ name: 'fcose', animate: (fc.animate as boolean) ?? false, randomize: (fc.randomize as boolean) ?? false, numIter: (fc.numIter as number) ?? 400 } as any);
 }
 
 // Note: constrained hybrid mode removed
