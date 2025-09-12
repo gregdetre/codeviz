@@ -39,6 +39,13 @@ export async function initApp() {
   let mode: ViewerMode = (vcfg.mode ?? 'explore') as ViewerMode;
   let groupFolders = true; // default: group by folders
   let layoutName = normalizeLayoutName(vcfg.layout);
+  // Precompute module -> file mapping for quick lookups (used by search suggestions)
+  const moduleToFile = new Map<string, string>();
+  try {
+    for (const n of graph.nodes) {
+      if (n.module && n.file && !moduleToFile.has(n.module)) moduleToFile.set(n.module, n.file);
+    }
+  } catch {}
   const elements = graphToElements(graph, { mode, groupFolders });
   const cy = cytoscape({
     container: document.getElementById('cy') as HTMLElement,
@@ -90,12 +97,22 @@ export async function initApp() {
   // Initialize expand/collapse if available (disable animation/fisheye; lightweight layout)
   try {
     const ec = (cy as any).expandCollapse
-      ? (cy as any).expandCollapse({ layoutBy: { name: 'fcose', animate: false, randomize: false, numIter: 250 }, animate: false, fisheye: false })
+      ? (cy as any).expandCollapse({ layoutBy: { name: 'fcose', animate: false, randomize: false, numIter: 250 }, animate: false, fisheye: false, groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' })
       : null;
+    const reaggregateEdges = () => {
+      try {
+        const api = (cy as any).expandCollapse('get');
+        if (!api) return;
+        api.expandAllEdges();
+        api.collapseAllEdges({ groupEdgesOfSameTypeOnCollapse: true, edgeTypeInfo: 'type' });
+      } catch {}
+    };
     // Auto-collapse folders deeper than level 1
     if (ec) {
       const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 1);
       if (foldersDeep.length > 0) ec.collapse(foldersDeep, { animate: false });
+      // After collapsing, aggregate parallel/meta edges to reduce clutter
+      reaggregateEdges();
     }
     // Double-click (or quick double-tap) to toggle collapse on folder & module (file) groups
     if ((cy as any).expandCollapse) {
@@ -107,6 +124,8 @@ export async function initApp() {
           if (!api) return;
           if (api.isExpandable(node)) api.expand(node, { animate: false });
           else if (api.isCollapsible(node)) api.collapse(node, { animate: false });
+          // Refresh edge aggregation after toggle to keep group-level edges compact
+          reaggregateEdges();
         } catch (err) {
           console.warn('expand/collapse toggle failed', err);
         }
@@ -347,17 +366,55 @@ export async function initApp() {
       const query = (q || '').trim().toLowerCase();
       if (!query) return [];
       const scored: Array<{ s: Suggestion; score: number }> = [];
-      for (const n of graph.nodes) {
-        const id = String(n.id || '');
-        const label = String(n.label || '');
-        const moduleName = String(n.module || '');
-        const file = String(n.file || '');
-        const fields = [id.toLowerCase(), label.toLowerCase(), moduleName.toLowerCase(), file.toLowerCase()];
-        const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
-        if (indexes.length === 0) continue;
-        const score = Math.min(...indexes);
-        scored.push({ s: { id, label, module: moduleName, file, kind: String(n.kind || '') }, score });
-      }
+
+      // Entity nodes (functions, classes, variables) from raw graph – only when not in Modules mode
+      try {
+        if (mode !== 'modules') {
+          for (const n of graph.nodes) {
+            const id = String(n.id || '');
+            const label = String(n.label || '');
+            const moduleName = String(n.module || '');
+            const file = String(n.file || '');
+            const fields = [id.toLowerCase(), label.toLowerCase(), moduleName.toLowerCase(), file.toLowerCase()];
+            const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
+            if (indexes.length === 0) continue;
+            const score = Math.min(...indexes);
+            scored.push({ s: { id, label, module: moduleName, file, kind: String(n.kind || '') }, score });
+          }
+        }
+      } catch {}
+
+      // Group nodes: modules (files)
+      try {
+        const mods = cy.nodes('node[type = "module"]');
+        mods.forEach((mn: any) => {
+          const id: string = String(mn.id()); // e.g. module:path/to/file.py
+          const label: string = String(mn.data('label') || mn.data('path') || id);
+          const modPath: string = String(mn.data('path') || '');
+          const repFile: string = moduleToFile.get(modPath) || '';
+          const fields = [id.toLowerCase(), label.toLowerCase(), modPath.toLowerCase(), repFile.toLowerCase()];
+          const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
+          if (indexes.length === 0) return;
+          const score = Math.min(...indexes);
+          scored.push({ s: { id, label, module: modPath, file: repFile, kind: 'module' }, score });
+        });
+      } catch {}
+
+      // Group nodes: folders
+      try {
+        const flds = cy.nodes('node[type = "folder"]');
+        flds.forEach((fn: any) => {
+          const id: string = String(fn.id()); // e.g. folder:src/utils
+          const label: string = String(fn.data('label') || fn.data('path') || id);
+          const path: string = String(fn.data('path') || '');
+          const fields = [id.toLowerCase(), label.toLowerCase(), path.toLowerCase()];
+          const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
+          if (indexes.length === 0) return;
+          const score = Math.min(...indexes);
+          scored.push({ s: { id, label, module: '', file: path, kind: 'folder' }, score });
+        });
+      } catch {}
+
       scored.sort((a, b) => a.score - b.score || a.s.label.localeCompare(b.s.label));
       return scored.slice(0, 30).map((x) => x.s);
     }
