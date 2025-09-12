@@ -147,12 +147,27 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       projectName = (fromRoot && fromRoot.length > 0 ? fromRoot : fromDataPath) || undefined;
     } catch {}
 
-    // Load global config for viewer highlight settings if present
+    // Load global config for viewer highlight settings and colors if present
     let highlight: any = undefined;
+    let colors: any = undefined;
     try {
       const gcfg: any = await loadGlobalConfig();
       const hv = (gcfg && gcfg.viewer && gcfg.viewer.highlight) ? gcfg.viewer.highlight : undefined;
       highlight = hv ? hv : undefined;
+      const cv = (gcfg && gcfg.viewer && (gcfg.viewer as any).colors) ? (gcfg.viewer as any).colors : undefined;
+      const toHsl = (v: any) => {
+        if (!v || typeof v !== 'object') return undefined;
+        const h = Number((v as any).h);
+        const s = Number((v as any).s);
+        const l = Number((v as any).l);
+        if (Number.isFinite(h) && Number.isFinite(s) && Number.isFinite(l)) return { h, s, l };
+        return undefined;
+      };
+      if (cv) {
+        const moduleBg = toHsl((cv as any).moduleBg);
+        const folderBg = toHsl((cv as any).folderBg);
+        colors = (moduleBg || folderBg) ? { moduleBg, folderBg } : undefined;
+      }
     } catch {}
 
     const cfg = { 
@@ -161,7 +176,8 @@ export async function startServer(opts: { host: string; port: number; openBrowse
       hybridMode: (opts.hybridMode ?? "sequential"),
       workspaceRoot: rawRoot,
       projectName,
-      highlight
+      highlight,
+      colors
     };
     reply.type("application/json").send(cfg);
   });

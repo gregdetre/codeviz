@@ -8,7 +8,8 @@ export type Tokens = {
       function: string;
       class: string;
       variable: string;
-      moduleBg: Hsl; // base for modules
+      moduleBg: Hsl; // base for modules (files)
+      folderBg: Hsl; // base for folders
     };
     edges: {
       calls: string;
@@ -35,7 +36,8 @@ export const defaultTokensLight: Tokens = {
       function: "#e8f1ff",
       class: "#f7eefc",
       variable: "#fff6ec",
-      moduleBg: { h: 210, s: 40, l: 92 }
+      moduleBg: { h: 210, s: 40, l: 92 },
+      folderBg: { h: 220, s: 20, l: 93 }
     },
     edges: {
       calls: "#2563eb",

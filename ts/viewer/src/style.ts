@@ -52,4 +52,30 @@ export function applyModuleColorTint(cy: any) {
   });
 }
 
+// Apply background colors to group compounds (folders and files/modules), darkening with nesting depth
+export function applyGroupBackgroundColors(cy: any, tokens: Tokens = defaultTokensLight) {
+  function darkenByDepth(base: { h: number; s: number; l: number }, depth: number) {
+    const step = 4; // lightness delta per level
+    const newL = Math.max(60, Math.min(96, base.l - Math.max(0, depth - 1) * step));
+    return { h: base.h, s: base.s, l: newL };
+  }
+  // Folders
+  cy.nodes('node[type = "folder"]').forEach((n: any) => {
+    const base = tokens.colors.node.folderBg;
+    const depth = Number(n.data('depth') || 1);
+    const color = hslToCss(darkenByDepth(base, depth));
+    n.style('background-color', color);
+    n.style('background-opacity', 0.35);
+  });
+  // Modules (files)
+  cy.nodes('node[type = "module"]').forEach((n: any) => {
+    const base = tokens.colors.node.moduleBg;
+    // Depth derived from folder ancestors; at least 1
+    const folderDepth = n.ancestors('node[type = "folder"]').length || 0;
+    const color = hslToCss(darkenByDepth(base, folderDepth + 1));
+    n.style('background-color', color);
+    n.style('background-opacity', 0.3);
+  });
+}
+
 

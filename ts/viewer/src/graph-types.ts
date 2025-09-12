@@ -55,6 +55,10 @@ export type ViewerConfig = {
   projectName?: string;
   highlight?: HighlightConfig;
   wheelSensitivity?: number;
+  colors?: {
+    moduleBg?: { h: number; s: number; l: number };
+    folderBg?: { h: number; s: number; l: number };
+  };
 };
 
 export type HighlightConfig = {

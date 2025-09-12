@@ -288,13 +288,150 @@ export async function initApp() {
     });
   }
 
+  // Typeahead search dropdown + existing filter behaviour
   const searchBox = document.getElementById('searchBox') as HTMLInputElement;
+  const searchResultsEl = document.getElementById('searchResults') as HTMLDivElement | null;
+  const searchContainer = searchBox ? (searchBox.parentElement as HTMLElement | null) : null;
   if (searchBox) {
+    type Suggestion = { id: string; label: string; module: string; file: string; kind: string };
     let timer: any;
+    let suggestions: Suggestion[] = [];
+    let selectedIndex = -1;
+
+    const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
+    function computeSuggestions(q: string): Suggestion[] {
+      const query = (q || '').trim().toLowerCase();
+      if (!query) return [];
+      const scored: Array<{ s: Suggestion; score: number }> = [];
+      for (const n of graph.nodes) {
+        const id = String(n.id || '');
+        const label = String(n.label || '');
+        const moduleName = String(n.module || '');
+        const file = String(n.file || '');
+        const fields = [id.toLowerCase(), label.toLowerCase(), moduleName.toLowerCase(), file.toLowerCase()];
+        const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
+        if (indexes.length === 0) continue;
+        const score = Math.min(...indexes);
+        scored.push({ s: { id, label, module: moduleName, file, kind: String(n.kind || '') }, score });
+      }
+      scored.sort((a, b) => a.score - b.score || a.s.label.localeCompare(b.s.label));
+      return scored.slice(0, 30).map((x) => x.s);
+    }
+
+    function renderDropdown(list: Suggestion[]): void {
+      if (!searchResultsEl) return;
+      if (list.length === 0) {
+        searchResultsEl.innerHTML = '';
+        searchResultsEl.hidden = true;
+        return;
+      }
+      const html = list.map((it, idx) => {
+        const selected = idx === selectedIndex ? ' selected' : '';
+        const title = `${escapeHtml(it.label || it.id)}`;
+        const meta = `${escapeHtml(it.module || '')}${it.module && it.file ? ' — ' : ''}${escapeHtml(it.file || '')}`;
+        const kind = escapeHtml(it.kind || '');
+        return `
+          <div class="search-result-item${selected}" data-node-id="${escapeHtml(it.id)}">
+            <div class="search-result-title">
+              <span>${title}</span>
+              ${kind ? `<span class="search-result-badge">${kind}</span>` : ''}
+            </div>
+            <div class="search-result-meta">${meta}</div>
+          </div>
+        `;
+      }).join('');
+      searchResultsEl.innerHTML = html;
+      searchResultsEl.hidden = false;
+      // Wire clicks
+      Array.from(searchResultsEl.querySelectorAll('[data-node-id]')).forEach((el, idx) => {
+        el.addEventListener('mouseenter', () => { selectedIndex = idx; updateSelectionHighlight(); });
+        el.addEventListener('click', (evt) => {
+          evt.preventDefault();
+          const id = (el as HTMLElement).getAttribute('data-node-id')!;
+          focusNode(id);
+        });
+      });
+    }
+
+    function updateSelectionHighlight(): void {
+      if (!searchResultsEl) return;
+      const items = Array.from(searchResultsEl.querySelectorAll('.search-result-item')) as HTMLElement[];
+      items.forEach((el, i) => {
+        if (i === selectedIndex) el.classList.add('selected'); else el.classList.remove('selected');
+      });
+    }
+
+    function hideDropdown(): void {
+      if (!searchResultsEl) return;
+      searchResultsEl.hidden = true;
+    }
+
+    function showDropdown(): void {
+      if (!searchResultsEl) return;
+      if (suggestions.length > 0) searchResultsEl.hidden = false;
+    }
+
+    function focusNode(nodeId: string): void {
+      try { im.clearFocus(); } catch {}
+      try { im.focus(nodeId); } catch {}
+      try {
+        const node = cy.getElementById(nodeId);
+        if (node && !node.empty()) {
+          try { cy.center(node); } catch {}
+          try {
+            const detailsNow = document.getElementById('details') as HTMLElement | null;
+            if (detailsNow) renderDetails(detailsNow, node as any);
+          } catch {}
+        }
+      } catch {}
+      hideDropdown();
+    }
+
     searchBox.addEventListener('input', () => {
       clearTimeout(timer);
-      timer = setTimeout(() => search(cy, searchBox.value, 'fade'), 150);
+      timer = setTimeout(() => {
+        // Keep existing filter behaviour
+        search(cy, searchBox.value, 'fade');
+        // Update suggestions dropdown
+        selectedIndex = -1;
+        suggestions = computeSuggestions(searchBox.value);
+        renderDropdown(suggestions);
+      }, 150);
     });
+
+    searchBox.addEventListener('keydown', (ev) => {
+      if (!searchResultsEl || searchResultsEl.hidden) return;
+      if (ev.key === 'ArrowDown') {
+        ev.preventDefault();
+        if (suggestions.length === 0) return;
+        selectedIndex = (selectedIndex + 1) % suggestions.length;
+        updateSelectionHighlight();
+      } else if (ev.key === 'ArrowUp') {
+        ev.preventDefault();
+        if (suggestions.length === 0) return;
+        selectedIndex = (selectedIndex - 1 + suggestions.length) % suggestions.length;
+        updateSelectionHighlight();
+      } else if (ev.key === 'Enter') {
+        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          ev.preventDefault();
+          focusNode(suggestions[selectedIndex].id);
+        }
+        // if no selection, leave existing filter behaviour in place
+      } else if (ev.key === 'Escape') {
+        hideDropdown();
+      }
+    });
+
+    // Hide dropdown on outside click
+    document.addEventListener('click', (e) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (searchContainer && !searchContainer.contains(target)) hideDropdown();
+    });
+
+    // Show dropdown when input focused if there are suggestions
+    searchBox.addEventListener('focus', () => { if (suggestions.length > 0) showDropdown(); });
   }
 
   const detailsEl = document.getElementById('details') as HTMLElement;
