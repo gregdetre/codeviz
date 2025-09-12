@@ -6,6 +6,8 @@ import elk from "cytoscape-elk";
 import expandCollapse from "cytoscape-expand-collapse";
 (cytoscape as any).use(expandCollapse as any);
 import type { Core } from "cytoscape";
+import cxtmenu from "cytoscape-cxtmenu";
+(cytoscape as any).use(cxtmenu as any);
 import { graphToElements } from "./elements.js";
 import { generateStyles, applyModuleColorTint, applyGroupBackgroundColors } from "./style.js";
 import { defaultTokensLight } from "./style-tokens.js";
@@ -175,6 +177,13 @@ export async function initApp() {
 
   const im = InteractionManager(cy, graph, vcfg);
   im.installBasics();
+  // Install context menu (node/group)
+  try {
+    const mod = await import('./context-menu.js');
+    mod.installContextMenu(cy, graph, vcfg, im);
+  } catch (err) {
+    console.warn('Context menu unavailable:', err);
+  }
   // Annotations status (optional)
   try {
     const annStatus = document.getElementById('annStatus');
@@ -365,7 +374,8 @@ export async function initApp() {
     function computeSuggestions(q: string): Suggestion[] {
       const query = (q || '').trim().toLowerCase();
       if (!query) return [];
-      const scored: Array<{ s: Suggestion; score: number }> = [];
+      // cat priority: 0 = folder, 1 = module (file), 2 = entity (function/class/variable)
+      const scored: Array<{ s: Suggestion; score: number; cat: number }> = [];
 
       // Entity nodes (functions, classes, variables) from raw graph – only when not in Modules mode
       try {
@@ -379,7 +389,7 @@ export async function initApp() {
             const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
             if (indexes.length === 0) continue;
             const score = Math.min(...indexes);
-            scored.push({ s: { id, label, module: moduleName, file, kind: String(n.kind || '') }, score });
+            scored.push({ s: { id, label, module: moduleName, file, kind: String(n.kind || '') }, score, cat: 2 });
           }
         }
       } catch {}
@@ -396,7 +406,7 @@ export async function initApp() {
           const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
           if (indexes.length === 0) return;
           const score = Math.min(...indexes);
-          scored.push({ s: { id, label, module: modPath, file: repFile, kind: 'module' }, score });
+          scored.push({ s: { id, label, module: modPath, file: repFile, kind: 'module' }, score, cat: 1 });
         });
       } catch {}
 
@@ -411,11 +421,11 @@ export async function initApp() {
           const indexes = fields.map((f) => f.indexOf(query)).filter((i) => i >= 0);
           if (indexes.length === 0) return;
           const score = Math.min(...indexes);
-          scored.push({ s: { id, label, module: '', file: path, kind: 'folder' }, score });
+          scored.push({ s: { id, label, module: '', file: path, kind: 'folder' }, score, cat: 0 });
         });
       } catch {}
 
-      scored.sort((a, b) => a.score - b.score || a.s.label.localeCompare(b.s.label));
+      scored.sort((a, b) => (a.cat - b.cat) || (a.score - b.score) || a.s.label.localeCompare(b.s.label));
       return scored.slice(0, 30).map((x) => x.s);
     }
 

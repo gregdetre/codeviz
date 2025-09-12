@@ -179,10 +179,48 @@ export function installTooltips(cy: cytoscape.Core) {
   });
   cy.on('mouseout', 'node[type = "folder"]', hide);
 
-  // Edge tooltips (calls/imports/moduleImport, etc.)
+  // Edge tooltips (calls/imports/moduleImport, aggregated collapsed edges, etc.)
   cy.on('mouseover', 'edge', (evt) => {
     const e = evt.target as cytoscape.EdgeSingular;
-    showEdge(e, formatEdgeTooltip(e));
+    const isCollapsedAggregate = e.hasClass('cy-expand-collapse-collapsed-edge');
+    if (!isCollapsedAggregate) {
+      showEdge(e, formatEdgeTooltip(e));
+    } else {
+      try {
+        const collapsed = (e.data('collapsedEdges') as any) || [];
+        const n = collapsed.length || 0;
+        const kind = e.data('type') || e.data('edgeType') || 'edge';
+        // Attempt to extract representative endpoints labels
+        const src = e.source();
+        const tgt = e.target();
+        const sLabel = src.data('label') || src.id();
+        const tLabel = tgt.data('label') || tgt.id();
+        const sModule = src.data('module') || '';
+        const tModule = tgt.data('module') || '';
+        let examples: string[] = [];
+        try {
+          // collapsed is a collection-like object in plugin; fallback if array-like
+          const sample = (collapsed as any).slice ? (collapsed as any).slice(0, 5) : [];
+          for (const ce of sample) {
+            const cs = ce.source();
+            const ct = ce.target();
+            const csL = (cs?.data?.('label')) || (cs?.id?.()) || '';
+            const ctL = (ct?.data?.('label')) || (ct?.id?.()) || '';
+            examples.push(`${String(csL)} → ${String(ctL)}`);
+          }
+        } catch {}
+        let html = `<strong>${escapeHtml(String(kind))} (aggregated)</strong>`;
+        html += `<div>${escapeHtml(String(sModule ? `${sModule}.` : ''))}${escapeHtml(String(sLabel))} → ${escapeHtml(String(tModule ? `${tModule}.` : ''))}${escapeHtml(String(tLabel))}</div>`;
+        html += `<div style="opacity:0.9">edges: ${escapeHtml(String(n))}</div>`;
+        if (examples.length > 0) {
+          html += `<div style="opacity:0.9; margin-top:4px">examples:</div>`;
+          html += `<div style="opacity:0.85">${examples.map(escapeHtml).join('<br/>')}</div>`;
+        }
+        showEdge(e, html);
+      } catch {
+        showEdge(e, formatEdgeTooltip(e));
+      }
+    }
   });
   cy.on('mouseout', 'edge', hide);
 

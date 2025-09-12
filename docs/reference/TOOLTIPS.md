@@ -179,6 +179,17 @@ cy.on('pan zoom', hide);
 - Position updates via Floating UI `autoUpdate`; cleanup on hide.
 - Pan/zoom hides tooltip to prevent positional lag.
 
+### Aggregated edges (collapsed groups)
+- When folder/file groups are collapsed, edges between groups are aggregated using the expand-collapse plugin.
+- The aggregated edge gains class `cy-expand-collapse-collapsed-edge` and holds its underlying edges in `edge.data('collapsedEdges')`.
+- We render a dashed line with logarithmic width: `width = 2 + log2(N)` where N is the number of underlying edges.
+- The edge label shows `(N)` only when N > 1.
+- Tooltip content includes:
+  - Type (calls/imports)
+  - Source group → target group
+  - `edges: N`
+  - Up to 5 example underlying edges (source → target labels)
+
 ## Extending/Customising
 - Change content: edit formatter functions in `TooltipManager.ts` (e.g., add docstrings, counts, tags).
 - Add new kinds: wire additional selectors in `installTooltips` (e.g., class/variable nodes).

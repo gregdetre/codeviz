@@ -24,6 +24,22 @@ export function generateStyles(tokens: Tokens = defaultTokensLight, opts?: { dar
     { selector: 'edge[type = "imports"]', style: { 'line-color': t.colors.edges.imports, 'target-arrow-color': t.colors.edges.imports, 'line-style': 'dashed' } },
     { selector: 'edge[type = "runtime"]', style: { 'line-color': t.colors.edges.runtime, 'target-arrow-color': t.colors.edges.runtime, 'line-style': 'dotted' } },
     { selector: 'edge[type = "moduleImport"]', style: { 'line-color': t.colors.edges.imports, 'target-arrow-color': t.colors.edges.imports, 'line-style': 'dashed', 'width': 'mapData(weight, 1, 10, 1, 4)' } },
+    // Aggregated edges created by expand-collapse plugin
+    { selector: 'edge.cy-expand-collapse-collapsed-edge', style: {
+      'line-style': 'dashed',
+      'opacity': 0.9,
+      'text-opacity': 0.7,
+      'label': (e: any) => {
+        try { const n = (e.data('collapsedEdges')?.length ?? 0); return n > 1 ? `(${n})` : ''; } catch { return ''; }
+      },
+      'font-size': t.sizes.font - 1,
+      'text-background-opacity': 0.65,
+      'text-background-color': '#ffffff',
+      'text-background-shape': 'round-rectangle',
+      'width': (edge: any) => {
+        try { const n = Math.max(1, Number(edge.data('collapsedEdges')?.length ?? 1)); return 2 + Math.log2(n); } catch { return 2; }
+      }
+    } },
     // Directional highlighting styles
     { selector: '.focus', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.focus, 'border-opacity': 0.95 } as any },
     { selector: '.incoming-node', style: { 'border-width': widths.nodeBorderHighlighted, 'border-color': colors.incoming } },
