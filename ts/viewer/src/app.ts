@@ -87,13 +87,53 @@ export async function initApp() {
   applyModuleColorTint(cy);
   applyGroupBackgroundColors(cy, tokens);
 
-  // Initialize expand/collapse if available (disable animation to reduce jank)
+  // Initialize expand/collapse if available (disable animation/fisheye; lightweight layout)
   try {
-    const ec = (cy as any).expandCollapse ? (cy as any).expandCollapse({ layoutBy: { name: 'fcose', animate: false }, animate: false }) : null;
-    // Auto-collapse folders deeper than level 2
+    const ec = (cy as any).expandCollapse
+      ? (cy as any).expandCollapse({ layoutBy: { name: 'fcose', animate: false, randomize: false, numIter: 250 }, animate: false, fisheye: false })
+      : null;
+    // Auto-collapse folders deeper than level 1
     if (ec) {
-      const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 2);
-      if (foldersDeep.length > 0) ec.collapse(foldersDeep);
+      const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 1);
+      if (foldersDeep.length > 0) ec.collapse(foldersDeep, { animate: false });
+    }
+    // Double-click (or quick double-tap) to toggle collapse on folder & module (file) groups
+    if ((cy as any).expandCollapse) {
+      let lastTapTs = 0;
+      let lastTapId: string | null = null;
+      const toggleCollapse = (node: any) => {
+        try {
+          const api = (cy as any).expandCollapse('get');
+          if (!api) return;
+          if (api.isExpandable(node)) api.expand(node, { animate: false });
+          else if (api.isCollapsible(node)) api.collapse(node, { animate: false });
+        } catch (err) {
+          console.warn('expand/collapse toggle failed', err);
+        }
+      };
+      cy.on('tap', 'node[type = "folder"], node[type = "module"]', (evt) => {
+        try {
+          // Prefer native double-click count when available
+          const oe: any = (evt as any).originalEvent;
+          if (oe && typeof oe.detail === 'number' && oe.detail >= 2) {
+            toggleCollapse(evt.target);
+            lastTapId = null;
+            lastTapTs = 0;
+            return;
+          }
+          // Fallback: detect double-tap within 300ms on same node
+          const now = performance.now();
+          const id = String(evt.target.id());
+          if (lastTapId === id && (now - lastTapTs) < 300) {
+            toggleCollapse(evt.target);
+            lastTapId = null;
+            lastTapTs = 0;
+          } else {
+            lastTapId = id;
+            lastTapTs = now;
+          }
+        } catch {}
+      });
     }
   } catch {}
 
@@ -235,9 +275,9 @@ export async function initApp() {
         });
         await applyLayout(cy, layoutName, { hybridMode: vcfg.hybridMode as any });
         try { requestAnimationFrame(() => { try { cy.resize(); cy.fit(cy.elements(':visible'), 20); } catch {} }); } catch {}
-        // Auto-collapse folder depth > 2
+        // Auto-collapse folder depth > 1
         try {
-          const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 2);
+          const foldersDeep = cy.nodes('node[type = "folder"]').filter((n: any) => Number(n.data('depth') || 0) > 1);
           const ec = (cy as any).expandCollapse ? (cy as any).expandCollapse('get') : null;
           if (ec && foldersDeep.length > 0) ec.collapse(foldersDeep);
         } catch {}
