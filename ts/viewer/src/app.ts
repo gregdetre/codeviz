@@ -225,6 +225,17 @@ export async function initApp() {
 
   const layoutInfo = document.getElementById('layoutInfo');
   if (layoutInfo) layoutInfo.textContent = `Layout: ${layoutName}`;
+  const configInfo = document.getElementById('configInfo');
+  if (configInfo) {
+    try {
+      const stem = (vcfg as any).configStem;
+      if (stem && typeof stem === 'string' && stem.trim().length > 0) {
+        (configInfo as any).textContent = `Config: ${stem}`;
+      } else {
+        (configInfo as any).textContent = `Config: (unknown)`;
+      }
+    } catch { (configInfo as any).textContent = `Config: (unknown)`; }
+  }
   // Modes removed; Explore is the default/static mode
   // Instrument layout timing
   const t0 = performance.now();
