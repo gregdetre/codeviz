@@ -21,10 +21,11 @@ A quick overview of how text search, the typeahead dropdown, and graph filtering
   - As you type, the graph is filtered via fade by default (configurable to hide).
   - Matching is case-insensitive across id, label, module path, and file path fields.
 - Suggestions dropdown:
+  - Ordering: folders first, then modules (files), then entities (functions/classes/variables).
   - Populates with best matches from:
-    - Entities: functions, classes, variables (from raw graph data)
-    - Groups: modules (files) and folders (from rendered Cytoscape elements)
-  - Up to 30 suggestions, ranked by earliest match position then label.
+    - Entities: functions, classes, variables (only in Explore mode)
+    - Groups: modules (files) and folders (always)
+  - Up to 30 suggestions, ranked by category (folder < module < entity), then earliest match position, then label.
   - Keyboard: ArrowUp/ArrowDown to move, Enter to select; Escape to close.
   - Mouse: hover highlights, click to select.
 - Selecting a suggestion:
@@ -36,9 +37,10 @@ A quick overview of how text search, the typeahead dropdown, and graph filtering
 ### Implementation overview
 - Filtering: `search(cy, term, mode)` in `ts/viewer/src/search.ts` computes matching nodes and fades/hides the rest. It matches on `label`, `module`, `file`, and `id`.
 - Dropdown suggestions: Implemented in `ts/viewer/src/app.ts` near the search box wiring.
-  - Entities are pulled from `graph.nodes` and scored by textual match.
+  - Entities are pulled from `graph.nodes` and scored by textual match (Explore mode only).
   - Modules and folders are obtained from live Cytoscape nodes (`type = "module"|"folder"`) to reflect current grouping.
   - Module entries show `label`, module path, and a representative file path when available.
+  - Sorting places folders first, then modules, then entities.
 - Details panel:
   - For entity nodes, shows metadata, tags, and incoming/outgoing neighbours.
   - For modules, shows a grouped listing of contained entities.
@@ -47,7 +49,7 @@ A quick overview of how text search, the typeahead dropdown, and graph filtering
 ### Gotchas
 - If folder grouping is disabled, folder suggestions will not appear (no folder nodes exist).
 - Filters can hide elements that would otherwise be shown by focus; focus attempts to unhide relevant nodes, but visibility toggles still apply.
-- In modules view, only module and module import edges are present; entity suggestions will not apply in that mode.
+- In Modules mode, only module and module import edges are present; entity suggestions are intentionally suppressed.
 
 ### Troubleshooting
 - No dropdown items: ensure you typed at least one non-space character; verify modules/folders exist (grouping enabled) and entities are visible by type toggles.
